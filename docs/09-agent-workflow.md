@@ -26,7 +26,7 @@
 
 **`/done`** (`.claude/skills/done/SKILL.md`) — 이슈 종료 절차의 유일한 경로.
 
-working tree 정리 → DoD 실검증(명령·출력을 증거로 수집) → 이슈 diff(첫 `(SJO-N)` 커밋의 부모 ~ HEAD)로 code-reviewer(+UI면 design-reviewer, P1 수정 필수) → **리뷰 수정 시 DoD 재검증** → 증거 코멘트 → `Done` → 외부 상태 변경 시 MEMORY.md
+working tree 정리 → DoD 실검증(명령·출력을 증거로 수집) → 이슈 diff(첫 `(SJO-N)` 커밋의 부모 ~ HEAD)로 code-reviewer(+UI면 design-reviewer, P1 수정 필수) → **리뷰 수정 시 DoD 재검증** → 증거 + 세션 유언장(기각한 대안·다음 이슈에 걸치는 발견) 코멘트 → `Done` → 외부 상태 변경 시 MEMORY.md
 
 **`/lesson`** (`.claude/skills/lesson/SKILL.md`) — 실수·혼동을 LESSONS.md에 즉시 기록. 같은 원인 2회 반복 시 CLAUDE.md 규칙 또는 훅으로 승격 — "규칙은 실패에서 나온다" 원칙의 수집 장치.
 
