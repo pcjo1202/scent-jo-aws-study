@@ -90,7 +90,7 @@
 
 ### CloudFront — CORS
 
-**Response Headers Policy로 주입한다.** S3 버킷 CORS로 처리하면 CloudFront가 `Origin` 헤더를 오리진까지 전달해야 하고, 그러면 Origin별로 캐시가 파편화된다. CloudFront에서 직접 주입하면 캐시가 하나로 유지된다.
+**Response Headers Policy로 주입한다.** 근거(캐시 파편화 방지)는 `03-architecture.md` CORS 절이 캐논이다.
 
 - [ ] Response Headers Policy 생성
   - `Access-Control-Allow-Origin`: 아래 목록
