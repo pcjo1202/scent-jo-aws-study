@@ -6,7 +6,7 @@
 
 **1. 시도는 추가만 한다 (append-only)**
 
-`attempts`는 수정·삭제하지 않는다. 같은 문항을 다시 풀면 행이 하나 더 쌓인다. "현재 상태"는 최신 행으로 도출한다.
+`attempts`는 수정·삭제하지 않는다. 같은 문항을 다시 풀면 행이 하나 더 쌓인다. "현재 상태"는 최신 행으로 도출한다. 유일한 예외는 모의고사 포기(`DELETE /exams/:id`)로, 세션과 함께 그 세션의 시도도 cascade 삭제된다.
 
 - 기기 간 충돌이 구조적으로 발생하지 않는다. 두 기기에서 동시에 풀어도 둘 다 기록될 뿐이다
 - 나중에 필요한 지표를 원장에서 다시 계산할 수 있다 (몇 번째 시도에 맞혔는가, 정답률 추이 등)
@@ -24,6 +24,8 @@
 Nest가 service role로 접속하고 JWT 검증과 소유권 확인을 직접 한다. RLS를 살리려면 사용자 JWT를 Postgres 세션에 전달해야 하는데(`SET LOCAL request.jwt.claims`), 트랜잭션 풀러 환경에서 관리 비용이 커진다.
 
 대신 **모든 쿼리가 `user_id` 조건을 반드시 포함하도록 리포지토리 레이어에서 강제한다.** 사용자가 1명이므로 유출 대상 자체가 없다.
+
+이 방어는 Nest 경로만 막는다. **Supabase Data API(PostgREST)는 비활성화한다** — RLS가 없는 상태에서는 공개된 anon 키만으로 REST 경로(`/rest/v1/*`)가 열리기 때문이다. 셋업 체크리스트는 `07-infrastructure.md`.
 
 > 다중 사용자로 확장하면 이 결정을 먼저 뒤집어야 한다.
 
@@ -118,11 +120,13 @@ create table study_progress (
 
 순차 모드의 이어풀기 포인터. `0`은 아직 시작 안 함을 뜻한다.
 
-`source = 'sequential'` 시도가 들어오면 서버가 `last_question_id = greatest(현재, questionId)` 로 갱신한다. 별도 엔드포인트를 두지 않는다. 되돌아가서 다시 풀어도 포인터는 뒤로 가지 않는다.
+`source = 'sequential'`이고 `advancesPointer = true`인 시도가 들어오면 서버가 `last_question_id = greatest(현재, questionId)` 로 갱신한다. 필터 모드 풀이는 `advancesPointer: false`로 보내 포인터를 건드리지 않는다. 별도 엔드포인트를 두지 않는다. 되돌아가서 다시 풀어도 포인터는 뒤로 가지 않는다.
 
-기기 간에는 last-write-wins다. 사용자가 1명이므로 충분하다.
+기기 간에는 `greatest`로 단조 증가한다. 사용자가 1명이므로 충분하다.
 
 ## 도출 쿼리
+
+진행 중(미완료) 모의고사 세션의 시도는 모든 도출에서 제외한다 — 시험 중 정오가 오답 목록·통계로 새는 것을 막는다. 완료된 세션의 시도는 포함된다 (모의고사 오답도 복습 대상이다).
 
 ### 풀이 상태 맵
 
@@ -130,6 +134,8 @@ create table study_progress (
 select distinct on (question_id) question_id, is_correct
 from attempts
 where user_id = $1
+  and (session_id is null
+       or session_id in (select id from exam_sessions where finished))
 order by question_id, created_at desc;
 ```
 
@@ -192,7 +198,7 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트�
 
 ## API 계약
 
-모든 엔드포인트는 `Authorization: Bearer <supabase-jwt>` 를 요구한다. `user_id`는 토큰의 `sub`에서 가져오며 **요청 본문에서 받지 않는다.**
+모든 엔드포인트는 `Authorization: Bearer <supabase-jwt>` 를 요구한다. `user_id`는 토큰의 `sub`에서 가져오며 **요청 본문에서 받지 않는다.** JWT의 `email`이 `ALLOWED_EMAIL`과 다르면 403 — 로그인은 아무 구글 계정이나 되지만, API는 소유자만 통과시킨다.
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
@@ -232,11 +238,26 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트�
   source: 'sequential' | 'review' | 'exam'
   sessionId?: string        // source가 'exam'이면 필수
   durationMs?: number
+  advancesPointer?: boolean // sequential 전용. 기본 true, 필터 모드는 false
 }
 // 응답 — sequential | review
 { isCorrect: boolean, answer: Array<'A'|'B'|'C'|'D'|'E'> }
 // 응답 — exam (정오를 돌려주지 않는다)
 { accepted: true }
+
+// POST /attempts/batch — 오프라인 큐 재전송
+// 요청 — answeredAt(클라이언트 발생 시각)을 created_at으로 기록한다
+{ items: Array<{
+  questionId: number
+  selected: Array<'A'|'B'|'C'|'D'|'E'>
+  source: 'sequential' | 'review' | 'exam'
+  sessionId?: string
+  durationMs?: number
+  advancesPointer?: boolean
+  answeredAt: string        // ISO 8601
+}> }
+// 응답 — 항목별 결과. rejected 항목은 클라이언트가 큐에서 버린다 (재시도는 네트워크 오류만)
+{ results: Array<{ index: number, status: 'saved' | 'rejected', isCorrect?: boolean }> }
 
 // POST /exams  → 진행 중 세션이 있으면 409
 { id: string, questionIds: number[], cursor: 0 }
@@ -293,6 +314,8 @@ type ExamResult = {
 | 종료된 세션에 답안 제출 | 409 |
 | 종료된 세션을 삭제 시도 | 409 |
 | `questionId` 범위 밖 / 선택지 키 불일치 | 400 |
+| exam 시도의 `questionId`가 세션 `question_ids`에 없음 | 400 |
+| JWT의 `email`이 `ALLOWED_EMAIL`과 불일치 | 403 |
 
 ## Nest 모듈 구성
 

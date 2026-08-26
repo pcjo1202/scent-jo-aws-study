@@ -75,7 +75,7 @@ type IndexEntry = {
 type QuestionIndex = { entries: IndexEntry[] }
 ```
 
-1019개, 약 60KB. **필터·모의고사 추첨·목록 렌더링을 전부 이 파일만으로 처리한다.** 실제로 문제를 풀 때만 해당 청크를 받는다.
+1019개, 약 60KB. **필터·목록 렌더링을 전부 이 파일만으로 처리한다.** 모의고사 추첨은 서버 `catalog`가 한다 (`05-database.md`). 실제로 문제를 풀 때만 해당 청크를 받는다.
 
 `chunk`를 인덱스에 넣어 두면 문항 id에서 청크 번호를 계산하지 않아도 되고, 나중에 청크 크기를 바꿔도 클라이언트 코드가 안 깨진다.
 
@@ -232,11 +232,12 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 
 ### data:publish
 
-1. `data/`에서 청크·인덱스·노트·해부서를 읽는다
+1. `data/`에서 청크·인덱스·노트·해부서와 테스트 픽스처(`tests/fixtures/`)를 읽는다
 2. 각 파일의 sha256을 계산해 manifest를 만든다
 3. `s3://<bucket>/aws-saa/<version>/` 에 업로드한다
    - `v*/**` → `Cache-Control: public, max-age=31536000, immutable`
    - `manifest.json` → `Cache-Control: public, max-age=300`
+   - `v*/fixtures/` → 파서 골든 픽스처. `data:pull`이 데이터와 함께 복원한다
 4. manifest는 **마지막에** 올린다. 데이터가 다 올라간 뒤에 가리켜야 한다
 5. 기존 버전은 삭제하지 않는다
 

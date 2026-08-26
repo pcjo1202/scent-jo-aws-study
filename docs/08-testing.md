@@ -1,4 +1,4 @@
-# 09. 테스트 전략
+# 08. 테스트 전략
 
 개인 프로젝트에 전면 커버리지는 낭비다. **깨지면 치명적인 곳만** 테스트하고 나머지는 쓰지 않는다.
 
@@ -86,6 +86,8 @@ grade(selected: ChoiceKey[], answer: ChoiceKey[]): boolean
 | 서명 불일치 | 401 |
 | 알 수 없는 `kid` | 401 |
 | `iss` 불일치 | 401 |
+| `aud`가 `authenticated`가 아님 | 401 |
+| `email`이 `ALLOWED_EMAIL`과 불일치 | 403 |
 | `/health` | 인증 없이 200 |
 
 JWKS는 스텁으로 대체하고 테스트용 키쌍으로 서명한다. 실제 Supabase를 부르지 않는다.

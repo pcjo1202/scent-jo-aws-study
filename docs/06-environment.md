@@ -16,11 +16,12 @@
 |---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | web | 공개 | `https://<ref>.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | web | 공개 | anon 키. RLS 전제가 아니라 **Auth 용도로만** 쓴다 |
-| `NEXT_PUBLIC_DATA_BASE_URL` | web | 공개 | `https://static-cdn.scent-jo.dev/aws-saa` |
+| `NEXT_PUBLIC_DATA_BASE_URL` | web | 공개 | CDN 데이터 경로. **랜덤 프리픽스 포함 — 실제 값은 커밋 금지** |
 | `NEXT_PUBLIC_API_URL` | web | 공개 | 로컬 폴백용. 배포에서는 `VERCEL_RELATED_PROJECTS`가 우선 |
 | `VERCEL_RELATED_PROJECTS` | web | 공개 | **Vercel이 자동 주입.** 직접 설정하지 않는다 |
 | `SUPABASE_JWKS_URL` | api | 공개 | `https://<ref>.supabase.co/auth/v1/jwks` |
 | `SUPABASE_JWT_ISSUER` | api | 공개 | `iss` 클레임 검증용 |
+| `ALLOWED_EMAIL` | api | 공개 | 소유자 이메일. JWT `email` 불일치 시 403 |
 | `DATABASE_URL` | api | **서버** | Supavisor 트랜잭션 풀러 `:6543` |
 | `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 인덱스를 받을 경로 |
 | `CORS_ALLOWED_ORIGINS` | api | 공개 | 쉼표 구분 |
@@ -40,7 +41,7 @@
 
 S3 업로드는 `pnpm data:publish`가 **로컬에서만** 실행한다. 런타임 코드는 CDN을 읽기만 하고 쓰지 않는다. Vercel에 쓰기 권한을 올려둘 이유가 없다.
 
-IAM 정책은 `s3:PutObject` / `s3:ListBucket`을 `arn:aws:s3:::<bucket>/aws-saa/*` 로 좁힌다.
+IAM 정책은 `s3:PutObject` / `s3:GetObject` / `s3:ListBucket`을 `arn:aws:s3:::<bucket>/aws-saa/*` 로 좁힌다.
 
 ## 주체별 접근 경계
 
@@ -57,7 +58,7 @@ scripts → S3 (쓰기)              ·  로컬 PDF
 | | local | preview | production |
 |---|---|---|---|
 | API URL | `http://localhost:3001` | `VERCEL_RELATED_PROJECTS` | `VERCEL_RELATED_PROJECTS` |
-| CORS 허용 | `http://localhost:3000` | `https://*.vercel.app` | 프로덕션 도메인 |
+| CORS 허용 | `http://localhost:3000` | `https://aws-study-web-*.vercel.app` | 프로덕션 도메인 |
 | DB | 프로덕션과 **동일** | 동일 | 동일 |
 | CDN | 프로덕션과 동일 | 동일 | 동일 |
 
@@ -67,20 +68,21 @@ scripts → S3 (쓰기)              ·  로컬 PDF
 
 ## `.env.example`
 
-git에 커밋한다. 값은 비우고 키만 남긴다.
+git에 커밋한다. 값은 비우고 키만 남긴다. 실제 값이 담기는 `.env*`는 `.gitignore`에 있어야 한다 (example만 예외).
 
 ```bash
 # apps/web/.env.example
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_DATA_BASE_URL=https://static-cdn.scent-jo.dev/aws-saa
+NEXT_PUBLIC_DATA_BASE_URL=          # CDN 경로. 랜덤 프리픽스 포함, 커밋 금지
 NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # apps/api/.env.example
 DATABASE_URL=
 SUPABASE_JWKS_URL=
 SUPABASE_JWT_ISSUER=
-DATA_BASE_URL=https://static-cdn.scent-jo.dev/aws-saa
+ALLOWED_EMAIL=
+DATA_BASE_URL=                      # CDN 경로. 랜덤 프리픽스 포함, 커밋 금지
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 # scripts/.env.example

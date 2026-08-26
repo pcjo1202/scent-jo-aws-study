@@ -23,11 +23,14 @@
 | `06-environment` | 환경변수·시크릿 |
 | `07-infrastructure` | 인프라 셋업 런북 |
 | `08-testing` | 테스트 전략 |
+| `09-agent-workflow` | 에이전트 워크플로 (검증 게이트·`/done`) |
 | `data-changelog` | 데이터 버전 변경 이력 |
 
 ## 어기기 쉬운 규칙
 
 - **`data/`를 커밋하지 않는다.** 저작권 자료이고 이 레포는 **public**이다. `.gitignore`에 있지만 `git add -f`로 뚫지 않는다.
+- **원문 텍스트를 어디에도 옮기지 않는다.** 문제 지문·해설 원문을 docs/·Linear 이슈·커밋 메시지에 인용하지 않는다. 문항은 번호로만 지칭한다.
+- **실제 CDN 경로(랜덤 프리픽스 포함)를 커밋하지 않는다.** URL을 아는 사람은 데이터를 받을 수 있다. `.env.example`에도 값은 비운다.
 - **Drizzle 초기화에 `prepare: false`가 없으면 런타임에 터진다.** Supavisor 트랜잭션 풀러(:6543)는 prepared statement를 지원하지 않는다.
 - **추출 데이터의 원본은 CDN이다. git에 없다.** 로컬 `data/`가 비었으면 `pnpm data:pull`.
 - **데이터를 고치면 `v2` 경로에 새로 올린다.** 기존 버전을 덮어쓰지 않는다. 되돌릴 방법이 manifest 한 줄뿐이다.

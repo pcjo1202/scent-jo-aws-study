@@ -57,7 +57,7 @@ aws-study/
 
 > Turbopack과 Turborepo는 다른 도구다. 전자는 Next.js의 번들러, 후자는 모노레포 태스크 러너다. 둘 다 쓴다.
 
-`packages/shared`에는 **타입만** 둔다. 추출 데이터는 절대 들어가지 않는다.
+`packages/shared`에는 **타입만** 둔다. 추출 데이터는 절대 들어가지 않는다. "타입만"은 런타임 산출물이 없다는 뜻이다 — class-validator DTO 클래스는 `apps/api` 소유이고, shared의 interface를 `implements`해 계약 정합을 강제한다.
 
 ## 배포
 
@@ -123,7 +123,7 @@ const client = postgres(process.env.DATABASE_URL!, { prepare: false })
 ### 경로 레이아웃
 
 ```
-s3://<bucket>/aws-saa/
+s3://<bucket>/aws-saa/<prefix>/      ← 랜덤 프리픽스. 실제 값은 커밋하지 않는다
 ├─ manifest.json          Cache-Control: public, max-age=300
 └─ v1/                    Cache-Control: public, max-age=31536000, immutable
    ├─ questions/
@@ -144,7 +144,7 @@ s3://<bucket>/aws-saa/
 
 - **CloudFront invalidation이 영영 필요 없다** — 파일 경로가 바뀌므로
 - **롤백이 manifest 한 줄이다** — `v1`은 지우지 않고 그대로 둔다
-- **덮어쓰기 사고가 구조적으로 불가능하다** — 추출 데이터가 git에 없으므로 이 방어가 특히 중요하다
+- **덮어쓰기 사고를 이중으로 막는다** — publish가 같은 버전 재업로드를 기본 거부하고(`--force` 필요), S3 버저닝이 최후 안전망이다. **버저닝 활성화는 첫 publish 전 필수다**
 
 추가로 S3 버킷 버저닝을 활성화해 이중 안전망을 둔다.
 
@@ -152,7 +152,9 @@ s3://<bucket>/aws-saa/
 
 **CloudFront Response Headers Policy**로 주입한다. S3 버킷 CORS로 처리하면 CloudFront가 `Origin` 헤더를 오리진까지 전달해야 하고, 그러면 Origin별로 캐시가 파편화된다. CloudFront에서 직접 주입하면 캐시가 하나로 유지된다.
 
-허용 Origin: 프로덕션 도메인 + Vercel 프리뷰 도메인 패턴 + `localhost`.
+허용 Origin: 프로덕션 도메인 + `localhost`. 프리뷰 대응은 `07-infrastructure.md`의 (a)안을 따른다 (CloudFront는 와일드카드 Origin을 직접 지원하지 않는다).
+
+CORS는 브라우저의 교차출처만 막고 curl 직접 fetch는 못 막는다. 실질 방어선은 경로의 랜덤 프리픽스이며(`aws-saa/<prefix>/`), 실제 프리픽스 값은 레포·문서·이슈에 적지 않는다.
 
 ## 저장소 정책
 
