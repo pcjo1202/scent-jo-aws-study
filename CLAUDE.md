@@ -1,5 +1,15 @@
 # AWS SAA-C03 학습 앱
 
+## 명령어
+
+```bash
+pnpm dev          # web + api 동시 실행 (turbo)
+pnpm build        # 전체 빌드
+pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
+```
+
+<!-- data:pull / data:verify / data:publish 는 E1에서 생기면 여기 추가 -->
+
 ## 문서
 
 **루트** — 작업을 시작하기 전에 읽는다. 제약이 걸린다.
@@ -39,6 +49,12 @@
 - **정오를 색으로만 표시하지 않는다.** 아이콘·텍스트를 병기한다.
 - **CDN publish 전 `pnpm data:verify`를 통과해야 한다.** 검증 안 된 데이터가 올라가면 v2 재배포다.
 
+## 언어·스타일
+
+- 응답·문서·커밋 메시지는 한국어. 코드 식별자는 영어
+- 코드 주석은 코드가 말할 수 없는 제약만 적는다
+- UI 문구는 DESIGN.md 용어표를 따른다 (예: "오답/정답", "오답 복습")
+
 ## 작업 흐름 (Linear)
 
 작업은 Linear 이슈(`SJO-*`) 단위로 진행한다. 상태 갱신은 세션 중 Linear MCP로 직접 한다. 모든 이슈는 같은 루프를 돈다:
@@ -48,6 +64,26 @@
 3. **종료** — **`/done` 스킬로만 닫는다**: DoD 실검증(증거 수집) → 이슈 전체 diff 리뷰(UI 변경 시 design-reviewer 추가) → 리뷰 수정 시 DoD 재검증 → 증거 코멘트 → `Done`. 체크박스가 다 찼다고 닫지 않는다
 
 외부 상태(CDN·인프라·마이그레이션)가 바뀌었으면 그 자리에서 `MEMORY.md`를 갱신한다.
+
+## 스킬 라우팅
+
+작업 유형에 맞는 스킬을 먼저 부른다. 역할이 겹치면 이 표가 우선한다.
+
+| 상황 | 사용 |
+|---|---|
+| 이슈 착수 / 종료 | `/start` / `/done` (위 작업 흐름) |
+| 새 기능·설계 논의, 명세에 없는 결정 | `superpowers:brainstorming` — 설계 승인 전 구현 금지 |
+| 버그·원인 불명 동작 | `superpowers:systematic-debugging` — 재현 먼저, 추측 수정 금지 |
+| 구현 스타일 | **ponytail full** 기준: 최소 diff, YAGNI, 사다리(필요한가→재사용→stdlib→최소 구현) |
+| 웹 조사 | websearch. 브라우저 조작은 `/browse` |
+| 화면 실동작 확인·QA | `/qa` (gstack) |
+| 코드 리뷰 | `/done` 안의 code-reviewer·design-reviewer로 통일 — gstack `/review`는 문서 점검 등 특수 목적에만 |
+
+## 수정 전 논의가 필요한 파일
+
+- `docs/data-changelog.md` — append-only. 과거 항목을 고치지 않는다
+- `.mcp.json` — 논의 후 수정
+- 마이그레이션 파일 — 적용된 마이그레이션은 수정 금지, 새 파일 추가만
 
 ## 외부 상태를 바꿨으면 MEMORY.md를 갱신한다
 
