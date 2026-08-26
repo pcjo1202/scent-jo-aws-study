@@ -18,7 +18,15 @@
 | 코드 리뷰 | `pr-review-toolkit:code-reviewer` (기존 플러그인 재사용) | 이슈 전체 diff에서 CLAUDE.md 규칙 위반·버그 검사 | 플러그인 기본 |
 | 디자인 리뷰 | `.claude/agents/design-reviewer.md` (신규) | DESIGN.md 전용: 토큰 미사용 하드코딩 색상, 색상만으로 정오 표시, 48px 터치 타깃, 타이포 역할 오용 | **읽기 전용** — 고칠 수 없는 리뷰어는 실수로 고치지도 못한다 |
 
-### 스킬 (1)
+### 스킬 (2)
+
+**`/start`** (`.claude/skills/start/SKILL.md`) — 이슈 착수의 유일한 경로.
+
+1. In Progress 2개 초과·blocked-by 미해결이면 착수하지 않는다
+2. `In Progress` + `me` 할당
+3. 이슈 DoD·체크리스트·관련 docs/ 절을 읽는다
+4. 명세 공백이 있으면 코딩 전에 해소한다 (SJO-30, 결정은 doc에 반영)
+5. 체크리스트를 실행 순서로 정렬해 계획을 세운다 (3단계 이상이면 사용자에게 한 번 보인다)
 
 **`/done`** (`.claude/skills/done/SKILL.md`) — 이슈 종료 절차의 유일한 경로.
 
