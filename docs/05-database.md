@@ -44,6 +44,7 @@ create table exam_sessions (
   id            uuid        primary key default gen_random_uuid(),
   user_id       uuid        not null,
   question_ids  int[]       not null,
+  content_version text      not null,
   cursor        int         not null default 0,
   started_at    timestamptz not null default now(),
   finished_at   timestamptz,
@@ -64,7 +65,7 @@ create unique index exam_sessions_one_active_idx
   where finished_at is null;
 ```
 
-`question_ids`는 세션 생성 시점에 고정된다. 추첨 결과를 배열로 박아 두면 나중에 문제 데이터가 `v2`로 바뀌어도 그 세션이 무엇을 물었는지 그대로 남는다.
+`question_ids`는 세션 생성 시점에 고정된다. 추첨 결과를 배열로 박아 두면 나중에 문제 데이터가 `v2`로 바뀌어도 그 세션이 무엇을 물었는지 그대로 남는다. `content_version`도 함께 고정한다 — `finish` 시 카탈로그의 현재 버전과 다르면 409를 주어, 버전 교체를 가로지른 세션이 새 정답으로 채점되는 것을 막는다.
 
 **부분 유니크 인덱스**가 "진행 중 세션은 하나"를 DB 레벨에서 보장한다. 애플리케이션 로직에 의존하지 않는다.
 
@@ -318,6 +319,7 @@ type ExamResult = {
 | `questionId` 범위 밖 / 선택지 키 불일치 | 400 |
 | exam 시도의 `questionId`가 세션 `question_ids`에 없음 | 400 |
 | JWT의 `email`이 `ALLOWED_EMAIL`과 불일치 | 403 |
+| `finish` 시 세션 `content_version`이 카탈로그 현재 버전과 불일치 | 409 |
 
 ## Nest 모듈 구성
 

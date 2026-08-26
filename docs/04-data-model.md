@@ -121,7 +121,13 @@ type Comparisons = { items: Comparison[] }   // 48쌍
 
 ## 해부서
 
-61페이지를 이미지로 판독해 구조화한다. 스크립트로 재현할 수 없는 유일한 데이터다.
+**v1은 구조화하지 않는다.** 원본 61페이지를 이미지 자산(`anatomy/pages/001..061.webp`)으로 올리고, 수동 목차 하나만 만든다 (2026-08-26 리뷰 D8 — 판독 20~40시간의 학습 ROI 없음, 이미지화는 반나절).
+
+```ts
+type AnatomyToc = { entries: Array<{ id: string; title: string; page: number }> }  // 21항목 수동 작성, anatomy/toc.json
+```
+
+아래 구조화 스키마는 **시험 후 과제**로 보존한다. 재개 시 유일한 재현 불가 산출물이 된다.
 
 ### part1-patterns.json
 
@@ -206,7 +212,7 @@ pnpm data:publish    manifest 생성 → S3 업로드
 pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 ```
 
-**anatomy는 optional 자산이다.** 판독(E2)이 미완이면 `data:publish`가 anatomy를 제외하고 올리고, `data:verify`도 문제·노트만으로 통과한다. anatomy가 완성되면 다음 버전(v2 등)에 포함해 올린다. `/anatomy` 화면(E7)은 anatomy가 포함된 데이터 버전부터 동작한다 — v1 배포와 E5~E8은 판독 완료를 기다리지 않는다.
+**anatomy는 optional 자산이다.** 자산화(E2)가 미완이면 `data:publish`가 anatomy를 제외하고 올리고, `data:verify`도 문제·노트만으로 통과한다. anatomy가 완성되면 다음 버전(v2 등)에 포함해 올린다. `/anatomy` 화면(E7)은 anatomy가 포함된 데이터 버전부터 동작한다 — v1 배포와 E5~E8은 판독 완료를 기다리지 않는다.
 
 ### data:extract
 
@@ -232,6 +238,8 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 
 검증 실패는 배포를 막는다.
 
+**내용 정확도 검증** — 구조 검증은 오독을 못 잡는다. 카테고리 층화 표본 **50문항**을 독립 에이전트(또는 사람)가 원본 PDF와 대조한다. 허용 오류 **0건** — 발견 시 파서를 고치고 표본을 다시 뽑는다. 대조 결과는 해당 이슈 코멘트에 기록한다.
+
 ### data:publish
 
 1. `data/`에서 청크·인덱스·노트·해부서와 테스트 픽스처(`tests/fixtures/`)를 읽는다
@@ -245,6 +253,8 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 
 버전을 올릴 때는 `--version v2` 를 준다. 같은 버전에 다시 올리는 것은 기본적으로 거부하고 `--force`를 요구한다.
 
-## 해부서 판독 진행 방식
+## 해부서 자산화 진행 방식
 
-61장을 한 번에 읽지 않는다. **PART 1을 먼저 만들어 구조를 확인받고** PART 2·3을 채운다. 전부 읽은 뒤에 "구조가 다르다"가 나오면 손실이 크다.
+v1: `pdftoppm`으로 61장 렌더링 → webp 변환 → `toc.json` 21항목 수동 작성 → publish. 반나절 작업이다.
+
+구조화 판독을 시험 후 재개할 때는 PART 1을 먼저 만들어 구조를 확인받고 PART 2·3을 채운다. 전부 읽은 뒤에 "구조가 다르다"가 나오면 손실이 크다.

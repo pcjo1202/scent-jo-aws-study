@@ -122,6 +122,7 @@ https://aws-study-web-*.vercel.app     ← 프리뷰
 
 - [ ] `aws-study-web` 생성 · Root Directory `apps/web`
 - [ ] `aws-study-api` 생성 · Root Directory `apps/api`
+- [ ] **Functions 리전 `icn1`(서울) 설정 — web·api 둘 다.** 기본 `iad1`이면 매 답안 제출이 미 동부를 왕복한다
 - [ ] **NestJS 제로 설정 감지 확인** — `apps/api`가 프레임워크로 NestJS를 인식하는지
 
   이것이 M0 검증의 핵심이다. 인식하지 못하면 `apps/api/vercel.json`에 빌드·출력 설정을 명시해 우회한다.

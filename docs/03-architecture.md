@@ -133,9 +133,8 @@ s3://<bucket>/aws-saa/<prefix>/      ← 랜덤 프리픽스. 실제 값은 커�
    │  ├─ oneliners.json
    │  └─ comparisons.json
    └─ anatomy/
-      ├─ part1-patterns.json
-      ├─ part2-services.json
-      └─ part3-method.json
+      ├─ toc.json
+      └─ pages/001..061.webp
 ```
 
 ### 버전 경로를 쓰는 이유
