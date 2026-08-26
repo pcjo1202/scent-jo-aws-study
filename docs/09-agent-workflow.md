@@ -22,20 +22,13 @@
 
 **`/start`** (`.claude/skills/start/SKILL.md`) — 이슈 착수의 유일한 경로.
 
-1. In Progress 2개 초과·blocked-by 미해결이면 착수하지 않는다
-2. `In Progress` + `me` 할당
-3. 이슈 DoD·체크리스트·관련 docs/ 절을 읽는다
-4. 명세 공백이 있으면 코딩 전에 해소한다 (SJO-30, 결정은 doc에 반영)
-5. 체크리스트를 실행 순서로 정렬해 계획을 세운다 (3단계 이상이면 사용자에게 한 번 보인다)
+게이트(동시 2개·blocked-by) → 할당 → 컨텍스트(DoD·docs·SJO-30 미결정 확인) → **태스크마다 `verify:` 계약이 있는 계획** → 계획을 이슈 코멘트로 기록(세션 중단 시 재개 지점) → 3단계 이상이면 사용자 확인
 
 **`/done`** (`.claude/skills/done/SKILL.md`) — 이슈 종료 절차의 유일한 경로.
 
-1. 이슈의 완료 정의(DoD)를 실제 실행·검증
-2. 이슈 전체 diff로 code-reviewer 실행
-3. UI 파일(`apps/web` 컴포넌트·스타일) 변경이 포함되면 design-reviewer도 실행
-4. 리뷰 지적 사항 반영 (반영 후 재리뷰는 지적이 심각할 때만)
-5. 체크박스 patch → 검증 결과 코멘트 → `Done`
-6. 외부 상태(CDN·인프라·마이그레이션) 변경 시 MEMORY.md 갱신
+working tree 정리 → DoD 실검증(명령·출력을 증거로 수집) → 이슈 diff(첫 `(SJO-N)` 커밋의 부모 ~ HEAD)로 code-reviewer(+UI면 design-reviewer, P1 수정 필수) → **리뷰 수정 시 DoD 재검증** → 증거 코멘트 → `Done` → 외부 상태 변경 시 MEMORY.md
+
+두 스킬 모두 자주 틀리는 지점을 명시한 gotchas 절을 갖는다. 구현 사이클(테스트 우선·verify 통과 시에만 체크)은 CLAUDE.md 작업 흐름이 정의한다.
 
 ### 발동 규칙 (CLAUDE.md에 명문화)
 
