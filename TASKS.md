@@ -1,68 +1,27 @@
-# 할 일
+# 작업 관리 → Linear
 
-마일스톤 단위로만 유지한다. 세부 작업은 세션 안에서 처리한다.
-**체크박스가 30개를 넘으면 이 파일이 실패한 것이다.** 쪼개지 말고 묶어라.
+작업 관리는 **Linear**에서 한다. 이 파일은 포인터다.
 
-현재 상태는 `MEMORY.md`.
+- **프로젝트**: [aws-study](https://linear.app/mustard-fe/project/aws-study-f79b1104b8b5) (팀 `scent-jo`, 이슈 prefix `SJO-`)
+- **구조**: 마일스톤 E0~E9 (Epic) → 이슈 SJO-1~29 (Story, 완료 정의 보유) → 이슈 본문 체크리스트 (Task)
+- **커밋 참조**: `feat(api): POST /attempts 구현 (SJO-15)` 형식으로 이슈 ID를 커밋 메시지에 남긴다
+- **브랜치**: 이슈의 git branch name 사용 가능 (`ckdwhdev/sjo-N-...`)
 
-## M0 · 배포 가능성 검증 (선행)
+## 로드맵 요약
 
-기능 코드를 쓰기 전에 한다. 여기서 막히면 아키텍처가 바뀐다.
+E0 배포 검증 → E1 데이터 → E3 백엔드 → E4 디자인 → E5 문제 풀이 → E6 모의고사 → E7 참조 → E8 현황 → E9 출시.
+**E2(해부서 판독)는 병렬 가능** — 막혔을 때 채워 넣기 좋다.
 
-- [ ] pnpm workspaces + Turborepo 뼈대
-- [ ] 빈 Next.js + 빈 NestJS 앱
-- [ ] Vercel 프로젝트 2개 생성, Root Directory 설정
-- [ ] **NestJS 제로 설정 감지가 `apps/api`에서 실제로 붙는지 확인** ← 이번 검증의 핵심
-- [ ] Related Projects 연결, `VERCEL_RELATED_PROJECTS` 수신 확인
+## v1 보류 목록
 
-## M1 · 데이터 파이프라인
+Linear에 이슈로 만들지 않았다. 다시 꺼낼 때 이슈로 승격한다.
 
-- [ ] `data:extract` — 문제 1019 + 노트 186·48
-- [ ] `data:verify` — 개수·스키마·태깅 분포 검증
-- [ ] 자동 태깅 (서비스명 별칭 사전)
-- [ ] S3 버저닝 활성화 + CloudFront CORS 정책
-- [ ] `data:publish` / `data:pull`
-- [ ] `v1` 배포
-
-## M2 · 해부서 판독
-
-- [ ] PART 1 판독 → **구조 확인받고 진행**
-- [ ] PART 2 (서비스군 21개)
-- [ ] PART 3
-
-## M3 · 백엔드
-
-- [ ] Supabase 프로젝트 + 비대칭 JWT 전환 + Google OAuth
-- [ ] Drizzle 스키마·마이그레이션 (`prepare: false` 확인)
-- [ ] `auth` — JWKS 가드, 전역 적용
-- [ ] `catalog` — CDN 인덱스 캐시, 채점, 추첨
-- [ ] `attempts` / `progress` / `exams` / `stats`
-
-## M4 · 프론트엔드
-
-- [ ] **`DESIGN.md`를 Material Design 3 구조로 재작성** (토큰 3계층 · 색 역할 · surface container · shape · state layer)
-- [ ] 로그인 + 인증 가드
-- [ ] 문제 풀이 컴포넌트 (3개 모드 공용)
-- [ ] `/study` 순차 + 필터
-- [ ] `/review` 오답
-- [ ] `/exam` 모의고사 + 결과
-- [ ] `/notes` 암기 노트
-- [ ] `/anatomy` 해부서
-- [ ] `/` 대시보드
-- [ ] 오프라인 제출 큐
-
-## M5 · 마무리
-
-- [ ] 테스트 3종 (파서 / 채점 / JWT 가드)
-- [ ] Next.js 보안 패치 반영 (2026-08-26 예정 릴리스)
-- [ ] 폰 실기기 확인
-
-## 보류
-
-v1에서 뺀 것들. 지우지 않고 여기 둔다.
-
-- 문제 전문 검색
-- 모의고사 시간 제한 (130분)
-- 확신도 표시 ("맞췄지만 찍음")
-- 조건만 보고 답 맞히기 훈련 (`requirements` 활용)
-- 카테고리 비중 가중 추첨
+| | 뺀 이유 |
+|---|---|
+| 문제 전문 검색 | 지문 전체(2.7MB)를 받아야 함. 카테고리·서비스 필터로 대체 |
+| 모의고사 시간 제한 (130분) | 학습보다 시험 리허설 기능. `started_at`이 있어 나중에 추가 가능 |
+| 확신도 표시 ("맞췄지만 찍음") | 학습 효과는 있으나 요구사항에 없었음 |
+| 조건만 보고 답 맞히기 훈련 | `requirements` 필드는 보존하되 기능은 만들지 않음 |
+| 카테고리 비중 가중 추첨 | 원본에 도메인 비중 정보가 없음 |
+| Pretendard 자체 호스팅 | 시스템 폰트로 읽어본 뒤 판단 |
+| CI (GitHub Actions) | 솔로. 배포 전 로컬 실행으로 충분 |
