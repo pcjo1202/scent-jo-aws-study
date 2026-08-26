@@ -135,7 +135,7 @@ select distinct on (question_id) question_id, is_correct
 from attempts
 where user_id = $1
   and (session_id is null
-       or session_id in (select id from exam_sessions where finished))
+       or session_id in (select id from exam_sessions where finished_at is not null))
 order by question_id, created_at desc;
 ```
 
@@ -150,6 +150,8 @@ select question_id from (
   select distinct on (question_id) question_id, is_correct
   from attempts
   where user_id = $1
+    and (session_id is null
+         or session_id in (select id from exam_sessions where finished_at is not null))
   order by question_id, created_at desc
 ) t
 where not is_correct
