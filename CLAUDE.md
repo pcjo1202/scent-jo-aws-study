@@ -20,6 +20,7 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 | `MEMORY.md` | 외부 상태의 현재값 (CDN 버전, 마이그레이션, 인프라) |
 | `TASKS.md` | Linear 포인터 + v1 보류 목록. 작업 관리는 Linear(`SJO-*`)에서 |
 | `DESIGN.md` | 디자인 시스템. UI를 건드리면 먼저 본다 |
+| `LESSONS.md` | 실수·혼동 기록. `/lesson`으로만 추가, append-only |
 
 **`docs/`** — 결정을 내릴 때 펼친다.
 
@@ -78,6 +79,16 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 | 웹 조사 | websearch. 브라우저 조작은 `/browse` |
 | 화면 실동작 확인·QA | `/qa` (gstack) |
 | 코드 리뷰 | `/done` 안의 code-reviewer·design-reviewer로 통일 — gstack `/review`는 문서 점검 등 특수 목적에만 |
+| 라이브러리·프레임워크 API 질문 (Next·Nest·Drizzle·Supabase) | **context7 MCP** — websearch보다 우선 |
+| React·Next 코드 작성·리팩토링 | **react-best-practices 스킬** (로컬 설치, git 미포함) — 워터폴·번들 규칙 우선 |
+| Vercel 배포 문제·설정 | **vercel:deployment-expert** 에이전트 |
+| PDF 추출·파싱 (E1·E2) | **document-skills:pdf** |
+| 라이브 화면의 시각 품질 검토 | `/design-review` (gstack) — 코드 레벨 DESIGN.md 준수는 design-reviewer |
+| 작업 중 실수·혼동 발견 | **`/lesson`** — 즉시 LESSONS.md에 기록, 2회 반복 시 규칙·훅 승격 |
+| 같은 실수가 규칙으로도 반복되면 | **hookify**로 훅 승격 |
+| 세션 마감·재개 | `/context-save` · `/context-restore` |
+
+**쓰지 않는 것**: `/ship`·`/land-and-deploy`(main 직접 커밋), `/spec`·`/autoplan`·`/plan-*-review`(Linear 이슈 + docs/가 대체), `/investigate`(systematic-debugging으로 통일). 제안이 떠도 따르지 않는다.
 
 ## 수정 전 논의가 필요한 파일
 

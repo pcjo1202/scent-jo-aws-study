@@ -18,7 +18,7 @@
 | 코드 리뷰 | `pr-review-toolkit:code-reviewer` (기존 플러그인 재사용) | 이슈 전체 diff에서 CLAUDE.md 규칙 위반·버그 검사 | 플러그인 기본 |
 | 디자인 리뷰 | `.claude/agents/design-reviewer.md` (신규) | DESIGN.md 전용: 토큰 미사용 하드코딩 색상, 색상만으로 정오 표시, 48px 터치 타깃, 타이포 역할 오용 | **읽기 전용** — 고칠 수 없는 리뷰어는 실수로 고치지도 못한다 |
 
-### 스킬 (2)
+### 스킬 (3)
 
 **`/start`** (`.claude/skills/start/SKILL.md`) — 이슈 착수의 유일한 경로.
 
@@ -28,7 +28,9 @@
 
 working tree 정리 → DoD 실검증(명령·출력을 증거로 수집) → 이슈 diff(첫 `(SJO-N)` 커밋의 부모 ~ HEAD)로 code-reviewer(+UI면 design-reviewer, P1 수정 필수) → **리뷰 수정 시 DoD 재검증** → 증거 코멘트 → `Done` → 외부 상태 변경 시 MEMORY.md
 
-두 스킬 모두 자주 틀리는 지점을 명시한 gotchas 절을 갖는다. 구현 사이클(테스트 우선·verify 통과 시에만 체크)은 CLAUDE.md 작업 흐름이 정의한다.
+**`/lesson`** (`.claude/skills/lesson/SKILL.md`) — 실수·혼동을 LESSONS.md에 즉시 기록. 같은 원인 2회 반복 시 CLAUDE.md 규칙 또는 훅으로 승격 — "규칙은 실패에서 나온다" 원칙의 수집 장치.
+
+모든 스킬은 자주 틀리는 지점을 명시한 gotchas 절을 갖는다. 구현 사이클(테스트 우선·verify 통과 시에만 체크)은 CLAUDE.md 작업 흐름이 정의한다.
 
 ### 발동 규칙 (CLAUDE.md에 명문화)
 

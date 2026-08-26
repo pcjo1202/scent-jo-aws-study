@@ -20,3 +20,6 @@ dist/
 # ── 플랫폼 ──────────────────────────────────────────────────
 .vercel
 .DS_Store
+
+# 서드파티 스킬 (라이선스 미명시 — 커밋 금지, 재설치: git clone vercel-labs/agent-skills)
+.claude/skills/react-best-practices/
