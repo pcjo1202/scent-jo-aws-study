@@ -19,6 +19,29 @@ src/
 
 도메인 모듈은 **컨트롤러·서비스·DTO를 자기 폴더 안에** 둔다. 공용 타입은 `@aws-study/shared`에서 가져온다.
 
+## 모듈 내부 파일
+
+Nest CLI 관용을 따른다 — **점 접미사로 역할을 표시**한다.
+
+```
+src/attempts/
+├─ attempts.module.ts
+├─ attempts.controller.ts     HTTP 경계. 검증된 DTO를 서비스에 넘긴다
+├─ attempts.service.ts        비즈니스 로직. SQL을 쓰지 않는다
+├─ attempts.repository.ts     Drizzle 쿼리. SQL이 이 파일 밖으로 새지 않는다
+└─ dto/create-attempt.dto.ts
+```
+
+- **`entities/`를 만들지 않는다** — Drizzle 스키마가 `db/schema.ts`에 단일 정의로 있다. `nest g resource`가 만들면 지운다
+- **`common/`·`core/`를 만들지 않는다** — 전역 장치가 가드 하나뿐이고, `05`의 오류 응답 형태(`{ statusCode, message, error }`)는 Nest 기본 예외 필터가 그대로 준다
+
+## repository가 SQL의 경계다
+
+- **서비스에 SQL을 쓰지 않는다.** Drizzle 쿼리는 전부 `*.repository.ts` 안이다
+- repository는 **도메인 타입을 반환**한다. Drizzle row 타입을 컨트롤러까지 흘리지 않는다
+- repository에 비즈니스 판단을 넣지 않는다 — 채점·추첨은 `catalog`, 소유권 판정은 서비스
+- `05`의 도출 쿼리는 **쓰는 모듈이 소유**한다: 풀이 상태 맵·오답 목록 → `progress`, 세션 채점 → `exams`, 카테고리별 정답률 → `stats`
+
 **경로 별칭을 두지 않는다.** 모듈 트리가 2단계로 얕아 상대경로로 충분하고, 별칭을 붙이면 SWC·Vitest 양쪽에 해석 설정을 중복으로 넣어야 한다. 공용 타입만 `@aws-study/shared`로 가져온다.
 
 ## 가드는 전역, 예외만 `@Public()`

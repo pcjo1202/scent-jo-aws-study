@@ -343,6 +343,8 @@ apps/api/src/
    └─ db.provider.ts        postgres-js { prepare: false }
 ```
 
+도메인 모듈(`attempts` · `exams` · `progress` · `stats`)은 각각 `*.module.ts` · `*.controller.ts` · `*.service.ts` · `*.repository.ts` · `dto/`를 갖는다. **Drizzle 쿼리는 repository 안에만 둔다** — 위 도출 쿼리도 쓰는 모듈의 repository가 소유한다 (`apps/api/CLAUDE.md`).
+
 `SupabaseJwtGuard`를 전역 가드로 등록하고 `/health`만 `@Public()`으로 뺀다. 가드를 붙이는 걸 잊어서 뚫리는 사고를 막는다.
 
 `prepare: false`는 트랜잭션 풀러에서 **필수**다. 빠뜨리면 런타임 오류가 난다 (`03-architecture.md` 리스크 표).

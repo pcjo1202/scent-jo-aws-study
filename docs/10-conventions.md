@@ -71,6 +71,34 @@ web만 `@/*` → `apps/web/src/*` 하나를 둔다. 레이어별 별칭을 만�
 
 api·scripts는 별칭을 두지 않는다. 모듈 트리가 얕아 상대경로로 충분하고, 별칭을 붙이면 SWC와 Vitest 양쪽에 해석 설정을 중복으로 넣어야 한다.
 
+## apps/api — 왜 Nest 기본 모듈 구조인가
+
+Nest가 프레임워크 수준에서 정하는 건 **CLI 관용**뿐이다 — 모듈 하나에 폴더 하나, `.module`·`.controller`·`.service` 점 접미사. FSD처럼 레이어 간 의존 방향을 규정하지는 않는다. 그 위 아키텍처는 커뮤니티 선택이고 크게 셋이다.
+
+| | 형태 | 판단 |
+|---|---|---|
+| **feature-based modular** | 모듈 폴더가 controller·service·dto를 다 가짐 | **채택** |
+| layered (Spring MVC식) | `controllers/` `services/` `repositories/`로 기술 계층 분리 | 기각 |
+| Clean · Hexagonal · DDD | `api / application / domain / infrastructure` 4계층 | 기각 |
+
+**feature-based modular을 쓴다.** `05-database.md`가 확정한 모듈 목록이 이미 그 형태이고, 부차 목표가 NestJS 학습이라 프레임워크 관용을 벗어날 이유가 없다.
+
+**Clean·DDD를 기각한 이유**: 도메인 로직의 실체가 `catalog`의 채점·추첨 순수함수 두 개다. 4계층을 깔면 인터페이스와 매퍼가 실제 로직보다 많아진다.
+
+**layered를 기각한 이유**: 기술 계층으로 자르면 한 기능을 고치는 데 세 폴더를 오간다. Nest 커뮤니티 가이드가 명시적으로 경고하는 형태다.
+
+프론트가 FSD, 백이 Nest 모듈로 **비대칭인 것은 정상이다.** 프론트는 화면·상호작용이 많아 배치 규칙이 따로 필요하고, 백은 Nest의 모듈 시스템이 이미 그 역할을 한다.
+
+### repository 계층은 둔다
+
+서비스가 `db.provider`를 주입받아 Drizzle을 직접 부르는 쪽이 파일이 적다. 그럼에도 `*.repository.ts`를 두기로 했다.
+
+- 서비스에서 SQL이 사라져 비즈니스 로직만 남는다
+- `05`의 도출 쿼리 4개가 각자 주인을 갖는다 (progress · exams · stats)
+- 계층 분리를 실제로 해보는 것이 부차 목표(NestJS 학습)에 부합한다
+
+**비용은 감수한다** — 도메인 모듈 4개에 파일 4개가 늘고, 한 곳에서만 쓰이는 쿼리는 얇은 래퍼가 된다.
+
 ## 린트·포맷 — 왜 ESLint + Prettier인가
 
 Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃는 게 크다.
