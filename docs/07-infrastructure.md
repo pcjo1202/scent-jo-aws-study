@@ -103,7 +103,7 @@
 
 ```
 http://localhost:3000
-https://<prod-domain>
+https://saa.scent-jo.dev            ← 프로덕션 (web)
 https://aws-study-*-smelljo.vercel.app     ← 프리뷰 (`docs/06` 「환경별 차이」)
 ```
 
