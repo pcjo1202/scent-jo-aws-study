@@ -2,13 +2,18 @@
   "name": "aws-study",
   "private": true,
   "packageManager": "pnpm@10.30.1",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "prettier": "^3.9.6",
     "turbo": "^2.5.6",
     "typescript": "^5.9.2"
   }

@@ -1,0 +1,13 @@
+pnpm-lock.yaml
+node_modules/
+.next/
+dist/
+.turbo/
+data/
+tests/fixtures/
+
+# 명세 문서 — 근거는 docs/10-conventions.md 「Prettier」
+*.md
+
+# Claude Code가 소유·재작성하는 파일
+.claude/settings.local.json
