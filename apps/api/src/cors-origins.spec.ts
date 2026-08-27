@@ -19,20 +19,23 @@ describe('parseAllowedOrigins', () => {
   })
 
   it('와일드카드가 프리뷰 도메인을 매치한다', () => {
-    const [matcher] = parseAllowedOrigins('https://aws-study-web-*.vercel.app')
+    const [matcher] = parseAllowedOrigins('https://aws-study-*-smelljo.vercel.app')
 
     expect(matcher).toBeInstanceOf(RegExp)
     const pattern = matcher as RegExp
-    expect(pattern.test('https://aws-study-web-abc123-pcjo1202.vercel.app')).toBe(true)
-    expect(pattern.test('https://aws-study-web-git-chore-sjo-3-pcjo1202.vercel.app')).toBe(true)
+    // Vercel이 실제로 주는 세 형태 (2026-08-27 실측).
+    expect(pattern.test('https://aws-study-dzz5vnfco-smelljo.vercel.app')).toBe(true)
+    expect(pattern.test('https://aws-study-web-git-main-smelljo.vercel.app')).toBe(true)
+    expect(pattern.test('https://aws-study-web-smelljo.vercel.app')).toBe(true)
   })
 
   it('와일드카드가 호스트 레이블을 넘지 않는다', () => {
-    const pattern = parseAllowedOrigins('https://aws-study-web-*.vercel.app')[0] as RegExp
+    const pattern = parseAllowedOrigins('https://aws-study-*-smelljo.vercel.app')[0] as RegExp
 
     // 점을 넘어가면 `https://aws-study-web-x.evil.com` 같은 남의 도메인이 통과한다.
-    expect(pattern.test('https://aws-study-web-x.evil.com')).toBe(false)
-    expect(pattern.test('https://aws-study-web-x.attacker.vercel.app')).toBe(false)
-    expect(pattern.test('https://evil-aws-study-web-x.vercel.app')).toBe(false)
+    expect(pattern.test('https://aws-study-x-smelljo.evil.com')).toBe(false)
+    expect(pattern.test('https://aws-study-x.attacker-smelljo.vercel.app')).toBe(false)
+    // 남의 스코프. `-smelljo` 접미사가 유일한 방어선이다.
+    expect(pattern.test('https://aws-study-x-attacker.vercel.app')).toBe(false)
   })
 })

@@ -59,9 +59,11 @@ scripts → S3 (쓰기)              ·  로컬 PDF
 | | local | preview | production |
 |---|---|---|---|
 | API URL | `http://localhost:3001` | `VERCEL_RELATED_PROJECTS` | `VERCEL_RELATED_PROJECTS` |
-| CORS 허용 | `http://localhost:3000` | `https://aws-study-web-*.vercel.app` | 프로덕션 도메인 |
+| CORS 허용 | `http://localhost:3000` | `https://aws-study-*-smelljo.vercel.app` | 프로덕션 도메인 |
 | DB | 프로덕션과 **동일** | 동일 | 동일 |
 | CDN | 프로덕션과 동일 | 동일 | 동일 |
+
+프리뷰 패턴이 프로젝트명(`aws-study-web-*`)이 아니다. Vercel이 배포마다 주는 URL은 `https://aws-study-<해시>-smelljo.vercel.app`이고 브랜치 별칭만 `aws-study-web-git-<브랜치>-smelljo`다 — 대시보드에서 프리뷰를 열면 앞의 형태라 프로젝트명으로 좁히면 막힌다. `-smelljo` 접미사가 남의 스코프를 배제한다 (2026-08-27 실측, SJO-3).
 
 **DB를 환경별로 나누지 않는다.** 사용자 1명, 데이터 규모가 작다. 스테이징 DB를 유지하는 비용이 얻는 것보다 크다.
 

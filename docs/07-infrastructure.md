@@ -104,7 +104,7 @@
 ```
 http://localhost:3000
 https://<prod-domain>
-https://aws-study-web-*.vercel.app     ← 프리뷰
+https://aws-study-*-smelljo.vercel.app     ← 프리뷰 (`docs/06` 「환경별 차이」)
 ```
 
 > CloudFront Response Headers Policy는 와일드카드 Origin 목록을 직접 지원하지 않는다. 프리뷰 도메인 대응이 안 되면 두 가지 선택지가 있다: (a) 프리뷰에서는 프로덕션 도메인의 데이터를 쓰도록 `NEXT_PUBLIC_DATA_BASE_URL`을 고정, (b) CloudFront Function으로 Origin을 검사해 반사. **(a)를 먼저 시도한다.** 데이터는 어차피 공개 읽기 전용이라 프리뷰가 프로덕션 데이터를 읽어도 문제가 없다.
