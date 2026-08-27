@@ -34,14 +34,18 @@ src/
 
 ```tsx
 // app/study/page.tsx
-export { StudyPage as default, metadata } from '@/_pages/study'
+export { StudyPage as default, metadata } from '@/_pages/study/ui/study-page'
 ```
+
+**슬라이스 루트 `index.ts`를 만들지 않는다.** `@/_pages/study`로 짧게 쓰려면 배럴이 필요한데, 아래 「배럴을 만들지 않는다」가 금지하는 그것이다. 경로가 길어지는 것을 받아들인다.
+
+`metadata`는 **화면 컴포넌트와 같은 파일**에서 내보낸다. 별도 세그먼트로 빼면 화면 하나가 두 파일로 갈리고 라우팅 파일의 re-export도 둘이 된다.
 
 ## 경로 별칭은 `@/` 하나뿐이다
 
 `@/*` → `apps/web/src/*`. `tsconfig.json`의 `paths`에 이 한 줄만 두고 Next가 그대로 해석한다. 레이어별 별칭(`@shared/*` 등)을 따로 만들지 않는다 — 별칭이 늘면 `import/no-restricted-paths`의 zone 경로와 어긋나 경계 검사가 새어 나간다.
 
-`app/`에서 `src/`를 가리킬 때도 같은 별칭을 쓴다 (`@/_pages/study`). 상대경로 `../../src`를 쓰지 않는다.
+`app/`에서 `src/`를 가리킬 때도 같은 별칭을 쓴다 (`@/_pages/study/ui/study-page`). 상대경로 `../../src`를 쓰지 않는다.
 
 ## import 정렬은 레이어 순서를 따른다
 

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 
 import type { HealthResponse } from '@aws-study/shared'
 
-// 배포에서는 VERCEL_RELATED_PROJECTS가 우선한다 (docs/06 「환경별 차이」). 이 값은 로컬 폴백이다.
+// 로컬 폴백. 배포에서 NEXT_PUBLIC_API_URL이 비면 이 값이 번들에 박혀 mixed content로 막히는데,
+// 화면에는 네트워크 오류로만 보인다. VERCEL_RELATED_PROJECTS로 가르는 분기는 SJO-3에서 넣는다.
 const DEFAULT_API_URL = 'http://localhost:3001'
 
 type LoadState =
@@ -30,8 +31,12 @@ export function HealthStatus() {
           throw new Error(`HTTP ${response.status}`)
         }
 
-        setState({ status: 'loaded', health: (await response.json()) as HealthResponse })
+        // 이 엔드포인트의 응답 형태는 api가 HealthResponse로 반환한다 (apps/api/src/app.controller.ts).
+        const health = (await response.json()) as HealthResponse
+
+        setState({ status: 'loaded', health })
       } catch (cause) {
+        // 언마운트로 인한 abort — 사라진 컴포넌트에 setState하지 않는다. 삼켜도 되는 유일한 경우다.
         if (controller.signal.aborted) {
           return
         }
@@ -58,7 +63,7 @@ export function HealthStatus() {
 
   return (
     <p>
-      api 응답: {state.health.service} · {state.health.status} · v{state.health.version}
+      api 응답: {state.health.service} · {state.health.status} · {state.health.version}
     </p>
   )
 }

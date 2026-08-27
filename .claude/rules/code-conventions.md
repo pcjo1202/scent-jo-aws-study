@@ -65,7 +65,7 @@ named export는 자동 import가 이름을 맞춰 주고, 리네임이 참조를
 
 ```tsx
 // app/study/page.tsx
-export { StudyPage as default, metadata } from '@/_pages/study'
+export { StudyPage as default, metadata } from '@/_pages/study/ui/study-page'
 ```
 
 ## SSOT — 같은 사실을 두 곳에 두지 않는다
