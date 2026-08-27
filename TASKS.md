@@ -5,7 +5,7 @@
 - **프로젝트**: [aws-study](https://linear.app/mustard-fe/project/aws-study-f79b1104b8b5) (팀 `scent-jo`, 이슈 prefix `SJO-`)
 - **구조**: 마일스톤 E0~E9 (Epic) → 이슈 SJO-1~29 (Story, 완료 정의 보유) → 이슈 본문 체크리스트 (Task)
 - **커밋 참조**: `feat(api): POST /attempts 구현 (SJO-15)` 형식으로 이슈 ID를 커밋 메시지에 남긴다
-- **브랜치**: 이슈의 git branch name 사용 가능 (`ckdwhdev/sjo-N-...`)
+- **브랜치·PR**: `<type>/sjo-N-<영문-kebab>` → `main`으로 PR. PR 본문에 `Ref SJO-N` (자세한 규약은 `CLAUDE.md` 「브랜치와 PR」)
 
 ## 로드맵 요약
 
