@@ -2,9 +2,9 @@ const DEFAULT_CORS_ORIGINS = 'http://localhost:3000'
 const REGEXP_METACHARACTERS = /[.*+?^${}()|[\]\\]/g
 
 /**
- * 프리뷰 도메인은 배포마다 바뀌므로 `https://aws-study-web-*.vercel.app` 형태를 허용한다
+ * 프리뷰 도메인은 배포마다 바뀌므로 `https://aws-study-*-smelljo.vercel.app` 형태를 허용한다
  * (docs/06 「환경별 차이」). `*`는 호스트 레이블 하나만 대체한다 — 점을 넘게 두면
- * `https://aws-study-web-x.evil.com`이 통과한다.
+ * `https://aws-study-x.evil.com`이 통과한다.
  */
 function toOriginMatcher(pattern: string): string | RegExp {
   if (!pattern.includes('*')) {
@@ -16,8 +16,20 @@ function toOriginMatcher(pattern: string): string | RegExp {
   return new RegExp(`^${escaped.replaceAll('\\*', '[^.]*')}$`)
 }
 
-export function parseAllowedOrigins(raw = process.env.CORS_ALLOWED_ORIGINS): (string | RegExp)[] {
-  const patterns = (raw ?? DEFAULT_CORS_ORIGINS)
+/**
+ * 배포에서는 로컬 폴백을 주지 않는다. 변수를 빠뜨리면 `localhost`만 허용된 채 조용히 부팅하고,
+ * 증상은 브라우저 콘솔의 CORS 오류뿐이라 원인을 찾기 어렵다 (docs/06 「검증」).
+ */
+function readConfiguredOrigins() {
+  if (process.env.CORS_ALLOWED_ORIGINS === undefined && process.env.VERCEL) {
+    return ''
+  }
+
+  return process.env.CORS_ALLOWED_ORIGINS ?? DEFAULT_CORS_ORIGINS
+}
+
+export function parseAllowedOrigins(raw = readConfiguredOrigins()): (string | RegExp)[] {
+  const patterns = raw
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean)

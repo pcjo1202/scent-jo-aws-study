@@ -63,7 +63,9 @@ scripts → S3 (쓰기)              ·  로컬 PDF
 | DB | 프로덕션과 **동일** | 동일 | 동일 |
 | CDN | 프로덕션과 동일 | 동일 | 동일 |
 
-프리뷰 패턴이 프로젝트명(`aws-study-web-*`)이 아니다. Vercel이 배포마다 주는 URL은 `https://aws-study-<해시>-smelljo.vercel.app`이고 브랜치 별칭만 `aws-study-web-git-<브랜치>-smelljo`다 — 대시보드에서 프리뷰를 열면 앞의 형태라 프로젝트명으로 좁히면 막힌다. `-smelljo` 접미사가 남의 스코프를 배제한다 (2026-08-27 실측, SJO-3).
+프리뷰 패턴이 프로젝트명(`aws-study-web-*`)이 아니다. Vercel이 배포마다 주는 URL은 `https://aws-study-<해시>-smelljo.vercel.app`이고 브랜치 별칭만 `aws-study-web-git-<브랜치>-smelljo`다 — 대시보드에서 프리뷰를 열면 앞의 형태라 프로젝트명으로 좁히면 막힌다. (2026-08-27 실측, SJO-3).
+
+**`-smelljo` 접미사는 스코프를 완전히 고정하지 못한다.** 와일드카드가 호스트 레이블 하나(`[^.]*`)를 덮으므로 팀 슬러그를 `evil-smelljo`로 잡고 프로젝트를 `aws-study`로 만들면 `https://aws-study-x-evil-smelljo.vercel.app`이 통과한다. 남은 위험은 **`credentials`를 켜지 않고 인증을 Bearer JWT로 두는 것**으로 막는다 — 교차출처 페이지가 토큰을 읽을 수 없으므로 허용된 Origin이 새어도 얻는 것이 없다. 이 조건이 깨지면(쿠키 인증 도입 등) 패턴부터 다시 좁혀야 한다.
 
 **DB를 환경별로 나누지 않는다.** 사용자 1명, 데이터 규모가 작다. 스테이징 DB를 유지하는 비용이 얻는 것보다 크다.
 

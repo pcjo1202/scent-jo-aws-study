@@ -86,7 +86,11 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 **pnpm workspaces 규약만으로는 건너뛰지 않는다.** docs만 바꾼 커밋에서도 web·api가 둘 다 22~30초씩 온전히 빌드했다 (2026-08-27 실측, SJO-3). Root Directory 밖의 파일을 포함해야 workspace 의존이 풀리는데, 그러면 레포의 어떤 변경이든 두 프로젝트를 모두 건드리기 때문이다.
 
-각 앱의 `vercel.json`에 `"ignoreCommand": "npx turbo-ignore"`를 둔다. Turborepo가 이미 태스크 러너이므로 그 의존 그래프가 판단 근거가 된다 — 새 도구를 들이지 않는다.
+`apps/web`의 `vercel.json`에만 `"ignoreCommand": "npx turbo-ignore"`를 둔다. Turborepo가 이미 태스크 러너이므로 그 의존 그래프가 판단 근거가 된다 — 새 도구를 들이지 않는다.
+
+**`apps/api`에는 두지 않는다.** 스킵과 「프로젝트 간 URL 연결」이 api 쪽에서 양립하지 않기 때문이다. web 프리뷰는 api의 **브랜치 별칭**(`aws-study-api-git-<브랜치>-…`)을 부르는데, 그 브랜치에서 api 빌드를 건너뛰면 별칭이 Vercel의 `Deployment was cancelled` 페이지를 가리킨다. 그 응답은 200이지만 JSON이 아니고 **`Access-Control-Allow-Origin`이 없어** 브라우저 fetch가 CORS로 막힌다. 화면에는 "api 호출 실패"로만 보인다 (2026-08-27 실측, SJO-3).
+
+부르는 쪽(web)은 스킵돼도 아무도 그 브랜치 별칭에 의존하지 않지만, 불리는 쪽(api)은 web이 의존하므로 브랜치마다 살아 있어야 한다. api 빌드 20~30초가 그 대가다.
 
 그 판단이 맞으려면 아래가 지켜져야 한다.
 
