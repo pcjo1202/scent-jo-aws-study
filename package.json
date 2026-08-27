@@ -11,7 +11,11 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "data:extract": "pnpm --filter @aws-study/scripts run extract",
+    "data:verify": "pnpm --filter @aws-study/scripts run verify",
+    "data:publish": "pnpm --filter @aws-study/scripts run publish",
+    "data:pull": "pnpm --filter @aws-study/scripts run pull"
   },
   "devDependencies": {
     "@swc/core": "^1.16.1",
