@@ -114,6 +114,22 @@ function submitAttempt(input: AttemptInput) {
 
 한 번만 쓰이는 3줄은 인라인이 낫다.
 
+## 주석은 코드가 말할 수 없는 것만 적는다
+
+이름·시그니처·구조가 이미 말하는 것을 문장으로 옮기지 않는다. 남길 것은 **코드에서 읽어낼 수 없는 제약**이다 — 왜 이 순서인지, 왜 이 값인지, 없으면 무엇이 깨지는지.
+
+```ts
+// ❌ — 코드가 그대로 말한다
+/** 공유 TS 규칙 배열. recommended와 prettier를 합친다. */
+export default [...tseslint.configs.recommended, prettier]
+
+// ✅ — 순서를 바꾸면 무엇이 깨지는지는 코드에 없다
+// prettier는 마지막 — 포맷 규칙을 끄는 역할이라 뒤에 설정이 오면 무의미해진다
+export default [...tseslint.configs.recommended, prettier]
+```
+
+**설명이 길어지면 주석이 아니라 문서다.** 결정의 근거는 `docs/`에 적고 주석은 그곳을 가리킨다. 주석 세 줄이 필요하다고 느껴지면 대개 근거가 문서에 없다는 신호다.
+
 ## 에러를 삼키지 않는다
 
 빈 `catch` 금지. 잡았으면 **처리하거나 다시 던진다.** 폴백 값을 반환한다면 왜 그게 안전한지 주석 한 줄을 남긴다.
