@@ -80,6 +80,8 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 배포 시 `VERCEL_RELATED_PROJECTS` 환경변수로 API URL이 주입된다. **프리뷰 배포끼리도 짝이 맞게 연결**되므로 API URL을 하드코딩하거나 환경별로 관리할 필요가 없다. 조회에는 `@vercel/related-projects`를 쓴다.
 
+**새 브랜치의 첫 푸시는 짝이 어긋난다.** web과 api가 같은 순간에 빌드되면 web이 읽는 `VERCEL_RELATED_PROJECTS`에 그 브랜치의 api 별칭이 아직 없어, api가 **직전에 프리뷰를 올린 다른 브랜치**의 별칭이 박힌다 (2026-08-27 실측: 새 브랜치 첫 배포에서 이전 브랜치의 api를 가리켰고, 같은 브랜치 2차 푸시에서 바로잡혔다). 응답 자체는 정상이라 화면으로는 구분되지 않는다 — **api를 함께 고친 브랜치라면 두 번째 푸시 이후의 프리뷰로 확인한다.** `GET /health`의 `version`이 커밋 sha라서 이 어긋남을 눈으로 잡을 수 있다.
+
 **`VERCEL_RELATED_PROJECTS`는 `NEXT_PUBLIC_`이 아니다 — 클라이언트 번들에 들어가지 않는다.** 서버 컴포넌트에서 `withRelatedProject()`로 풀어 prop으로 내린다. 클라이언트 컴포넌트에서 부르면 배포에서도 조용히 `defaultHost`(로컬 폴백)로 떨어지고, 화면에는 네트워크 오류로만 보인다.
 
 ### 빌드 스킵
