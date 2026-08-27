@@ -150,6 +150,8 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 따라서 projects 분할이나 jsdom 환경이 필요 없다. 루트 `vitest.config.ts` 하나에 `environment: 'node'`, `include: ['apps/api/**/*.spec.ts', 'scripts/**/*.spec.ts']`, NestJS 데코레이터를 위해 `unplugin-swc`를 단다. 루트 스크립트는 `"test": "vitest run"` — turbo를 거치지 않는다.
 
+`passWithNoTests: true`를 config에 둔다. 치명 영역 4종이 전부 아직 없는 `apps/api`·`scripts`에 있어 지금은 대상이 0건인데, vitest는 0건을 **exit 1**로 취급해 `pnpm test`가 실패한다. **대가는 include 패턴이 깨져도 조용히 통과한다는 것**이다 — 실제 테스트가 들어온 뒤(SJO-4·SJO-12·SJO-14) 이 옵션을 빼는 것을 검토한다.
+
 Jest를 쓰지 않는 이유는 러너가 둘로 갈리기 때문이다. Nest 공식 기본값이라는 이점이 있지만, `packages/shared`가 ESM(`type: module`)이라 Vitest 쪽이 마찰이 적다.
 
 ## turbo
