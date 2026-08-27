@@ -80,13 +80,29 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 배포 시 `VERCEL_RELATED_PROJECTS` 환경변수로 API URL이 주입된다. **프리뷰 배포끼리도 짝이 맞게 연결**되므로 API URL을 하드코딩하거나 환경별로 관리할 필요가 없다. 조회에는 `@vercel/related-projects`를 쓴다.
 
+**새 브랜치의 첫 푸시는 짝이 어긋난다.** web과 api가 같은 순간에 빌드되면 web이 읽는 `VERCEL_RELATED_PROJECTS`에 그 브랜치의 api 별칭이 아직 없어, api가 **직전에 프리뷰를 올린 다른 브랜치**의 별칭이 박힌다 (2026-08-27 실측: 새 브랜치 첫 배포에서 이전 브랜치의 api를 가리켰고, 같은 브랜치 2차 푸시에서 바로잡혔다). 응답 자체는 정상이라 화면으로는 구분되지 않는다 — **api를 함께 고친 브랜치라면 두 번째 푸시 이후의 프리뷰로 확인한다.** `GET /health`의 `version`이 커밋 sha라서 이 어긋남을 눈으로 잡을 수 있다.
+
+**`VERCEL_RELATED_PROJECTS`는 `NEXT_PUBLIC_`이 아니다 — 클라이언트 번들에 들어가지 않는다.** 서버 컴포넌트에서 `withRelatedProject()`로 풀어 prop으로 내린다. 클라이언트 컴포넌트에서 부르면 배포에서도 조용히 `defaultHost`(로컬 폴백)로 떨어지고, 화면에는 네트워크 오류로만 보인다.
+
 ### 빌드 스킵
 
-pnpm workspaces 규약을 지키면 Vercel이 변경되지 않은 앱의 빌드를 자동으로 건너뛴다. 조건은 다음과 같다.
+**Vercel 프로젝트 설정이 한다.** Settings → Build and Deployment → Root Directory의 **Skip deployment** 스위치이고, 모노레포로 Import하면 기본으로 켜진다. `vercel.json`에 넣는 것이 아니다 — `ignoreCommand`는 이 동작과 무관하고, 넣어도 스킵을 되돌리지 못한다 (2026-08-27 실측, SJO-3).
+
+판정 근거는 커밋이 건드린 파일이 어느 패키지에 속하는가다. 그래서 아래가 지켜져야 한다.
 
 - `pnpm-workspace.yaml`에 모든 패키지가 등록돼 있을 것
 - 각 패키지의 `package.json` `name`이 유일할 것
 - 패키지 간 의존이 `package.json`에 명시돼 있을 것 (`apps/web` → `packages/shared`)
+
+`docs/`·`MEMORY.md` 같은 루트 파일은 어느 패키지 소유도 아니라 판정이 서지 않고, 두 프로젝트가 모두 빌드된다. 정상이다.
+
+#### api는 스킵하지 않는다
+
+**`aws-study-api`의 Skip deployment는 꺼 둔다.** 스킵과 「프로젝트 간 URL 연결」이 api 쪽에서 양립하지 않는다.
+
+web 프리뷰는 api의 **브랜치 별칭**(`aws-study-api-git-<브랜치>-…`)을 부른다. 그 브랜치에서 api 빌드를 건너뛰면 별칭이 Vercel의 `Deployment was cancelled` 페이지를 가리키는데, 응답은 200이지만 JSON이 아니고 **`Access-Control-Allow-Origin`이 없어** 브라우저 fetch가 CORS로 막힌다. 화면에는 "api 호출 실패"로만 보인다 (2026-08-27 실측, SJO-3).
+
+부르는 쪽(web)은 스킵돼도 아무도 그 브랜치 별칭에 의존하지 않으므로 켜 둔다. 불리는 쪽(api)은 브랜치마다 살아 있어야 한다 — api 빌드 20~30초가 그 대가다.
 
 ## 인증
 
@@ -172,7 +188,6 @@ git에 들어가는 것은 코드, 문서, 그리고 데이터를 재생성하�
 | 리스크 | 대응 |
 |---|---|
 | 모노레포 `apps/api`에서 NestJS 제로 설정 감지가 실제로 붙는지 문서만으로 확신 불가 | **기능 개발 전에 빈 Next + 빈 Nest로 배포부터 검증한다.** 실패 시 `vercel.json`에 빌드 커맨드 명시로 우회 |
-| Next.js 16.3 critical 취약점 보안 릴리스가 2026-08-26 예정 | 릴리스 직후 즉시 업그레이드 |
 | 트랜잭션 모드에서 prepared statement 사용 시 런타임 오류 | Drizzle 초기화에 `prepare: false` 강제. 코드 리뷰 체크리스트 항목 |
 | 자동 태깅 오분류 | 카테고리와 함께 `services` 원본을 인덱스에 보존. 분포 검증으로 사전 오류 탐지 |
 | 해부서 판독 결과 유실 | 버전 경로 + S3 버저닝. 판독 결과는 재현 불가 |

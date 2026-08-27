@@ -4,10 +4,6 @@ import { useEffect, useState } from 'react'
 
 import type { HealthResponse } from '@aws-study/shared'
 
-// 로컬 폴백. 배포에서 NEXT_PUBLIC_API_URL이 비면 이 값이 번들에 박혀 mixed content로 막히는데,
-// 화면에는 네트워크 오류로만 보인다. VERCEL_RELATED_PROJECTS로 가르는 분기는 SJO-3에서 넣는다.
-const DEFAULT_API_URL = 'http://localhost:3001'
-
 type LoadState =
   | { status: 'loading' }
   | { status: 'loaded'; health: HealthResponse }
@@ -17,12 +13,11 @@ type LoadState =
  * 브라우저에서 직접 api를 부른다 — Next를 프록시로 두지 않는 구조(docs/03 §인증)를
  * 실제로 확인하는 것이 이 컴포넌트의 목적이다. 서버 컴포넌트로 옮기면 CORS 경로가 검증되지 않는다.
  */
-export function HealthStatus() {
+export function HealthStatus({ apiUrl }: { apiUrl: string }) {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   useEffect(() => {
     const controller = new AbortController()
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL
 
     async function loadHealth() {
       try {
@@ -51,7 +46,7 @@ export function HealthStatus() {
     void loadHealth()
 
     return () => controller.abort()
-  }, [])
+  }, [apiUrl])
 
   if (state.status === 'loading') {
     return <p>api 상태 확인 중…</p>
