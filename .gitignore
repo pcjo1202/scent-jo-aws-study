@@ -23,3 +23,5 @@ dist/
 
 # 서드파티 스킬 (라이선스 미명시 — 커밋 금지, 재설치: git clone vercel-labs/agent-skills)
 .claude/skills/react-best-practices/
+# gstack 도구 부산물 (browse 로그)
+.gstack/

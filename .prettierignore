@@ -4,5 +4,6 @@ pnpm-lock.yaml
 # 명세 문서 — 근거는 docs/10-conventions.md 「Prettier」
 *.md
 
-# Claude Code가 소유·재작성하는 파일
+# 도구가 소유·재작성하는 파일
 .claude/settings.local.json
+apps/web/next-env.d.ts

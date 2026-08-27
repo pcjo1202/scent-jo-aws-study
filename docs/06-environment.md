@@ -19,6 +19,7 @@
 | `NEXT_PUBLIC_DATA_BASE_URL` | web | 공개 | CDN 데이터 경로. **랜덤 프리픽스 포함 — 실제 값은 커밋 금지** |
 | `NEXT_PUBLIC_API_URL` | web | 공개 | 로컬 폴백용. 배포에서는 `VERCEL_RELATED_PROJECTS`가 우선 |
 | `VERCEL_RELATED_PROJECTS` | web | 공개 | **Vercel이 자동 주입.** 직접 설정하지 않는다 |
+| `VERCEL_GIT_COMMIT_SHA` | api | 공개 | **Vercel이 자동 주입.** `GET /health`의 `version`이 앞 7자리를 쓴다. 로컬에는 없으므로 `dev` |
 | `SUPABASE_JWKS_URL` | api | 공개 | `https://<ref>.supabase.co/auth/v1/jwks` |
 | `SUPABASE_JWT_ISSUER` | api | 공개 | `iss` 클레임 검증용 |
 | `ALLOWED_EMAIL` | api | 공개 | 소유자 이메일. JWT `email` 불일치 시 403 |
@@ -68,7 +69,9 @@ scripts → S3 (쓰기)              ·  로컬 PDF
 
 ## `.env.example`
 
-git에 커밋한다. 값은 비우고 키만 남긴다. 실제 값이 담기는 `.env*`는 `.gitignore`에 있어야 한다 (example만 예외).
+git에 커밋한다. **시크릿과 CDN 랜덤 프리픽스는 값을 비우고 키만 남긴다.** 로컬 기본값이 곧 정답인 것(포트·localhost)은 값을 채워도 된다 — 새 기기에서 그대로 복사해 쓰는 게 목적이다. 실제 값이 담기는 `.env*`는 `.gitignore`에 있어야 한다 (example만 예외).
+
+**아래는 최종 형태다.** 각 변수는 그것을 실제로 읽는 코드가 생기는 이슈에서 추가한다 — 읽는 곳이 없는 키를 미리 넣으면 검증할 수 없는 죽은 설정이 된다.
 
 ```bash
 # apps/web/.env.example

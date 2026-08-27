@@ -25,3 +25,4 @@ Linear에 이슈로 만들지 않았다. 다시 꺼낼 때 이슈로 승격한�
 | 카테고리 비중 가중 추첨 | 원본에 도메인 비중 정보가 없음 |
 | Pretendard 자체 호스팅 | 시스템 폰트로 읽어본 뒤 판단 |
 | CI (GitHub Actions) | 솔로. 배포 전 로컬 실행으로 충분 |
+| `pnpm-workspace.yaml`의 `catalog:`로 의존성 버전 통일 | `eslint`·`typescript`·`@types/node`가 여러 `package.json`에 같은 리터럴로 흩어져 있다(SSOT 위반). 다만 패키지가 4개라 아직 통증이 작다 — 늘어나면 승격 |

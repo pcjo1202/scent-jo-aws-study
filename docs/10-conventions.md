@@ -113,14 +113,20 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 | 파일 | 내용 |
 |---|---|
 | `eslint.config.base.mjs` | `typescript-eslint` recommended + `eslint-config-prettier/flat` |
-| `apps/web/eslint.config.mjs` | base + `eslint-config-next/core-web-vitals` + `/typescript` + FSD zones |
+| `apps/web/eslint.config.mjs` | `eslint-config-next/core-web-vitals` + `/typescript` + `eslint-config-prettier/flat` + FSD zones |
 | `apps/api/eslint.config.mjs` | base + 타입 인지 규칙(`projectService`) |
 
 `packages/shared`는 타입 20줄이라 설정을 두지 않는다. Next 16에서 `next lint`가 제거됐으므로 각 패키지 스크립트는 `eslint .` 이다.
 
+**web은 base를 펼치지 않는다.** `eslint-config-next/typescript`가 `typescript-eslint`의 base·eslint-recommended·recommended를 그대로 품고 있어, base까지 펼치면 `@typescript-eslint` 플러그인이 두 번 정의돼 flat config가 `Cannot redefine plugin`으로 죽는다. web은 next 설정에 prettier와 FSD zones만 얹는다. api는 next 설정이 없으므로 base를 그대로 펼친다.
+
+**ESLint는 9를 쓴다.** `eslint-config-next`가 끌어오는 `eslint-plugin-react`의 peer가 `^9.7`까지이고, 10에서는 `context.getFilename()`이 사라져 `react/display-name` 로딩 자체가 터진다. `typescript-eslint`는 10을 지원하지만 그쪽에 맞출 수 없다. **eslint를 각 앱의 devDependency로도 명시한다** — 루트만 두면 `node_modules/.bin`이 다른 버전을 가리키는 일이 생긴다.
+
 ### import 정렬
 
 `import/order`로 그룹 순서를 강제한다 — 외부 → `@aws-study/shared` → `@/shared` → `@/features` → `@/widgets` → `@/_pages` → 상대경로. **읽는 순서가 곧 의존 방향**이라 잘못된 방향의 import가 눈에 띈다.
+
+**web에만 건다.** 이 순서는 FSD 레이어를 그대로 옮긴 것이라 레이어가 없는 api·scripts에는 의미가 없다. api의 모듈 트리는 2단계로 얕아 정렬 규칙이 주는 값보다 설정 비용이 크다.
 
 새 의존성이 아니다. `import/no-restricted-paths`를 쓰려면 `eslint-plugin-import`가 어차피 필요하고, `eslint-config-next`가 이미 번들한다. Prettier는 import를 정렬하지 않으므로 정렬 플러그인 대신 이 규칙을 쓴다.
 
@@ -132,7 +138,7 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 `packages/shared/src/index.ts`의 현재 스타일을 성문화한 것이다. `printWidth`만 100으로 올린다 — 한글 주석과 긴 유니온 타입이 80에서 자주 접힌다.
 
-**`*.md`는 대상에서 제외한다.** 위 네 옵션은 전부 코드용이라 md에는 걸리는 게 없는데, prettier는 표를 열 폭에 맞춰 재작성한다. 한글 셀의 폭 계산이 실제 표시와 어긋나 정렬이 오히려 깨지고, 명세 문서의 diff에 내용 변경과 포맷 변경이 섞인다. `.claude/settings.local.json`도 제외한다 — Claude Code가 소유·재작성하는 파일이라 포맷이 유지되지 않는다.
+**`*.md`는 대상에서 제외한다.** 위 네 옵션은 전부 코드용이라 md에는 걸리는 게 없는데, prettier는 표를 열 폭에 맞춰 재작성한다. 한글 셀의 폭 계산이 실제 표시와 어긋나 정렬이 오히려 깨지고, 명세 문서의 diff에 내용 변경과 포맷 변경이 섞인다. `.claude/settings.local.json`과 `apps/web/next-env.d.ts`도 제외한다 — 각각 Claude Code와 Next가 소유·재작성하는 파일이라 포맷이 유지되지 않는다.
 
 ## tsconfig
 
