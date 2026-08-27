@@ -6,4 +6,3 @@ pnpm-lock.yaml
 
 # 도구가 소유·재작성하는 파일
 .claude/settings.local.json
-apps/web/next-env.d.ts
