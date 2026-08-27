@@ -138,6 +138,10 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 루트 `tsconfig.base.json`에 **strict 계열만** 두고 각 패키지가 상대경로로 extends한다. 별도 `packages/tsconfig` 패키지는 만들지 않는다 — 파일 하나를 위해 워크스페이스 항목을 늘릴 이유가 없다.
 
+담는 것은 `strict` · `noUncheckedIndexedAccess` · `skipLibCheck` 셋뿐이다. `target`·`module`·`moduleResolution`은 각 패키지가 정한다 — Next·Nest·Node 스크립트가 서로 다른 값을 요구하므로 base에 두면 어차피 전부 덮어쓴다.
+
+`noUncheckedIndexedAccess`를 켜는 이유는 **치명 영역이 배열 인덱싱 위에 있기 때문**이다. 파서(`scripts`)와 채점(`api/catalog`)에서 `arr[i]`가 `undefined`일 수 있다는 사실이 타입에 드러나야 한다. 조용히 틀린 결과가 나오는 것보다 옵셔널 체이닝 몇 개가 싸다.
+
 **`verbatimModuleSyntax`는 base에 넣지 않는다.** web·shared는 켜고 **api는 끈다** — 주입 대상을 `import type`으로 가져오면 `emitDecoratorMetadata`가 런타임 토큰을 잃어 Nest DI가 깨진다. base에 넣고 api에서 끄는 형태로 만들면 의도가 보이지 않는다.
 
 ## 테스트 — Vitest 루트 단일 설정
