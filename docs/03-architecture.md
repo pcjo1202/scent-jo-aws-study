@@ -84,21 +84,23 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 ### 빌드 스킵
 
-**pnpm workspaces 규약만으로는 건너뛰지 않는다.** docs만 바꾼 커밋에서도 web·api가 둘 다 22~30초씩 온전히 빌드했다 (2026-08-27 실측, SJO-3). Root Directory 밖의 파일을 포함해야 workspace 의존이 풀리는데, 그러면 레포의 어떤 변경이든 두 프로젝트를 모두 건드리기 때문이다.
+**Vercel 프로젝트 설정이 한다.** Settings → Build and Deployment → Root Directory의 **Skip deployment** 스위치이고, 모노레포로 Import하면 기본으로 켜진다. `vercel.json`에 넣는 것이 아니다 — `ignoreCommand`는 이 동작과 무관하고, 넣어도 스킵을 되돌리지 못한다 (2026-08-27 실측, SJO-3).
 
-`apps/web`의 `vercel.json`에만 `"ignoreCommand": "npx turbo-ignore"`를 둔다. Turborepo가 이미 태스크 러너이므로 그 의존 그래프가 판단 근거가 된다 — 새 도구를 들이지 않는다.
-
-**`apps/api`에는 두지 않는다.** 스킵과 「프로젝트 간 URL 연결」이 api 쪽에서 양립하지 않기 때문이다. web 프리뷰는 api의 **브랜치 별칭**(`aws-study-api-git-<브랜치>-…`)을 부르는데, 그 브랜치에서 api 빌드를 건너뛰면 별칭이 Vercel의 `Deployment was cancelled` 페이지를 가리킨다. 그 응답은 200이지만 JSON이 아니고 **`Access-Control-Allow-Origin`이 없어** 브라우저 fetch가 CORS로 막힌다. 화면에는 "api 호출 실패"로만 보인다 (2026-08-27 실측, SJO-3).
-
-부르는 쪽(web)은 스킵돼도 아무도 그 브랜치 별칭에 의존하지 않지만, 불리는 쪽(api)은 web이 의존하므로 브랜치마다 살아 있어야 한다. api 빌드 20~30초가 그 대가다.
-
-api에는 `"ignoreCommand": "exit 1"`을 **명시**한다. Vercel은 종료코드 1을 "빌드 진행"으로 읽는다. 키를 지우기만 하면 프로젝트 설정(대시보드 Ignored Build Step)이 살아 있어 계속 건너뛰었다 — 명시가 그 설정을 덮고, 레포만 보고도 의도를 알 수 있다.
-
-그 판단이 맞으려면 아래가 지켜져야 한다.
+판정 근거는 커밋이 건드린 파일이 어느 패키지에 속하는가다. 그래서 아래가 지켜져야 한다.
 
 - `pnpm-workspace.yaml`에 모든 패키지가 등록돼 있을 것
 - 각 패키지의 `package.json` `name`이 유일할 것
 - 패키지 간 의존이 `package.json`에 명시돼 있을 것 (`apps/web` → `packages/shared`)
+
+`docs/`·`MEMORY.md` 같은 루트 파일은 어느 패키지 소유도 아니라 판정이 서지 않고, 두 프로젝트가 모두 빌드된다. 정상이다.
+
+#### api는 스킵하지 않는다
+
+**`aws-study-api`의 Skip deployment는 꺼 둔다.** 스킵과 「프로젝트 간 URL 연결」이 api 쪽에서 양립하지 않는다.
+
+web 프리뷰는 api의 **브랜치 별칭**(`aws-study-api-git-<브랜치>-…`)을 부른다. 그 브랜치에서 api 빌드를 건너뛰면 별칭이 Vercel의 `Deployment was cancelled` 페이지를 가리키는데, 응답은 200이지만 JSON이 아니고 **`Access-Control-Allow-Origin`이 없어** 브라우저 fetch가 CORS로 막힌다. 화면에는 "api 호출 실패"로만 보인다 (2026-08-27 실측, SJO-3).
+
+부르는 쪽(web)은 스킵돼도 아무도 그 브랜치 별칭에 의존하지 않으므로 켜 둔다. 불리는 쪽(api)은 브랜치마다 살아 있어야 한다 — api 빌드 20~30초가 그 대가다.
 
 ## 인증
 

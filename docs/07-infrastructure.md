@@ -142,6 +142,7 @@ https://aws-study-*-smelljo.vercel.app     ← 프리뷰 (`docs/06` 「환경별
 
 - [ ] 각 프로젝트에 환경변수 등록 (`06-environment.md`)
 - [ ] 빌드 스킵 조건 충족 확인 — `pnpm-workspace.yaml`, 유일한 패키지명, 명시적 패키지 간 의존
+- [ ] **`aws-study-api`의 Skip deployment 끄기** — Settings → Build and Deployment → Root Directory. 켜 두면 web 단독 커밋에서 api 브랜치 별칭이 `Deployment was cancelled` 페이지가 되어 프리뷰 짝이 깨진다 (`03-architecture.md` §빌드 스킵). web은 켜 둔다
 - [ ] CLI 48.4.0 이상 (`vercel dev`, NestJS 지원 최소 버전)
 
 ## 5. Related Projects

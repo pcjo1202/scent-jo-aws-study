@@ -10,8 +10,8 @@ _최종 갱신: 2026-08-27_
 
 | 항목 | 상태 |
 |---|---|
-| Vercel `aws-study-web` | **생성됨** · Root `apps/web` · Next.js · `icn1` · SSO 보호 꺼짐 · `prj_mFYDO5Dgom098rYuHH4fUWK9Fp0d` |
-| Vercel `aws-study-api` | **생성됨** · Root `apps/api` · **NestJS 자동 감지** · `icn1` · SSO 보호 꺼짐 · `prj_uVsyAepv8G2t0QwrqN7DcANjYXJu` |
+| Vercel `aws-study-web` | **생성됨** · Root `apps/web` · Next.js · `icn1` · SSO 보호 꺼짐 · Skip deployment 켜짐(기본) · `prj_mFYDO5Dgom098rYuHH4fUWK9Fp0d` |
+| Vercel `aws-study-api` | **생성됨** · Root `apps/api` · **NestJS 자동 감지** · `icn1` · SSO 보호 꺼짐 · **Skip deployment 꺼짐** · `prj_uVsyAepv8G2t0QwrqN7DcANjYXJu` |
 | Related Projects 연결 | **설정됨** — `apps/web/vercel.json`. 프리뷰끼리 짝이 맞는 것 확인 |
 | Supabase 프로젝트 | 미생성 |
 | Supabase JWT 비대칭 서명 전환 | 미적용 |
