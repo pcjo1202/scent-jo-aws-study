@@ -113,10 +113,14 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 | 파일 | 내용 |
 |---|---|
 | `eslint.config.base.mjs` | `typescript-eslint` recommended + `eslint-config-prettier/flat` |
-| `apps/web/eslint.config.mjs` | base + `eslint-config-next/core-web-vitals` + `/typescript` + FSD zones |
+| `apps/web/eslint.config.mjs` | `eslint-config-next/core-web-vitals` + `/typescript` + `eslint-config-prettier/flat` + FSD zones |
 | `apps/api/eslint.config.mjs` | base + 타입 인지 규칙(`projectService`) |
 
 `packages/shared`는 타입 20줄이라 설정을 두지 않는다. Next 16에서 `next lint`가 제거됐으므로 각 패키지 스크립트는 `eslint .` 이다.
+
+**web은 base를 펼치지 않는다.** `eslint-config-next/typescript`가 `typescript-eslint`의 base·eslint-recommended·recommended를 그대로 품고 있어, base까지 펼치면 `@typescript-eslint` 플러그인이 두 번 정의돼 flat config가 `Cannot redefine plugin`으로 죽는다. web은 next 설정에 prettier와 FSD zones만 얹는다. api는 next 설정이 없으므로 base를 그대로 펼친다.
+
+**ESLint는 9를 쓴다.** `eslint-config-next`가 끌어오는 `eslint-plugin-react`의 peer가 `^9.7`까지이고, 10에서는 `context.getFilename()`이 사라져 `react/display-name` 로딩 자체가 터진다. `typescript-eslint`는 10을 지원하지만 그쪽에 맞출 수 없다. **eslint를 각 앱의 devDependency로도 명시한다** — 루트만 두면 `node_modules/.bin`이 다른 버전을 가리키는 일이 생긴다.
 
 ### import 정렬
 

@@ -21,6 +21,7 @@
     "@nestjs/schematics": "^11.0.8",
     "@nestjs/testing": "^11.2.3",
     "@types/node": "^22.10.0",
+    "eslint": "^9.39.5",
     "typescript": "^5.9.2"
   }
 }

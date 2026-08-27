@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@swc/core": "^1.16.1",
-    "eslint": "^10.9.1",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6",
     "turbo": "^2.5.6",
