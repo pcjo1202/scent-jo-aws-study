@@ -122,7 +122,20 @@ https://aws-study-*-smelljo.vercel.app     ← 프리뷰 (`docs/06` 「환경별
 
 - [ ] `aws-study-web` 생성 · Root Directory `apps/web`
 - [ ] `aws-study-api` 생성 · Root Directory `apps/api`
-- [ ] **Functions 리전 `icn1`(서울) 설정 — web·api 둘 다.** 기본 `iad1`이면 매 답안 제출이 미 동부를 왕복한다
+- [ ] **Functions 리전 `icn1`(서울) — web·api 둘 다.** 기본 `iad1`이면 매 답안 제출이 미 동부를 왕복한다.
+
+  대시보드가 아니라 각 앱의 `vercel.json`에 `"regions": ["icn1"]`로 둔다 — 프로젝트를 다시 만들어도 따라오고 리뷰에 남는다. 빌드·출력은 명시하지 않는다(NestJS 제로 설정 감지를 유지).
+
+- [ ] **프리뷰 SSO 보호(Vercel Authentication) 끄기 — web·api 둘 다.**
+
+  기본값이 `all_except_custom_domains`라 프리뷰 URL이 `vercel.com/sso-api`로 302된다. 브라우저가 api를 **교차출처로 직접 부르는** 구조(`03-architecture.md` §인증)에서는 그 fetch가 SSO 리디렉션을 받고 CORS에 걸려 죽는다. Protection Bypass 시크릿은 브라우저 fetch에 쓰려면 클라이언트 번들에 박아야 해서 같은 노출이 된다.
+
+  ```bash
+  vercel project protection disable --sso    # 되돌리기: enable --sso
+  ```
+
+  실질 방어선은 앱 자체 인증이다 — Supabase 로그인 + `ALLOWED_EMAIL` 불일치 403 (`06-environment.md`).
+
 - [ ] **NestJS 제로 설정 감지 확인** — `apps/api`가 프레임워크로 NestJS를 인식하는지
 
   이것이 M0 검증의 핵심이다. 인식하지 못하면 `apps/api/vercel.json`에 빌드·출력 설정을 명시해 우회한다.

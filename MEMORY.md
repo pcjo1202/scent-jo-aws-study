@@ -10,15 +10,19 @@ _최종 갱신: 2026-08-27_
 
 | 항목 | 상태 |
 |---|---|
-| Vercel `aws-study-web` | 미생성 |
-| Vercel `aws-study-api` | 미생성 |
-| Related Projects 연결 | 미설정 |
+| Vercel `aws-study-web` | **생성됨** · Root `apps/web` · Next.js · `icn1` · SSO 보호 꺼짐 · `prj_mFYDO5Dgom098rYuHH4fUWK9Fp0d` |
+| Vercel `aws-study-api` | **생성됨** · Root `apps/api` · **NestJS 자동 감지** · `icn1` · SSO 보호 꺼짐 · `prj_uVsyAepv8G2t0QwrqN7DcANjYXJu` |
+| Related Projects 연결 | **설정됨** — `apps/web/vercel.json`. 프리뷰끼리 짝이 맞는 것 확인 |
 | Supabase 프로젝트 | 미생성 |
 | Supabase JWT 비대칭 서명 전환 | 미적용 |
 | Google OAuth 클라이언트 | 미등록 |
 | S3 버킷 (`static-cdn.scent-jo.dev`) | **기존 보유** · ap-northeast-2 + CloudFront |
 | S3 버저닝 | **미확인** |
 | CloudFront CORS Response Headers Policy | **미설정** (확인 완료) |
+| Vercel 스코프 | `smelljo`. 프리뷰 URL이 `aws-study-<해시>-smelljo.vercel.app` — 프로젝트명이 아니다 |
+| 프로덕션 도메인 (web) | `saa.scent-jo.dev`. DNS는 **Cloudflare**(`*.scent-jo.dev` 와일드카드 프록시) — Vercel 네임서버 아님 |
+| 프로덕션 도메인 (api) | 없음. `aws-study-api.vercel.app` 그대로 — Bearer JWT라 커스텀 도메인이 필요 없다 |
+| api `CORS_ALLOWED_ORIGINS` | production `https://saa.scent-jo.dev,https://aws-study-web.vercel.app` · preview `https://aws-study-*-smelljo.vercel.app` |
 | Linear ↔ GitHub 연동 | **켜짐** (확인 완료 — PR #1이 SJO-31에 자동 첨부) |
 | GitHub 레포 | `pcjo1202/scent-jo-aws-study` · **public**. PR 생성은 `pcjo1202` 계정 토큰이 필요하다 (gh 기본 활성 계정은 collaborator가 아니라 `must be a collaborator`로 거부된다) |
 

@@ -80,6 +80,8 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 배포 시 `VERCEL_RELATED_PROJECTS` 환경변수로 API URL이 주입된다. **프리뷰 배포끼리도 짝이 맞게 연결**되므로 API URL을 하드코딩하거나 환경별로 관리할 필요가 없다. 조회에는 `@vercel/related-projects`를 쓴다.
 
+**`VERCEL_RELATED_PROJECTS`는 `NEXT_PUBLIC_`이 아니다 — 클라이언트 번들에 들어가지 않는다.** 서버 컴포넌트에서 `withRelatedProject()`로 풀어 prop으로 내린다. 클라이언트 컴포넌트에서 부르면 배포에서도 조용히 `defaultHost`(로컬 폴백)로 떨어지고, 화면에는 네트워크 오류로만 보인다.
+
 ### 빌드 스킵
 
 pnpm workspaces 규약을 지키면 Vercel이 변경되지 않은 앱의 빌드를 자동으로 건너뛴다. 조건은 다음과 같다.
