@@ -86,7 +86,7 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 ### 빌드 스킵
 
-**Vercel 프로젝트 설정이 한다.** Settings → Build and Deployment → Root Directory의 **Skip deployment** 스위치이고, 모노레포로 Import하면 기본으로 켜진다. `vercel.json`에 넣는 것이 아니다 — `ignoreCommand`는 이 동작과 무관하고, 넣어도 스킵을 되돌리지 못한다 (2026-08-27 실측, SJO-3).
+**Vercel 프로젝트 설정이 한다.** Settings → Build and Deployment → Root Directory의 **Skip deployment** 스위치이고, 모노레포로 Import하면 기본으로 켜진다. `vercel.json`에 넣는 것이 아니다 — `ignoreCommand`를 넣어도(`npx turbo-ignore`·`exit 1` 둘 다) 이 스킵을 되돌리지 못했다 (2026-08-27 실측, SJO-3). 그 키가 무엇을 하는지는 확인하지 않았다.
 
 판정 근거는 커밋이 건드린 파일이 어느 패키지에 속하는가다. 그래서 아래가 지켜져야 한다.
 
