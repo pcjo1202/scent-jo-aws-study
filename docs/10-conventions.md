@@ -9,7 +9,7 @@
 
 | 내용 | 위치 | 로드 시점 |
 |---|---|---|
-| 범용 코드 규약 — 함수 선언문·네이밍·SSOT·매직넘버·early return·helper·에러·타입 | `.claude/rules/code-conventions.md` | `**/*.{ts,tsx,mjs}`를 읽을 때 자동 |
+| 범용 코드 규약 — 함수 선언문·네이밍·SSOT·매직넘버·early return·helper·주석·에러·타입 | `.claude/rules/code-conventions.md` | `**/*.{ts,tsx,mjs}`를 읽을 때 자동 |
 | web 규칙 — FSD 레이어·배럴 금지·`'use client'`·토큰 | `apps/web/CLAUDE.md` | `apps/web` 파일을 읽을 때 자동 |
 | api 규칙 — 모듈 배치·전역 가드·DTO·오류 응답 | `apps/api/CLAUDE.md` | `apps/api` 파일을 읽을 때 자동 |
 | 결정의 근거 | 이 문서 | 사람이 펼침 |
@@ -132,9 +132,15 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 `packages/shared/src/index.ts`의 현재 스타일을 성문화한 것이다. `printWidth`만 100으로 올린다 — 한글 주석과 긴 유니온 타입이 80에서 자주 접힌다.
 
+**`*.md`는 대상에서 제외한다.** 위 네 옵션은 전부 코드용이라 md에는 걸리는 게 없는데, prettier는 표를 열 폭에 맞춰 재작성한다. 한글 셀의 폭 계산이 실제 표시와 어긋나 정렬이 오히려 깨지고, 명세 문서의 diff에 내용 변경과 포맷 변경이 섞인다. `.claude/settings.local.json`도 제외한다 — Claude Code가 소유·재작성하는 파일이라 포맷이 유지되지 않는다.
+
 ## tsconfig
 
 루트 `tsconfig.base.json`에 **strict 계열만** 두고 각 패키지가 상대경로로 extends한다. 별도 `packages/tsconfig` 패키지는 만들지 않는다 — 파일 하나를 위해 워크스페이스 항목을 늘릴 이유가 없다.
+
+담는 것은 `strict` · `noUncheckedIndexedAccess` · `skipLibCheck` 셋뿐이다. `target`·`module`·`moduleResolution`은 각 패키지가 정한다 — Next·Nest·Node 스크립트가 서로 다른 값을 요구하므로 base에 두면 어차피 전부 덮어쓴다.
+
+`noUncheckedIndexedAccess`를 켜는 이유는 **치명 영역이 배열 인덱싱 위에 있기 때문**이다. 파서(`scripts`)와 채점(`api/catalog`)에서 `arr[i]`가 `undefined`일 수 있다는 사실이 타입에 드러나야 한다. 조용히 틀린 결과가 나오는 것보다 옵셔널 체이닝 몇 개가 싸다.
 
 **`verbatimModuleSyntax`는 base에 넣지 않는다.** web·shared는 켜고 **api는 끈다** — 주입 대상을 `import type`으로 가져오면 `emitDecoratorMetadata`가 런타임 토큰을 잃어 Nest DI가 깨진다. base에 넣고 api에서 끄는 형태로 만들면 의도가 보이지 않는다.
 
@@ -144,10 +150,14 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 따라서 projects 분할이나 jsdom 환경이 필요 없다. 루트 `vitest.config.ts` 하나에 `environment: 'node'`, `include: ['apps/api/**/*.spec.ts', 'scripts/**/*.spec.ts']`, NestJS 데코레이터를 위해 `unplugin-swc`를 단다. 루트 스크립트는 `"test": "vitest run"` — turbo를 거치지 않는다.
 
+`passWithNoTests: true`를 config에 둔다. 치명 영역 4종이 전부 아직 없는 `apps/api`·`scripts`에 있어 지금은 대상이 0건인데, vitest는 0건을 **exit 1**로 취급해 `pnpm test`가 실패한다. **대가는 include 패턴이 깨져도 조용히 통과한다는 것**이다 — 실제 테스트가 들어온 뒤(SJO-4·SJO-12·SJO-14) 이 옵션을 빼는 것을 검토한다.
+
 Jest를 쓰지 않는 이유는 러너가 둘로 갈리기 때문이다. Nest 공식 기본값이라는 이점이 있지만, `packages/shared`가 ESM(`type: module`)이라 Vitest 쪽이 마찰이 적다.
 
 ## turbo
 
-`lint`·`format:check` 태스크를 추가한다. 둘 다 `dependsOn`이 없다 — 빌드 산출물이 필요 없다.
+`lint` 태스크를 추가한다. `dependsOn`이 없다 — 빌드 산출물이 필요 없다.
+
+**`format:check`는 turbo에 두지 않는다.** Prettier는 레포 전역을 한 번에 보는 것이 더 싸고, 루트 `prettier --check .`가 이미 그 역할을 한다. 패키지별 `format:check` 스크립트를 두지 않으므로 turbo 태스크는 호출부 없는 죽은 설정이 된다.
 
 **기존 `typecheck: {}`의 빈 설정은 건드리지 않는다.** `07e98ae`에서 죽은 `dependsOn`을 의도적으로 제거한 결과다. `packages/shared`가 `types: ./src/index.ts`로 원본 `.ts`를 노출하므로 소비자가 인라인으로 타입 검사한다.

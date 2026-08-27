@@ -1,0 +1,8 @@
+# .gitignore가 기본 ignore-path라 빌드 산출물·data·fixtures는 여기 적지 않는다.
+pnpm-lock.yaml
+
+# 명세 문서 — 근거는 docs/10-conventions.md 「Prettier」
+*.md
+
+# Claude Code가 소유·재작성하는 파일
+.claude/settings.local.json
