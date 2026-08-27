@@ -35,7 +35,18 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 | `07-infrastructure` | 인프라 셋업 런북 |
 | `08-testing` | 테스트 전략 |
 | `09-agent-workflow` | 에이전트 워크플로 (검증 게이트·`/done`) |
+| `10-conventions` | 개발 규약의 **근거** — 폴더 구조·린트·tsconfig·테스트를 왜 그렇게 정했나 |
 | `data-changelog` | 데이터 버전 변경 이력 |
+
+**자동 주입되는 규칙 파일** — 읽으라고 지시할 필요가 없다. 해당 파일을 건드리는 순간 컨텍스트에 들어온다.
+
+| | 언제 |
+|---|---|
+| `.claude/rules/code-conventions.md` | TS/TSX를 읽을 때 — 함수 선언문·네이밍·SSOT·매직넘버·early return·에러·타입 |
+| `apps/web/CLAUDE.md` | `apps/web` 파일을 읽을 때 — FSD 레이어·배럴 금지·`'use client'` |
+| `apps/api/CLAUDE.md` | `apps/api` 파일을 읽을 때 — 모듈 배치·전역 가드·DTO·오류 응답 |
+
+규칙을 추가할 곳은 이 셋 중 하나다. 이 파일은 **전역에 걸리는 것만** 담는다.
 
 ## 어기기 쉬운 규칙
 
