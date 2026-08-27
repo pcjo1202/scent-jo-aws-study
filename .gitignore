@@ -11,6 +11,9 @@ tests/fixtures/
 !.env.example
 
 # ── 빌드 산출물 ──────────────────────────────────────────────
+# next-env.d.ts는 next dev와 next build가 서로 다른 내용으로 생성한다
+# (.next/types vs .next/dev/types) — 커밋하면 tree가 영구히 더러워진다.
+apps/web/next-env.d.ts
 node_modules/
 .next/
 dist/
