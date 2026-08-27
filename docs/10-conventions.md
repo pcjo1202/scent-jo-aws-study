@@ -9,7 +9,7 @@
 
 | 내용 | 위치 | 로드 시점 |
 |---|---|---|
-| 범용 코드 규약 — 함수 선언문·네이밍·SSOT·매직넘버·early return·helper·에러·타입 | `.claude/rules/code-conventions.md` | `**/*.{ts,tsx,mjs}`를 읽을 때 자동 |
+| 범용 코드 규약 — 함수 선언문·네이밍·SSOT·매직넘버·early return·helper·주석·에러·타입 | `.claude/rules/code-conventions.md` | `**/*.{ts,tsx,mjs}`를 읽을 때 자동 |
 | web 규칙 — FSD 레이어·배럴 금지·`'use client'`·토큰 | `apps/web/CLAUDE.md` | `apps/web` 파일을 읽을 때 자동 |
 | api 규칙 — 모듈 배치·전역 가드·DTO·오류 응답 | `apps/api/CLAUDE.md` | `apps/api` 파일을 읽을 때 자동 |
 | 결정의 근거 | 이 문서 | 사람이 펼침 |
@@ -156,6 +156,8 @@ Jest를 쓰지 않는 이유는 러너가 둘로 갈리기 때문이다. Nest �
 
 ## turbo
 
-`lint`·`format:check` 태스크를 추가한다. 둘 다 `dependsOn`이 없다 — 빌드 산출물이 필요 없다.
+`lint` 태스크를 추가한다. `dependsOn`이 없다 — 빌드 산출물이 필요 없다.
+
+**`format:check`는 turbo에 두지 않는다.** Prettier는 레포 전역을 한 번에 보는 것이 더 싸고, 루트 `prettier --check .`가 이미 그 역할을 한다. 패키지별 `format:check` 스크립트를 두지 않으므로 turbo 태스크는 호출부 없는 죽은 설정이 된다.
 
 **기존 `typecheck: {}`의 빈 설정은 건드리지 않는다.** `07e98ae`에서 죽은 `dependsOn`을 의도적으로 제거한 결과다. `packages/shared`가 `types: ./src/index.ts`로 원본 `.ts`를 노출하므로 소비자가 인라인으로 타입 검사한다.

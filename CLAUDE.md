@@ -42,7 +42,7 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 
 | | 언제 |
 |---|---|
-| `.claude/rules/code-conventions.md` | TS/TSX를 읽을 때 — 함수 선언문·네이밍·SSOT·매직넘버·early return·에러·타입 |
+| `.claude/rules/code-conventions.md` | TS·TSX·mjs를 읽을 때 — 함수 선언문·네이밍·SSOT·매직넘버·early return·주석·에러·타입 |
 | `apps/web/CLAUDE.md` | `apps/web` 파일을 읽을 때 — FSD 레이어·배럴 금지·`'use client'` |
 | `apps/api/CLAUDE.md` | `apps/api` 파일을 읽을 때 — 모듈 배치·전역 가드·DTO·오류 응답 |
 
