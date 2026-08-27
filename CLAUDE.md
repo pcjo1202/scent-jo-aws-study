@@ -26,7 +26,7 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 
 | | |
 |---|---|
-| `01-requirements` | 배경·범위·성공 기준 |
+| `01-requirements` | 배경·범위·운영 환경·가정·성공 기준·미해결 사항 |
 | `02-features` | 화면과 기능 |
 | `03-architecture` | 구조·배포·CDN·리스크 |
 | `04-data-model` | 정적 데이터 스키마·추출 파이프라인 |
