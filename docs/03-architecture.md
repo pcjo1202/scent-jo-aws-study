@@ -84,7 +84,11 @@ Vercel 프로젝트 2개를 같은 레포에서 만든다. Root Directory로 구
 
 ### 빌드 스킵
 
-pnpm workspaces 규약을 지키면 Vercel이 변경되지 않은 앱의 빌드를 자동으로 건너뛴다. 조건은 다음과 같다.
+**pnpm workspaces 규약만으로는 건너뛰지 않는다.** docs만 바꾼 커밋에서도 web·api가 둘 다 22~30초씩 온전히 빌드했다 (2026-08-27 실측, SJO-3). Root Directory 밖의 파일을 포함해야 workspace 의존이 풀리는데, 그러면 레포의 어떤 변경이든 두 프로젝트를 모두 건드리기 때문이다.
+
+각 앱의 `vercel.json`에 `"ignoreCommand": "npx turbo-ignore"`를 둔다. Turborepo가 이미 태스크 러너이므로 그 의존 그래프가 판단 근거가 된다 — 새 도구를 들이지 않는다.
+
+그 판단이 맞으려면 아래가 지켜져야 한다.
 
 - `pnpm-workspace.yaml`에 모든 패키지가 등록돼 있을 것
 - 각 패키지의 `package.json` `name`이 유일할 것
