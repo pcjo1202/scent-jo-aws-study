@@ -4,7 +4,7 @@ git이 알 수 없는 외부 상태의 **현재값**만 적는다. 할 일은 `T
 
 바꿨으면 그 자리에서 덮어쓴다. 이력은 남기지 않는다 (데이터 변경 이력만 `docs/data-changelog.md`).
 
-_최종 갱신: 2026-08-24_
+_최종 갱신: 2026-08-27_
 
 ## 인프라
 
@@ -19,6 +19,8 @@ _최종 갱신: 2026-08-24_
 | S3 버킷 (`static-cdn.scent-jo.dev`) | **기존 보유** · ap-northeast-2 + CloudFront |
 | S3 버저닝 | **미확인** |
 | CloudFront CORS Response Headers Policy | **미설정** (확인 완료) |
+| Linear ↔ GitHub 연동 | **켜짐** (확인 완료 — PR #1이 SJO-31에 자동 첨부) |
+| GitHub 레포 | `pcjo1202/scent-jo-aws-study` · **public**. PR 생성은 `pcjo1202` 계정 토큰이 필요하다 (gh 기본 활성 계정은 collaborator가 아니라 `must be a collaborator`로 거부된다) |
 
 ## 데이터
 
