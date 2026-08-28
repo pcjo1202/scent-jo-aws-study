@@ -264,6 +264,53 @@
   }
 
   /*
+   * 칩은 시각 높이와 터치 영역이 다르다 (DESIGN.md 「칩 · 시각 높이와 터치 영역이 다르다」).
+   * base 레이어가 모든 button에 걸어 둔 48px을 여기서 덮고, 넓혀야 할 것은 터치 영역뿐이므로
+   * 가상 요소로 뺀다. 칩을 48px로 키우면 카테고리 라벨이 본문을 밀어낸다.
+   */
+  .chip {
+    position: relative;
+    min-width: 0;
+    min-height: 32px;
+  }
+
+  .chip::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+
+  /*
+   * 오답 해설 아코디언 (DESIGN.md 「해설 블록 · ③ 오답 해설」). 네이티브 details를 쓰므로
+   * 열림 상태와 키보드 조작을 직접 구현하지 않는다. 높이 전환은 ::details-content를
+   * 지원하는 브라우저에서만 걸리고, 아니면 즉시 열린다 — 원칙 4와 어긋나지 않는 방향의 퇴화다.
+   */
+  .rebuttal summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .rebuttal summary {
+    list-style: none;
+  }
+
+  .rebuttal[open] summary .rebuttal-marker {
+    transform: rotate(180deg);
+  }
+
+  .rebuttal::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size var(--sys-motion-duration-short4) var(--sys-motion-easing-standard),
+      content-visibility var(--sys-motion-duration-short4) allow-discrete;
+    interpolate-size: allow-keywords;
+  }
+
+  .rebuttal[open]::details-content {
+    block-size: auto;
+  }
+
+  /*
    * 선택지의 숫자 키 힌트 (DESIGN.md 「선택지 · 키보드」). 폭만으로 가르면 터치 태블릿에도
    * 뜨는데, 키보드가 없는 기기에 단축키를 보여줄 이유가 없다.
    */
