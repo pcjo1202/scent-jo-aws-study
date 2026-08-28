@@ -95,11 +95,18 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 # scripts/.env.example
 SOURCE_PDF_DIR=                     # 원본 PDF 디렉터리. 기기마다 다르므로 값은 비운다
+                                    # 파일은 번호 접두사로 고른다 (docs/01 「원본 자료」) — "4. …pdf"
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=ap-northeast-2
 S3_BUCKET=
 ```
+
+## 환경변수가 아닌 전제
+
+`pnpm data:extract`는 **`pdftotext`(poppler)를 PATH에서 찾는다.** 없으면 `spawnSync pdftotext ENOENT`로 죽는다. macOS는 `brew install poppler`.
+
+환경변수가 아니라 여기 적는 이유: 값이 아니라 도구라 `.env`로 해결되지 않고, 새 기기에서 `data:extract`가 실패하는 첫 번째 원인이다 (2026-08-28, SJO-6).
 
 ## 검증
 
