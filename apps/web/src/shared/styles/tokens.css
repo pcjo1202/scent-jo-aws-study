@@ -1,0 +1,235 @@
+/*
+ * 디자인 토큰 — DESIGN.md 「Foundations · Design tokens」의 3계층 구현.
+ *
+ * 이 파일은 Tailwind를 모른다. global.css가 `@theme inline`으로 여기를 소비한다.
+ * 그렇게 나눈 이유는 docs/10-conventions.md 「스타일 저작」.
+ *
+ * reference 값은 Material 기본 스킴이고 톤 번호는 M3 원본 그대로다
+ * (material-web `tokens/versions/v0_192/_md-ref-palette.scss`와 대조 확인).
+ */
+
+/* ─────────────────────────────────────────────────────────────
+ * reference — 원시 팔레트. 의미가 없다. 화면에서 직접 참조하지 않는다.
+ * 테마가 바뀌어도 이 블록은 그대로다. 팔레트를 갈아끼울 때 고치는 곳은 여기 하나다.
+ * ───────────────────────────────────────────────────────────── */
+:root {
+  --ref-primary-10: #21005d;
+  --ref-primary-20: #381e72;
+  --ref-primary-30: #4f378b;
+  --ref-primary-40: #6750a4;
+  --ref-primary-80: #d0bcff;
+  --ref-primary-90: #eaddff;
+  --ref-primary-100: #ffffff;
+
+  --ref-secondary-10: #1d192b;
+  --ref-secondary-30: #4a4458;
+  --ref-secondary-90: #e8def8;
+
+  --ref-error-10: #410e0b;
+  --ref-error-20: #601410;
+  --ref-error-30: #8c1d18;
+  --ref-error-40: #b3261e;
+  --ref-error-80: #f2b8b5;
+  --ref-error-90: #f9dedc;
+  --ref-error-100: #ffffff;
+
+  /* correct — M3에 없는 확장 팔레트. 역할→톤 배정은 error 팔레트를 그대로 미러링한다
+     (DESIGN.md 「Correct 역할을 추가한 이유」). */
+  --ref-correct-10: #00210a;
+  --ref-correct-20: #00390f;
+  --ref-correct-30: #145223;
+  --ref-correct-40: #2e6b33;
+  --ref-correct-80: #95d89a;
+  --ref-correct-90: #b0f0b4;
+  --ref-correct-100: #ffffff;
+
+  --ref-neutral-4: #0f0d13;
+  --ref-neutral-6: #141218;
+  --ref-neutral-10: #1d1b20;
+  --ref-neutral-12: #211f26;
+  --ref-neutral-17: #2b2930;
+  --ref-neutral-22: #36343b;
+  --ref-neutral-90: #e6e0e9;
+  --ref-neutral-92: #ece6f0;
+  --ref-neutral-94: #f3edf7;
+  --ref-neutral-96: #f7f2fa;
+  --ref-neutral-98: #fef7ff;
+  --ref-neutral-100: #ffffff;
+
+  --ref-neutral-variant-30: #49454f;
+  --ref-neutral-variant-50: #79747e;
+  --ref-neutral-variant-60: #938f99;
+  --ref-neutral-variant-80: #cac4d0;
+  --ref-neutral-variant-90: #e7e0ec;
+
+  /* 웹폰트를 로드하지 않는다 (DESIGN.md 「Typography · 폰트」). Roboto는 한글 글리프가
+     없어 어차피 폴백으로 넘어가므로 부르는 값이 0이다. brand 타입페이스는 없다. */
+  --ref-typeface-plain:
+    system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  --ref-typeface-brand: var(--ref-typeface-plain);
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * system · color — 역할. 라이트 매핑.
+ * `on-` 짝이 함께 정의되므로 잘못된 대비 조합을 만들 수 없다.
+ * 대비 실측값은 DESIGN.md 「대비 검증」.
+ * ───────────────────────────────────────────────────────────── */
+:root {
+  --sys-color-primary: var(--ref-primary-40);
+  --sys-color-on-primary: var(--ref-primary-100);
+  --sys-color-primary-container: var(--ref-primary-90);
+  --sys-color-on-primary-container: var(--ref-primary-10);
+
+  --sys-color-secondary-container: var(--ref-secondary-90);
+  --sys-color-on-secondary-container: var(--ref-secondary-10);
+
+  --sys-color-error: var(--ref-error-40);
+  --sys-color-on-error: var(--ref-error-100);
+  --sys-color-error-container: var(--ref-error-90);
+  --sys-color-on-error-container: var(--ref-error-10);
+
+  --sys-color-correct: var(--ref-correct-40);
+  --sys-color-on-correct: var(--ref-correct-100);
+  --sys-color-correct-container: var(--ref-correct-90);
+  --sys-color-on-correct-container: var(--ref-correct-10);
+
+  --sys-color-surface: var(--ref-neutral-98);
+  --sys-color-on-surface: var(--ref-neutral-10);
+  --sys-color-surface-variant: var(--ref-neutral-variant-90);
+  --sys-color-on-surface-variant: var(--ref-neutral-variant-30);
+
+  --sys-color-surface-container-lowest: var(--ref-neutral-100);
+  --sys-color-surface-container-low: var(--ref-neutral-96);
+  --sys-color-surface-container: var(--ref-neutral-94);
+  --sys-color-surface-container-high: var(--ref-neutral-92);
+  --sys-color-surface-container-highest: var(--ref-neutral-90);
+
+  --sys-color-outline: var(--ref-neutral-variant-50);
+  --sys-color-outline-variant: var(--ref-neutral-variant-80);
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * system · 테마와 무관한 역할 — 타입스케일 · shape · 상태 · 모션 · 레이아웃.
+ * 다크에서 재매핑되지 않으므로 아래 [data-theme] 블록에 나타나지 않는다.
+ * ───────────────────────────────────────────────────────────── */
+:root {
+  /* 타입스케일 — DESIGN.md 「Typography · 우리 스케일」의 8역할만 만든다.
+     M3 15개 중 display-*, headline-large/medium, title-large, label-small은
+     「쓰지 않는 역할」이라 정의하지 않는다 — 정의하면 결국 쓰이게 된다.
+     tracking이 전부 0인 것은 한글이 이미 고정폭에 가까워 양수 자간이 단어 덩어리를
+     흩기 때문이다. 굵기는 400·500 둘뿐이다. */
+  --sys-typescale-headline-small-size: 24px;
+  --sys-typescale-headline-small-line-height: 32px;
+  --sys-typescale-headline-small-weight: 400;
+  --sys-typescale-headline-small-tracking: 0;
+
+  --sys-typescale-title-medium-size: 17px;
+  --sys-typescale-title-medium-line-height: 26px;
+  --sys-typescale-title-medium-weight: 500;
+  --sys-typescale-title-medium-tracking: 0;
+
+  --sys-typescale-title-small-size: 15px;
+  --sys-typescale-title-small-line-height: 22px;
+  --sys-typescale-title-small-weight: 500;
+  --sys-typescale-title-small-tracking: 0;
+
+  /* 이 앱에서 가장 중요한 단일 수치다. 행간 28px(1.75)은 M3의 24px(1.5)에서 올린 값이고,
+     이탈이 아니라 CJK에 대한 M3 준수다 (DESIGN.md 「한국어 조정」). */
+  --sys-typescale-body-large-size: 16px;
+  --sys-typescale-body-large-line-height: 28px;
+  --sys-typescale-body-large-weight: 400;
+  --sys-typescale-body-large-tracking: 0;
+
+  --sys-typescale-body-medium-size: 15px;
+  --sys-typescale-body-medium-line-height: 26px;
+  --sys-typescale-body-medium-weight: 400;
+  --sys-typescale-body-medium-tracking: 0;
+
+  --sys-typescale-body-small-size: 13px;
+  --sys-typescale-body-small-line-height: 22px;
+  --sys-typescale-body-small-weight: 400;
+  --sys-typescale-body-small-tracking: 0;
+
+  --sys-typescale-label-large-size: 15px;
+  --sys-typescale-label-large-line-height: 20px;
+  --sys-typescale-label-large-weight: 500;
+  --sys-typescale-label-large-tracking: 0;
+
+  --sys-typescale-label-medium-size: 13px;
+  --sys-typescale-label-medium-line-height: 18px;
+  --sys-typescale-label-medium-weight: 500;
+  --sys-typescale-label-medium-tracking: 0;
+
+  /* shape — 값이 아니라 토큰을 고른다. "12px"이 아니라 "medium"을 지정한다. */
+  --sys-shape-corner-none: 0px;
+  --sys-shape-corner-extra-small: 4px;
+  --sys-shape-corner-small: 8px;
+  --sys-shape-corner-medium: 12px;
+  --sys-shape-corner-large: 16px;
+  --sys-shape-corner-extra-large: 28px;
+  --sys-shape-corner-full: 9999px;
+
+  /* 상태 레이어 불투명도 — M3 값 그대로. dragged(0.16)는 이 앱에 드래그가 없어 빼둔다. */
+  --sys-state-hover-opacity: 0.08;
+  --sys-state-focus-opacity: 0.12;
+  --sys-state-pressed-opacity: 0.12;
+
+  /* 모션 — 이 셋뿐이다. medium 이상과 emphasized 계열은 쓰지 않는다.
+     같은 화면을 1019번 반복하므로 200ms가 1019번이면 3분 24초다 (DESIGN.md 「Motion」). */
+  --sys-motion-duration-short2: 100ms;
+  --sys-motion-duration-short4: 200ms;
+  --sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* 한 줄이 길어지면 다음 줄 시작점을 놓친다. 화면이 아무리 넓어도 본문은 이 폭을 넘지 않는다.
+     672px는 16px 한글로 약 42자다. */
+  --sys-layout-reading-width: 42rem;
+  --sys-layout-margin: 16px; /* compact */
+}
+
+/* medium(600–839) · expanded(≥840)의 화면 여백은 같은 값이라 분기가 하나면 된다. */
+@media (min-width: 600px) {
+  :root {
+    --sys-layout-margin: 24px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * 다크는 system 매핑만 뒤집는다. reference 팔레트는 건드리지 않는다 — 이 이슈의 완료 정의다.
+ * 색을 두 벌 관리하는 게 아니라 매핑을 두 벌 관리한다.
+ *
+ * `system` 상태는 인라인 스크립트가 prefers-color-scheme를 읽어 light/dark로 확정하므로
+ * 여기에 @media (prefers-color-scheme) 분기를 두지 않는다 (shared/lib/theme.ts).
+ * ───────────────────────────────────────────────────────────── */
+[data-theme='dark'] {
+  --sys-color-primary: var(--ref-primary-80);
+  --sys-color-on-primary: var(--ref-primary-20);
+  --sys-color-primary-container: var(--ref-primary-30);
+  --sys-color-on-primary-container: var(--ref-primary-90);
+
+  --sys-color-secondary-container: var(--ref-secondary-30);
+  --sys-color-on-secondary-container: var(--ref-secondary-90);
+
+  --sys-color-error: var(--ref-error-80);
+  --sys-color-on-error: var(--ref-error-20);
+  --sys-color-error-container: var(--ref-error-30);
+  --sys-color-on-error-container: var(--ref-error-90);
+
+  --sys-color-correct: var(--ref-correct-80);
+  --sys-color-on-correct: var(--ref-correct-20);
+  --sys-color-correct-container: var(--ref-correct-30);
+  --sys-color-on-correct-container: var(--ref-correct-90);
+
+  --sys-color-surface: var(--ref-neutral-6);
+  --sys-color-on-surface: var(--ref-neutral-90);
+  --sys-color-surface-variant: var(--ref-neutral-variant-30);
+  --sys-color-on-surface-variant: var(--ref-neutral-variant-80);
+
+  --sys-color-surface-container-lowest: var(--ref-neutral-4);
+  --sys-color-surface-container-low: var(--ref-neutral-10);
+  --sys-color-surface-container: var(--ref-neutral-12);
+  --sys-color-surface-container-high: var(--ref-neutral-17);
+  --sys-color-surface-container-highest: var(--ref-neutral-22);
+
+  --sys-color-outline: var(--ref-neutral-variant-60);
+  --sys-color-outline-variant: var(--ref-neutral-variant-30);
+}
