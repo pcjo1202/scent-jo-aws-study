@@ -82,12 +82,14 @@ M3 원본은 `md.sys.color.surface` 형태다. 우리는 단일 제품이라 `md
 --ref-{palette}-{tone}          --ref-neutral-10
 --sys-color-{role}              --sys-color-on-surface
 --sys-typescale-{role}-{prop}   --sys-typescale-body-large-size
---sys-shape-{size}              --sys-shape-medium
+--sys-shape-corner-{size}       --sys-shape-corner-medium
 --sys-state-{state}-opacity     --sys-state-hover-opacity
+--sys-motion-duration-{step}    --sys-motion-duration-short2
+--sys-motion-easing-{name}      --sys-motion-easing-standard
 --comp-{component}-{prop}       --comp-choice-container-color
 ```
 
-톤 번호는 M3 규약을 따른다. **0이 검정, 100이 흰색**이고 그 사이를 `10 · 20 · … · 90 · 95 · 99`로 나눈다.
+톤 번호는 M3 규약을 따른다. **0이 검정, 100이 흰색**이고 그 사이를 10 단위로 나눈다. surface container 5단계는 그 사이를 더 잘게 쓰므로 M3 확장 톤(`4 · 6 · 12 · 17 · 22 · 92 · 94 · 96 · 98`)이 함께 온다 — **톤 번호를 우리가 정하지 않는다.** M3가 그 값에 붙인 번호를 그대로 쓴다.
 
 ### 구현
 
@@ -96,19 +98,18 @@ CSS 커스텀 프로퍼티로 구현한다.
 ```css
 :root {
   /* reference — 불변. 테마가 바뀌어도 그대로다 */
-  --ref-neutral-0:   #000000;
-  --ref-neutral-10:  #1a1c1e;
-  --ref-neutral-90:  #e2e2e5;
-  --ref-neutral-99:  #fcfcff;
-  --ref-neutral-100: #ffffff;
+  --ref-neutral-6:   #141218;
+  --ref-neutral-10:  #1d1b20;
+  --ref-neutral-90:  #e6e0e9;
+  --ref-neutral-98:  #fef7ff;
 
   /* system — 역할. 테마마다 다시 매핑된다 */
-  --sys-color-surface:    var(--ref-neutral-99);
+  --sys-color-surface:    var(--ref-neutral-98);
   --sys-color-on-surface: var(--ref-neutral-10);
 }
 
 [data-theme="dark"] {
-  --sys-color-surface:    var(--ref-neutral-10);
+  --sys-color-surface:    var(--ref-neutral-6);
   --sys-color-on-surface: var(--ref-neutral-90);
 }
 ```
@@ -175,6 +176,15 @@ M3의 분기 어휘를 쓴다. 대상 기기가 폰과 PC뿐이라 셋만 쓴다
 
 M3에는 `large`·`extra-large`도 있지만 우리 화면은 읽기 칼럼 폭으로 상한이 걸려서 더 나눌 이유가 없다.
 
+**이 경계에 토큰 이름을 준다.** `compact`가 기본이고 위로 둘만 이름이 필요하다.
+
+```css
+--sys-layout-breakpoint-medium:   600px;
+--sys-layout-breakpoint-expanded: 840px;
+```
+
+프레임워크가 제공하는 기본 브레이크포인트를 **함께 두지 않는다.** `sm`·`md`·`lg` 같은 이름이 살아 있으면 이 표와 다른 지점에서 화면이 갈리는데, 그건 리뷰로 잡히지 않는다.
+
 ### 읽기 칼럼
 
 ```css
@@ -221,7 +231,11 @@ M3의 **4dp 그리드**를 따른다. 임의 값을 쓰지 않는다.
 | 본문 대비 | **4.5:1** 이상 (WCAG AA) |
 | 큰 텍스트·UI 컴포넌트 대비 | **3:1** 이상 |
 | 탭 타겟 | **48 × 48px** 이상 (M3 기준) |
-| 포커스 링 | 지우지 않는다 |
+| 포커스 링 | 지우지 않는다. `primary` 2px · offset 2px |
+
+링을 여기서 못 박는 이유: "지우지 않는다"만 적어두면 화면마다 각자 다시 만든다. 전역 `:focus-visible` 한 곳에서 정의하고 컴포넌트는 건드리지 않는다.
+
+링 색이 `primary`인 것은 「색 사용 규칙」의 *"`primary`는 링크와 주 버튼에만"* 과 충돌하지 않는다. 그 규칙은 **장식으로 쓰지 말라**는 것이고, 포커스 링은 한 번에 하나만 뜨는 시스템 어포던스다.
 
 ### 색 단독 전달 금지
 
@@ -276,12 +290,12 @@ M3의 **4dp 그리드**를 따른다. 임의 값을 쓰지 않는다.
 
 ### 역할 목록
 
-M3의 색 역할을 그대로 쓴다. 명명은 `--sys-color-<role>`이고, **모든 역할에 대응하는 `on-` 짝이 있다.**
+M3의 색 역할을 그대로 쓴다. 명명은 `--sys-color-<role>`이고, **강조색·의미색 역할에는 대응하는 `on-` 짝이 있다.**
 
 | 그룹 | 역할 |
 |---|---|
 | Primary | `primary` · `primary-container` |
-| Secondary | `secondary` · `secondary-container` |
+| Secondary | `secondary-container` |
 | Error | `error` · `error-container` |
 | **Correct** *(확장)* | `correct` · `correct-container` |
 | Neutral | `surface` · `surface-variant` |
@@ -289,6 +303,8 @@ M3의 색 역할을 그대로 쓴다. 명명은 `--sys-color-<role>`이고, **�
 | Outline | `outline` · `outline-variant` |
 
 **Tertiary를 쓰지 않는다.** 세 번째 강조색이 필요한 화면이 없다. 역할을 정의해두면 결국 아무 데나 쓰이게 된다.
+
+**같은 이유로 bare `secondary`도 두지 않는다.** 이 앱에서 secondary 계열이 쓰이는 곳은 선택된 선택지와 선택된 필터 칩뿐이고 둘 다 `secondary-container` / `on-secondary-container` 쌍이다. 강조색으로서의 `secondary`는 쓸 자리가 없다.
 
 surface container 계열의 내용색은 전부 `on-surface` 또는 `on-surface-variant`를 쓴다. M3 규약 그대로다.
 
@@ -554,6 +570,9 @@ M3는 `plain`과 `brand` 두 타입페이스를 둔다. **우리는 brand 타입
 --ref-typeface-plain: system-ui, -apple-system, "Apple SD Gothic Neo",
                       "Noto Sans KR", "Malgun Gothic", sans-serif;
 --ref-typeface-brand: var(--ref-typeface-plain);
+
+/* 화면은 reference를 직접 참조하지 않는다 (「Design tokens · 계층」). 타입페이스도 예외가 아니다. */
+--sys-typescale-font-plain: var(--ref-typeface-plain);
 ```
 
 **Roboto를 불러오지 않는다.** M3 기본 타입페이스지만 한글 글리프가 없어 어차피 폴백으로 넘어간다. 시스템 폰트만 쓰면 네트워크 비용이 0이고 첫 렌더가 즉시다. Apple에서는 SF Pro + Apple SD Gothic Neo, Android/Chrome에서는 Roboto + Noto Sans KR로 붙는다.
