@@ -29,7 +29,7 @@ type Manifest = {
 ### Question
 
 ```ts
-type ChoiceKey = 'A' | 'B' | 'C' | 'D' | 'E'
+type ChoiceKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 
 type Question = {
   id: number                    // 1..1019
