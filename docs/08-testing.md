@@ -160,7 +160,7 @@ JWKS는 스텁으로 대체하고 테스트용 키쌍으로 서명한다. 실제
 ## 실행
 
 ```
-pnpm test          # 위 3종
+pnpm test          # 위 치명 영역 전부
 pnpm data:verify   # 전수 검증. 배포 게이트
 ```
 
