@@ -24,18 +24,18 @@ export type SeamOracle = (leftTail: string, rightHead: string) => boolean
 export function buildSeamOracle(corpus: string): SeamOracle {
   const joined = new Map<string, number>()
   const spaced = new Map<string, number>()
+  const n = CONTEXT_LENGTH
 
-  for (let i = 0; i + 4 < corpus.length; i += 1) {
-    const [a, b, c, d, e] = [
-      corpus[i]!,
-      corpus[i + 1]!,
-      corpus[i + 2]!,
-      corpus[i + 3]!,
-      corpus[i + 4]!,
-    ]
-    if (!isHangul(a) || !isHangul(b)) continue
-    if (isHangul(c) && isHangul(d)) increment(joined, a + b + c + d)
-    if (c === ' ' && isHangul(d) && isHangul(e)) increment(spaced, a + b + d + e)
+  for (let i = 0; i + 2 * n < corpus.length; i += 1) {
+    const left = corpus.slice(i, i + n)
+    if (!isAllHangul(left)) continue
+
+    // 붙어 나온 경우와, 사이에 공백 하나를 두고 나온 경우를 같은 열쇠로 센다.
+    const adjacent = corpus.slice(i + n, i + 2 * n)
+    if (isAllHangul(adjacent)) increment(joined, left + adjacent)
+
+    const afterSpace = corpus.slice(i + n + 1, i + 2 * n + 1)
+    if (corpus[i + n] === ' ' && isAllHangul(afterSpace)) increment(spaced, left + afterSpace)
   }
 
   return (leftTail, rightHead) => {
@@ -45,26 +45,18 @@ export function buildSeamOracle(corpus: string): SeamOracle {
   }
 }
 
-/** 판정 결과만 추린 표. 골든 픽스처가 원본 PDF 없이 같은 판정을 재현하는 데 쓴다. */
-export function oracleFromDecisions(decisions: Record<string, boolean>): SeamOracle {
-  return (leftTail, rightHead) => {
-    const key = seamKey(leftTail, rightHead)
-    return key === undefined ? false : (decisions[key] ?? false)
-  }
-}
-
 export function seamKey(leftTail: string, rightHead: string): string | undefined {
   const left = leftTail.replaceAll(' ', '').slice(-CONTEXT_LENGTH)
   const right = rightHead.slice(0, CONTEXT_LENGTH)
   if (left.length < CONTEXT_LENGTH || right.length < CONTEXT_LENGTH) return undefined
-  if (![...left, ...right].every(isHangul)) return undefined
+  if (!isAllHangul(left) || !isAllHangul(right)) return undefined
   return left + right
 }
 
-function isHangul(char: string): boolean {
-  return HANGUL_SYLLABLE.test(char)
+function isAllHangul(text: string) {
+  return text.length > 0 && [...text].every((char) => HANGUL_SYLLABLE.test(char))
 }
 
-function increment(counts: Map<string, number>, key: string): void {
+function increment(counts: Map<string, number>, key: string) {
   counts.set(key, (counts.get(key) ?? 0) + 1)
 }

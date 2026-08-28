@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { parseQuestion, type ParsedQuestion } from './parse-question.ts'
+import { parseQuestion, stripRestatedChoice, type ParsedQuestion } from './parse-question.ts'
 
 /**
  * 골든 픽스처 (`08-testing.md` 「1. 추출 파서」).
@@ -53,3 +53,112 @@ function normalize(question: ParsedQuestion): ParsedQuestion {
     rebuttals: question.rebuttals.map(({ key, text }) => ({ key, text: strip(text) })),
   }
 }
+
+/**
+ * 골든 픽스처가 덮지 못하는 분기. 합성 입력이라 저작권 자료가 없고, 원본 코퍼스에
+ * 표본이 하나뿐인 형태(키만 있는 선택지 줄)도 여기서 고정한다.
+ */
+describe('parseQuestion — 합성 입력', () => {
+  function block(lines: string[]) {
+    return parseQuestion({ id: 1, lines })
+  }
+
+  it('키만 있고 본문이 다음 줄부터인 선택지를 잡는다', () => {
+    const parsed = block([
+      '지문이다.',
+      '  A.',
+      '     첫째 안',
+      '  B. 둘째 안',
+      '   정답: A / 정답 및 해설',
+      '   정답 해설',
+      '   첫째가 맞다.',
+    ])
+
+    expect(parsed.choices).toEqual([
+      { key: 'A', text: '첫째 안' },
+      { key: 'B', text: '둘째 안' },
+    ])
+  })
+
+  it('들여쓰기가 흔들려도 선택지로 읽는다', () => {
+    const parsed = block([
+      '지문이다.',
+      ' A. 첫째 안',
+      '    B. 둘째 안',
+      '   정답: B / 정답 및 해설',
+      '   정답 해설',
+      '   둘째가 맞다.',
+    ])
+
+    expect(parsed.choices.map((choice) => choice.key)).toEqual(['A', 'B'])
+  })
+
+  it('코드 블록은 줄바꿈과 상대 들여쓰기를 남긴다', () => {
+    const parsed = block([
+      '아래 정책을 보라:',
+      '   {',
+      '       "Effect": "Allow",',
+      '       "Action": [',
+      '         "s3:GetObject"',
+      '       ]',
+      '   }',
+      '무엇이 문제인가?',
+      '  A. 첫째 안',
+      '  B. 둘째 안',
+      '   정답: A / 정답 및 해설',
+      '   정답 해설',
+      '   첫째가 맞다.',
+    ])
+
+    // 절대 들여쓰기는 PDF 여백에서 온 값이라 버리고, 상대 구조만 남는다.
+    expect(parsed.stem).toBe(
+      [
+        '아래 정책을 보라:',
+        '{',
+        '    "Effect": "Allow",',
+        '    "Action": [',
+        '      "s3:GetObject"',
+        '    ]',
+        '}',
+        '무엇이 문제인가?',
+      ].join('\n'),
+    )
+  })
+
+  it('절이 빠져도 앞뒤 절이 서로 먹지 않는다', () => {
+    const parsed = block([
+      '지문이다.',
+      '  A. 첫째 안',
+      '  B. 둘째 안',
+      '   정답: A / 정답 및 해설',
+      '   정답 해설',
+      '   첫째가 맞다.',
+    ])
+
+    expect(parsed.requirements).toEqual([])
+    expect(parsed.rebuttals).toEqual([])
+    expect(parsed.explanation).toBe('첫째가 맞다.')
+  })
+})
+
+describe('stripRestatedChoice', () => {
+  it('선택지 재기술을 떼고 반박만 남긴다', () => {
+    expect(stripRestatedChoice('첫째 안이다. 그래서 틀렸다.', '첫째 안이다.')).toBe(
+      '그래서 틀렸다.',
+    )
+  })
+
+  it('줄바꿈과 공백이 어긋나도 뗀다 — 두 곳의 줄바꿈 위치가 다르다', () => {
+    expect(stripRestatedChoice('첫째\n안이다. 그래서 틀렸다.', '첫째 안이다.')).toBe(
+      '그래서 틀렸다.',
+    )
+  })
+
+  it('재기술이 어긋나면 원문을 그대로 둔다 — 지우는 것보다 낫다', () => {
+    expect(stripRestatedChoice('다른 문장이다.', '첫째 안이다.')).toBe('다른 문장이다.')
+  })
+
+  it('선택지를 모르면 손대지 않는다', () => {
+    expect(stripRestatedChoice('반박이다.', undefined)).toBe('반박이다.')
+  })
+})

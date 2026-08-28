@@ -15,7 +15,13 @@
 import type { SeamOracle } from './seam-oracle.ts'
 
 const HANGUL_SYLLABLE = /[가-힣]/
-/** IAM 정책 같은 코드 블록. 7문항에 들어 있고 들여쓰기가 곧 의미다. */
+/**
+ * IAM 정책 같은 코드 블록. 들여쓰기가 곧 의미라 줄을 잇지 않는다.
+ *
+ * 느슨한 판정이다 — `"`로 시작하는 **산문** 줄도 걸린다. 현 코퍼스에서는 매칭
+ * 262줄이 전부 코드 블록을 가진 7문항 안에 있어 오인이 0건이다. v2에서 원본이
+ * 바뀌면 이 수를 다시 센다.
+ */
 const CODE_LINE = /^[{}[\]"]/
 
 export function joinWrappedLines(lines: string[], seamHasSpace: SeamOracle = neverSpace): string {
@@ -42,25 +48,25 @@ export function joinWrappedLines(lines: string[], seamHasSpace: SeamOracle = nev
   return chunks.join('\n')
 }
 
-function needsSpace(left: string, right: string, seamHasSpace: SeamOracle): boolean {
+function needsSpace(left: string, right: string, seamHasSpace: SeamOracle) {
   const isHangulSeam = HANGUL_SYLLABLE.test(left.at(-1)!) && HANGUL_SYLLABLE.test(right[0]!)
   return isHangulSeam ? seamHasSpace(left, right) : true
 }
 
-function neverSpace(): boolean {
+function neverSpace() {
   return false
 }
 
-function isCodeLine(line: string): boolean {
+function isCodeLine(line: string) {
   return CODE_LINE.test(line.trim())
 }
 
 /** 코드 줄의 절대 들여쓰기는 PDF 여백에서 온 값이라 의미가 없다. 상대 구조만 남긴다. */
-function minimumCodeIndent(lines: string[]): number {
+function minimumCodeIndent(lines: string[]) {
   const indents = lines.filter(isCodeLine).map(indentOf)
   return indents.length === 0 ? 0 : Math.min(...indents)
 }
 
-function indentOf(line: string): number {
+function indentOf(line: string) {
   return line.length - line.trimStart().length
 }

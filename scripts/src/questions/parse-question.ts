@@ -6,9 +6,9 @@ import type { SeamOracle } from './seam-oracle.ts'
 /**
  * 문항 블록 하나를 구조로 바꾼다 (`04-data-model.md` 「Question」).
  *
- * 블록은 항상 같은 순서다. 다만 뒤쪽 절은 문항에 따라 통째로 빠질 수 있다 —
- * 오답 해설이 없는 문항이 20개, 요구사항/조건이 없는 문항이 2개 있다.
- * 없는 절을 전제로 깔면 그 문항에서 앞뒤 절이 서로 먹는다.
+ * 블록은 항상 같은 순서다. 절이 빠져도 앞뒤 절이 서로 먹지 않게 만든다 —
+ * 헤딩을 못 찾으면 빈 구간으로 본다. 현 코퍼스에서는 1019문항 모두 세 절을
+ * 갖고 있어 이 경로를 타지 않지만, 방어를 걷으면 v2에서 조용히 깨진다.
  *
  *   <지문>
  *   A. <선택지> …
@@ -41,7 +41,9 @@ export type ParsedQuestion = {
 }
 
 export function parseQuestion(block: QuestionBlock, seamHasSpace?: SeamOracle): ParsedQuestion {
-  const join = (lines: string[]): string => joinWrappedLines(lines, seamHasSpace)
+  function join(lines: string[]) {
+    return joinWrappedLines(lines, seamHasSpace)
+  }
   const answerIndex = block.lines.findIndex((line) => ANSWER_LINE.test(line))
   if (answerIndex === -1) {
     throw new Error(`Q.${block.id}: 정답 줄을 찾지 못했다`)
@@ -67,9 +69,10 @@ export function parseQuestion(block: QuestionBlock, seamHasSpace?: SeamOracle): 
   }
 }
 
-function parseAnswer(line: string, id: number): ChoiceKey[] {
+function parseAnswer(line: string, id: number) {
   const matched = ANSWER_LINE.exec(line)
   if (!matched) throw new Error(`Q.${id}: 정답을 읽지 못했다`)
+  // ANSWER_LINE이 [A-F]만 통과시킨다.
   return matched[1]!.split(',').map((key) => key.trim() as ChoiceKey)
 }
 
@@ -87,18 +90,18 @@ type Join = (lines: string[]) => string
  * 표시 전용 필드이고(`04-data-model.md` 「Question」), 서로 다른 두 조건을
  * 잘못 이어 붙여 한 항목으로 만드는 것보다 낫다.
  */
-function parseRequirements(tail: string[], join: Join): string[] {
+function parseRequirements(tail: string[], join: Join) {
   const section = sliceSection(tail, REQUIREMENTS_HEADING, [EXPLANATION_HEADING, REBUTTALS_HEADING])
   return section
     .filter((line) => line.trim() && !VERDICT_LINE.test(line))
     .map((line) => join([line]))
 }
 
-function parseExplanation(tail: string[], join: Join): string {
+function parseExplanation(tail: string[], join: Join) {
   return join(sliceSection(tail, EXPLANATION_HEADING, [REBUTTALS_HEADING]))
 }
 
-function parseRebuttals(tail: string[], choices: Choice[], join: Join): Choice[] {
+function parseRebuttals(tail: string[], choices: Choice[], join: Join) {
   const section = sliceSection(tail, REBUTTALS_HEADING, [])
   const byKey = new Map(choices.map((choice) => [choice.key, choice.text]))
 
@@ -108,7 +111,7 @@ function parseRebuttals(tail: string[], choices: Choice[], join: Join): Choice[]
   }))
 }
 
-function withoutWhitespace(text: string): string {
+function withoutWhitespace(text: string) {
   return text.replaceAll(/\s/g, '')
 }
 
@@ -119,7 +122,7 @@ function withoutWhitespace(text: string): string {
  * 두 곳의 줄바꿈 위치가 달라 공백이 어긋난다. 코드 줄이 섞이면 줄바꿈까지 끼므로
  * 공백과 줄바꿈을 모두 지운 문자열로 대조한다.
  */
-function stripRestatedChoice(text: string, choiceText: string | undefined): string {
+export function stripRestatedChoice(text: string, choiceText: string | undefined): string {
   if (!choiceText) return text
 
   const target = withoutWhitespace(choiceText)
@@ -133,13 +136,14 @@ function stripRestatedChoice(text: string, choiceText: string | undefined): stri
 }
 
 /** `A. …` 로 시작하는 덩어리들. 다음 키가 나올 때까지가 한 덩어리다. */
-function collectKeyedBlocks(lines: string[]): Array<{ key: ChoiceKey; lines: string[] }> {
+function collectKeyedBlocks(lines: string[]) {
   const blocks: Array<{ key: ChoiceKey; lines: string[] }> = []
   let current: { key: ChoiceKey; lines: string[] } | undefined
 
   for (const line of lines) {
     const matched = CHOICE_LINE.exec(line)
     if (matched) {
+      // CHOICE_LINE이 [A-F]만 통과시킨다.
       current = { key: matched[1] as ChoiceKey, lines: matched[2] ? [matched[2]] : [] }
       blocks.push(current)
       continue
@@ -150,12 +154,12 @@ function collectKeyedBlocks(lines: string[]): Array<{ key: ChoiceKey; lines: str
   return blocks
 }
 
-function toChoice({ key, lines }: { key: ChoiceKey; lines: string[] }, join: Join): Choice {
+function toChoice({ key, lines }: { key: ChoiceKey; lines: string[] }, join: Join) {
   return { key, text: join(lines) }
 }
 
 /** `heading` 다음 줄부터 `stopAt` 중 하나가 나오기 전까지. heading이 없으면 빈 배열. */
-function sliceSection(lines: string[], heading: string, stopAt: string[]): string[] {
+function sliceSection(lines: string[], heading: string, stopAt: string[]) {
   const start = lines.findIndex((line) => line.trim() === heading)
   if (start === -1) return []
 

@@ -42,7 +42,7 @@ export function splitQuestionBlocks(rawText: string): QuestionBlock[] {
   return blocks
 }
 
-function trimBlankEdges(lines: string[]): string[] {
+function trimBlankEdges(lines: string[]) {
   let start = 0
   let end = lines.length
   while (start < end && lines[start]?.trim() === '') start += 1

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSeamOracle, oracleFromDecisions, seamKey } from './seam-oracle.ts'
+import { buildSeamOracle, seamKey } from './seam-oracle.ts'
 
 // 저작권 자료를 옮기지 않으려고 합성 코퍼스를 쓴다. 판정 논리만 본다.
 const CORPUS = [
@@ -33,13 +33,5 @@ describe('buildSeamOracle', () => {
 
   it('직전 어절의 끝 두 글자만 본다', () => {
     expect(seamHasSpace('아주 긴 앞말 가나', '다라')).toBe(true)
-  })
-})
-
-describe('oracleFromDecisions', () => {
-  it('판정표를 그대로 재현한다', () => {
-    const seamHasSpace = oracleFromDecisions({ 가나다라: true })
-    expect(seamHasSpace('가나', '다라')).toBe(true)
-    expect(seamHasSpace('마바', '사아')).toBe(false)
   })
 })

@@ -47,7 +47,7 @@ export function readPdfText(path: string): string {
   })
 }
 
-function requireSourcePdfDir(): string {
+function requireSourcePdfDir() {
   const dir = process.env.SOURCE_PDF_DIR
   if (!dir) {
     throw new Error(
