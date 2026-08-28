@@ -1,4 +1,10 @@
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { withRelatedProject } from '@vercel/related-projects'
+
+import { getQueryClient } from '@/shared/api/query-client'
+import { QueryBoundary } from '@/shared/ui/query-boundary'
+
+import { healthQuery } from '../api/health-query'
 
 import { HealthStatus } from './health-status'
 
@@ -13,10 +19,19 @@ export function HomePage() {
     defaultHost: process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL,
   })
 
+  const queryClient = getQueryClient()
+  // await하지 않는다 — pending 상태로 dehydrate돼 스트리밍으로 넘어간다.
+  // await하면 이 페이지의 첫 바이트가 api 응답을 기다린다.
+  void queryClient.prefetchQuery(healthQuery(apiUrl))
+
   return (
     <main>
       <h1>AWS SAA-C03 학습</h1>
-      <HealthStatus apiUrl={apiUrl} />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <QueryBoundary pending={<p>api 상태 확인 중…</p>}>
+          <HealthStatus apiUrl={apiUrl} />
+        </QueryBoundary>
+      </HydrationBoundary>
     </main>
   )
 }
