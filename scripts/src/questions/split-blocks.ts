@@ -6,12 +6,12 @@
  * 푸터 한 줄이 박힌다 (`08-testing.md` 골든 픽스처 「페이지 경계에 걸친 문항」).
  */
 
+import { stripPageBreaks } from '../text/page-decoration.ts'
+
 /** 문항 시작. 우측 정렬된 페이지 헤더가 같은 줄에 붙어 나온다. */
 const QUESTION_HEADING = /^Q\.\s*(\d{1,4})\s+SAA-C03 한국어\s*$/
 /** 페이지 푸터. `AWS SAA-C03 Korean Final · <날짜>    <N> / <총쪽>` */
 const PAGE_FOOTER = /^AWS SAA-C03 Korean Final · /
-/** pdftotext가 페이지마다 끼워 넣는 개행 문자. */
-const PAGE_BREAK = /\f/g
 
 export type QuestionBlock = {
   id: number
@@ -23,7 +23,7 @@ export function splitQuestionBlocks(rawText: string): QuestionBlock[] {
   const blocks: QuestionBlock[] = []
   let current: QuestionBlock | undefined
 
-  for (const line of rawText.replace(PAGE_BREAK, '').split('\n')) {
+  for (const line of stripPageBreaks(rawText).split('\n')) {
     if (PAGE_FOOTER.test(line)) continue
 
     const heading = QUESTION_HEADING.exec(line)
