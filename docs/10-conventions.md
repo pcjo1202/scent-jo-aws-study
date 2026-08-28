@@ -198,8 +198,9 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 | `eslint.config.base.mjs` | `typescript-eslint` recommended + `eslint-config-prettier/flat` |
 | `apps/web/eslint.config.mjs` | `eslint-config-next/core-web-vitals` + `/typescript` + `eslint-config-prettier/flat` + FSD zones |
 | `apps/api/eslint.config.mjs` | base + 타입 인지 규칙(`projectService`) |
+| `scripts/eslint.config.mjs` | base 그대로. 파서가 치명 영역이라 린트 대상에서 빼지 않는다 |
 
-`packages/shared`는 타입 20줄이라 설정을 두지 않는다. Next 16에서 `next lint`가 제거됐으므로 각 패키지 스크립트는 `eslint .` 이다.
+`packages/shared`는 타입 20줄이라 설정을 두지 않는다. `scripts`는 다르다 — `08-testing.md`의 치명 영역 4종 중 추출 파서가 여기 있어 린트가 닿지 않으면 안 된다. Next 16에서 `next lint`가 제거됐으므로 각 패키지 스크립트는 `eslint .` 이다.
 
 **web은 base를 펼치지 않는다.** `eslint-config-next/typescript`가 `typescript-eslint`의 base·eslint-recommended·recommended를 그대로 품고 있어, base까지 펼치면 `@typescript-eslint` 플러그인이 두 번 정의돼 flat config가 `Cannot redefine plugin`으로 죽는다. web은 next 설정에 prettier와 FSD zones만 얹는다. api는 next 설정이 없으므로 base를 그대로 펼친다.
 
@@ -239,7 +240,9 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 따라서 projects 분할이나 jsdom 환경이 필요 없다. 루트 `vitest.config.ts` 하나에 `environment: 'node'`, `include: ['apps/api/**/*.spec.ts', 'scripts/**/*.spec.ts']`, NestJS 데코레이터를 위해 `unplugin-swc`를 단다. 루트 스크립트는 `"test": "vitest run"` — turbo를 거치지 않는다.
 
-`passWithNoTests: true`를 config에 둔다. 치명 영역 4종이 전부 아직 없는 `apps/api`·`scripts`에 있어 지금은 대상이 0건인데, vitest는 0건을 **exit 1**로 취급해 `pnpm test`가 실패한다. **대가는 include 패턴이 깨져도 조용히 통과한다는 것**이다 — 실제 테스트가 들어온 뒤(SJO-4·SJO-12·SJO-14) 이 옵션을 빼는 것을 검토한다.
+`passWithNoTests`는 **두지 않는다.** vitest가 대상 0건을 **exit 1**로 취급하는 것이 여기서는 기능이다 — `include` 패턴이 깨지면 `pnpm test`가 조용히 통과하는 대신 실패한다. `exit 0`은 "통과"가 아니라 "오류 없음"이고, 0건 실행과 0건 실패는 똑같이 0을 준다.
+
+초기에는 치명 영역 4종이 전부 없어 대상이 0건이라 이 옵션을 켜 뒀으나, SJO-4 시점에 `apps/api`·`scripts` 양쪽에 실제 대상이 들어와 근거가 사라졌다 (2026-08-28).
 
 Jest를 쓰지 않는 이유는 러너가 둘로 갈리기 때문이다. Nest 공식 기본값이라는 이점이 있지만, `packages/shared`가 ESM(`type: module`)이라 Vitest 쪽이 마찰이 적다.
 

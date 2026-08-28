@@ -26,6 +26,7 @@
 | `DATABASE_URL` | api | **서버** | Supavisor 트랜잭션 풀러 `:6543` |
 | `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 인덱스를 받을 경로 |
 | `CORS_ALLOWED_ORIGINS` | api | 공개 | 쉼표 구분 |
+| `SOURCE_PDF_DIR` | scripts | 로컬 | `data:extract`가 읽을 원본 PDF 디렉터리. **기기마다 다르다.** 미설정이면 즉시 실패 |
 | `AWS_ACCESS_KEY_ID` | scripts | **로컬** | S3 업로드 전용 |
 | `AWS_SECRET_ACCESS_KEY` | scripts | **로컬** | 〃 |
 | `AWS_REGION` | scripts | 로컬 | `ap-northeast-2` |
@@ -93,6 +94,7 @@ DATA_BASE_URL=                      # CDN 경로. 랜덤 프리픽스 포함, �
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 # scripts/.env.example
+SOURCE_PDF_DIR=                     # 원본 PDF 디렉터리. 기기마다 다르므로 값은 비운다
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=ap-northeast-2

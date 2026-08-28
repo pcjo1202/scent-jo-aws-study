@@ -7,7 +7,5 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['apps/api/**/*.spec.ts', 'scripts/**/*.spec.ts'],
-    // 대상 0건이면 vitest는 exit 1이다 (docs/10 「테스트」).
-    passWithNoTests: true,
   },
 })
