@@ -42,7 +42,7 @@ export function ChoiceItem({
   return (
     <label
       aria-disabled={isDisabled}
-      className={`state-layer flex min-h-12 cursor-pointer items-start gap-3 rounded-corner-medium border border-outline px-4 py-3 text-body-large ${surfaceClass}`}
+      className={`choice-card state-layer cursor-pointer border border-outline ${surfaceClass}`}
     >
       <input
         type={isSingleAnswer(answerCount) ? 'radio' : 'checkbox'}

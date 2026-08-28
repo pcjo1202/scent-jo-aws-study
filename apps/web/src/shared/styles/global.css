@@ -256,6 +256,14 @@
   }
 
   /*
+   * 선택지 카드의 골격 (DESIGN.md 「선택지 · 기본」). 미채점 카드와 채점 후 카드가 같은
+   * 상자를 그려야 제출 전후로 줄이 밀리지 않는다. 색·테두리는 상태마다 다르므로 뺀다.
+   */
+  .choice-card {
+    @apply flex min-h-12 items-start gap-3 rounded-corner-medium px-4 py-3 text-body-large;
+  }
+
+  /*
    * 선택지의 숫자 키 힌트 (DESIGN.md 「선택지 · 키보드」). 폭만으로 가르면 터치 태블릿에도
    * 뜨는데, 키보드가 없는 기기에 단축키를 보여줄 이유가 없다.
    */

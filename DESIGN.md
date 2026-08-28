@@ -729,9 +729,11 @@ M3 컴포넌트 라이브러리를 쓰지 않으므로, 이 앱에 실제로 있
 | 내가 고른 **정답** | `correct-container` | — | `check_circle` (fill) | **정답** |
 | 내가 고른 **오답** | `error-container` | — | `cancel` (fill) | **내 선택** |
 | 안 고른 **정답** | `surface-container-low` | `correct` 2px | `check_circle` (fill) | **정답** |
-| 안 고른 오답 | `surface-container-low` | `outline-variant` | — | — |
+| 안 고른 오답 | `surface-container-low` | `outline` | — | — |
 
-마지막 경우는 글자를 `on-surface-variant`로 낮춰 시선에서 물러나게 한다.
+마지막 경우는 글자를 `on-surface-variant`로 낮춰 시선에서 물러나게 한다. **테두리로 물러나게 하지 않는다** — 미채점 카드와 같은 이유로 `outline`이다 (「선택지 · 기본」).
+
+앞의 두 경우는 면색이 경계를 대신하므로 테두리를 **투명하게** 둔다. 지우지 않는다 — 폭이 0이 되면 그 두 줄만 옆으로 벌어진다.
 
 **색·아이콘·텍스트가 항상 함께 간다.** 셋 중 하나만으로는 전달하지 않는다 (Foundations · Accessibility).
 
