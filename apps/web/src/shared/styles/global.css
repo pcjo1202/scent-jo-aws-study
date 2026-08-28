@@ -254,6 +254,20 @@
   .state-layer[aria-disabled='true'] {
     opacity: var(--sys-state-disabled-content-opacity);
   }
+
+  /*
+   * 선택지의 숫자 키 힌트 (DESIGN.md 「선택지 · 키보드」). 폭만으로 가르면 터치 태블릿에도
+   * 뜨는데, 키보드가 없는 기기에 단축키를 보여줄 이유가 없다.
+   */
+  .key-hint {
+    display: none;
+  }
+
+  @media (hover: hover) and (width >= theme(--breakpoint-expanded)) {
+    .key-hint {
+      display: inline;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

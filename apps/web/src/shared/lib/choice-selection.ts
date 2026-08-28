@@ -8,7 +8,8 @@ import type { ChoiceKey } from '@aws-study/shared'
  */
 type SelectionRule = { answerCount: number }
 
-function isSingleAnswer(answerCount: number) {
+/** "단일정답이란 무엇인가"를 한 곳에만 둔다 — 화면도 규칙도 이 함수를 부른다. */
+export function isSingleAnswer(answerCount: number): boolean {
   return answerCount === 1
 }
 
