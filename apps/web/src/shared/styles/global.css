@@ -209,7 +209,168 @@
 }
 
 /* 모션은 원래 셋뿐이지만, 그것도 원하지 않는 사용자가 있다 (DESIGN.md 「Motion」). */
+@layer components {
+  /*
+   * 상태 레이어 — `on-` 색을 낮은 불투명도로 덮는다 (DESIGN.md 「Interaction states」).
+   * 유틸이 아니라 CSS로 두는 이유: 불투명도가 `--sys-state-*` 토큰이라 Tailwind로 쓰면
+   * `opacity-[0.08]` 같은 임의값이 되는데 그건 린트가 막는 문법이다.
+   *
+   * `currentColor`를 덮으므로 요소의 글자색이 곧 레이어 색이다 — 선택지 카드는 `on-surface`,
+   * 채워진 버튼은 `on-primary`가 되어 조합마다 색을 따로 정의할 필요가 없다.
+   */
+  .state-layer {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .state-layer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity var(--sys-motion-duration-short2) var(--sys-motion-easing-standard);
+  }
+
+  /* 터치에서 hover가 남으면 직전에 누른 항목이 선택된 것처럼 보인다. */
+  @media (hover: hover) {
+    .state-layer:hover:not(:disabled, [aria-disabled='true'])::before {
+      opacity: var(--sys-state-hover-opacity);
+    }
+  }
+
+  /*
+   * focus는 레이어와 링 둘 다다. 링은 위 `:focus-visible`이 전역으로 담당한다.
+   *
+   * `:has(:focus-visible)`이 있어야 선택지 카드가 걸린다 — 카드는 `label`이라 자기가
+   * 포커스를 받지 않고 안쪽 `input`이 가져간다. 이것 없이는 DESIGN.md가 "주요 인터랙티브
+   * 요소"라고 부른 바로 그 카드에서만 focus 레이어가 죽는다.
+   */
+  .state-layer:focus-visible::before,
+  .state-layer:has(:focus-visible)::before {
+    opacity: var(--sys-state-focus-opacity);
+  }
+
+  .state-layer:active:not(:disabled, [aria-disabled='true'])::before {
+    opacity: var(--sys-state-pressed-opacity);
+  }
+
+  /*
+   * 천장: M3는 disabled를 컨테이너 0.12 / 내용 0.38로 가르는데 여기서는 요소 전체를 0.38로
+   * 낮춘다. 배경까지 함께 흐려지므로 복수정답에서 비활성이 되는 선택지 카드가 규격보다 더
+   * 물러난다. 2단으로 가르려면 면색과 글자색을 따로 잡아야 하는데, 그 조정은 실물을 보고
+   * 해야 한다 — 이 이슈에는 화면이 없으므로 SJO-20에서 판단한다.
+   */
+  .state-layer:disabled,
+  .state-layer[aria-disabled='true'] {
+    opacity: var(--sys-state-disabled-content-opacity);
+  }
+
+  /*
+   * 선택지 카드의 골격 (DESIGN.md 「선택지 · 기본」). 미채점 카드와 채점 후 카드가 같은
+   * 상자를 그려야 제출 전후로 줄이 밀리지 않는다. 색·테두리는 상태마다 다르므로 뺀다.
+   */
+  .choice-card {
+    @apply flex min-h-12 items-start gap-3 rounded-corner-medium px-4 py-3 text-body-large;
+  }
+
+  /*
+   * 하단 액션 바 (DESIGN.md 「하단 액션 바」). compact에서 고정하는 이유는 긴 지문을 다
+   * 스크롤해야 버튼에 닿는 것이 1019번 반복할 동작으로 부적절하기 때문이다. expanded에서는
+   * 읽기 칼럼이 짧아 그럴 이유가 없으므로 문서 흐름 안으로 돌아온다.
+   *
+   * 그림자를 쓰지 않는다 — 떠 있다는 신호는 상단 경계선이 담당한다 (「Styles · Elevation」).
+   * 높이 64px과 safe-area는 Tailwind 임의값이 되므로 여기 둔다.
+   */
+  .action-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    min-height: 64px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  @media (width >= theme(--breakpoint-expanded)) {
+    .action-bar {
+      position: static;
+      padding-bottom: 0;
+    }
+  }
+
+  /*
+   * 칩은 시각 높이와 터치 영역이 다르다 (DESIGN.md 「칩 · 시각 높이와 터치 영역이 다르다」).
+   * base 레이어가 모든 button에 걸어 둔 48px을 여기서 덮고, 넓혀야 할 것은 터치 영역뿐이므로
+   * 가상 요소로 뺀다. 칩을 48px로 키우면 카테고리 라벨이 본문을 밀어낸다.
+   */
+  .chip {
+    position: relative;
+    min-width: 0;
+    min-height: 32px;
+  }
+
+  .chip::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+
+  /*
+   * 오답 해설 아코디언 (DESIGN.md 「해설 블록 · ③ 오답 해설」). 네이티브 details를 쓰므로
+   * 열림 상태와 키보드 조작을 직접 구현하지 않는다. 높이 전환은 ::details-content를
+   * 지원하는 브라우저에서만 걸리고, 아니면 즉시 열린다 — 원칙 4와 어긋나지 않는 방향의 퇴화다.
+   */
+  .rebuttal summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .rebuttal summary {
+    list-style: none;
+  }
+
+  .rebuttal[open] summary .rebuttal-marker {
+    transform: rotate(180deg);
+  }
+
+  .rebuttal::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size var(--sys-motion-duration-short4) var(--sys-motion-easing-standard),
+      content-visibility var(--sys-motion-duration-short4) allow-discrete;
+    interpolate-size: allow-keywords;
+  }
+
+  .rebuttal[open]::details-content {
+    block-size: auto;
+  }
+
+  /*
+   * 선택지의 숫자 키 힌트 (DESIGN.md 「선택지 · 키보드」). 폭만으로 가르면 터치 태블릿에도
+   * 뜨는데, 키보드가 없는 기기에 단축키를 보여줄 이유가 없다.
+   */
+  .key-hint {
+    display: none;
+  }
+
+  @media (hover: hover) and (width >= theme(--breakpoint-expanded)) {
+    .key-hint {
+      display: inline;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  /*
+   * `::details-content`를 따로 적는다. 아래 `*, *::before, *::after`는 이 의사 요소를
+   * 잡지 못하는데, 하필 이 앱에서 유일하게 살아 있는 레이아웃 전환(오답 해설 아코디언)이
+   * 거기 걸려 있다 (DESIGN.md 「Styles · Motion」).
+   */
+  .rebuttal::details-content {
+    transition: none !important;
+  }
+
   *,
   *::before,
   *::after {

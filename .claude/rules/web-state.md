@@ -55,13 +55,22 @@ const { data, isLoading, isError } = useQuery(healthQuery(apiUrl))
 if (isLoading) return <Spinner />
 ```
 
-로딩·오류 경계는 `@/shared/ui/query-boundary`의 `QueryBoundary`가 세운다. 화면은 `pending`만 넘긴다.
+로딩·오류 경계는 `@/shared/ui/query-boundary`의 `QueryBoundary`가 세운다.
 
 ```tsx
-<QueryBoundary pending={<p>불러오는 중…</p>}>
+<QueryBoundary
+  pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+  errorMessage="api 상태를 불러오지 못했다"
+  canRetry
+>
   <HealthStatus apiUrl={apiUrl} />
 </QueryBoundary>
 ```
+
+- **`errorMessage`는 필수다.** 무엇을 못 불러왔는지는 화면만 안다. 「오류가 발생했습니다」로 때우지 않는다
+- **오류 표현을 함수 prop으로 받지 않는다.** 화면이 대부분 서버 컴포넌트인데 함수는 그 경계를 못 넘는다 — 함수로 열면 정작 화면이 아무것도 못 정하고 기본값만 쓴다
+- **액션은 `docs/02-features.md` 「API 오류의 화면 표현」이 정한다.** 403은 아무것도 넘기지 않고(재시도 유도 금지), 404는 `errorAction`에 목록 링크를, 5xx·네트워크는 `canRetry`를 준다
+- 예외 문자열을 화면에 옮기지 않는다. `QueryBoundary`가 `error`를 렌더하지 않는 이유다
 
 `useQuery`를 쓸 자리는 둘뿐이다. 그때는 이유를 주석으로 남긴다.
 
