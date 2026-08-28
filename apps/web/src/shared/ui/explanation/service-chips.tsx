@@ -3,6 +3,7 @@
 import { useId, useState } from 'react'
 
 import { Chip } from '@/shared/ui/chip'
+import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 
 /**
  * 해설 블록 ④ — **이것이 이 앱의 핵심 가치다.** 문제를 풀다 "EFS가 뭐였지"에서 흐름이
@@ -11,6 +12,10 @@ import { Chip } from '@/shared/ui/chip'
  *
  * 한 번에 하나만 펼친다. 여럿이 동시에 열리면 해설 아래가 다시 길어져서 ③에서 아코디언을
  * 쓴 이유가 무너진다.
+ *
+ * 펼침을 색으로 표시하지 않는다. `secondary-container`는 **선택된 선택지와 선택된 필터
+ * 칩에만** 배정돼 있고 (`DESIGN.md` 「Color · 역할 목록」), 이 칩은 필터가 아니라 노트
+ * 토글이다. 상태는 마커 회전과 `aria-expanded`가 나른다.
  */
 export function ServiceChips({ services }: { services: Array<{ name: string; note: string }> }) {
   const noteId = useId()
@@ -27,12 +32,15 @@ export function ServiceChips({ services }: { services: Array<{ name: string; not
         {services.map((service) => (
           <li key={service.name}>
             <Chip
-              isSelected={service.name === openName}
               aria-expanded={service.name === openName}
               aria-controls={noteId}
               onClick={() => setOpenName(service.name === openName ? null : service.name)}
             >
               {service.name}
+              <MaterialSymbol
+                name="expand_more"
+                className={`size-4 ${service.name === openName ? 'rotate-180' : ''}`}
+              />
             </Chip>
           </li>
         ))}

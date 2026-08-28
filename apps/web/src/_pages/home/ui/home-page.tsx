@@ -32,7 +32,11 @@ export function HomePage() {
     <main className="mx-auto flex max-w-reading flex-col gap-6 px-screen py-6">
       <h1>AWS SAA-C03 학습</h1>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <QueryBoundary pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}>
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="api 상태를 불러오지 못했다"
+          canRetry
+        >
           <HealthStatus apiUrl={apiUrl} />
         </QueryBoundary>
       </HydrationBoundary>

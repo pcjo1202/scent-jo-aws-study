@@ -2,6 +2,19 @@ import type { ChoiceKey } from '@aws-study/shared'
 
 import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 
+const SUMMARY_MAX_LENGTH = 40
+
+/**
+ * 헤더는 **첫 문장 앞부분**이다 (`DESIGN.md` 「③ 오답 해설」). CSS로 자르지 않는 이유는
+ * `line-clamp`가 시각 전용이라 DOM에 전문이 남기 때문이다 — 그러면 스크린리더가 펼침 버튼
+ * 이름으로 해설 전문을 읽고, 펼치면 같은 전문을 한 번 더 읽는다.
+ */
+function toSummary(text: string) {
+  if (text.length <= SUMMARY_MAX_LENGTH) return text
+
+  return `${text.slice(0, SUMMARY_MAX_LENGTH)}…`
+}
+
 /**
  * 해설 블록 ③ — **전부 펼쳐두지 않는다.** 오답 해설 4개가 한꺼번에 펼쳐지면 화면이 두 배로
  * 길어지고 정작 필요한 하나를 못 찾는다 (`DESIGN.md` 「해설 블록 · ③ 오답 해설」).
@@ -33,7 +46,7 @@ export function RebuttalAccordion({
         >
           <summary className="state-layer flex min-h-12 cursor-pointer items-center gap-3 rounded-corner-medium px-4 py-3 text-body-medium">
             <span>{rebuttal.key}</span>
-            <span className="line-clamp-1 flex-1">{rebuttal.text}</span>
+            <span className="flex-1">{toSummary(rebuttal.text)}</span>
             <MaterialSymbol name="expand_more" className="rebuttal-marker" />
           </summary>
           <p className="whitespace-pre-wrap px-4 pb-3 text-body-medium">{rebuttal.text}</p>

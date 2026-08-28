@@ -30,7 +30,9 @@ const fsdZones = Object.entries(LAYERS_ABOVE).map(([layer, above]) => ({
 //
 // `(?!:)`로 임의 **variant**는 통과시킨다 — `data-[state=open]:`·`[&>svg]:`는
 // 값이 아니라 선택자라 토큰 체계를 우회하지 않는다.
-const ARBITRARY_VALUE_PATTERN = String.raw`/(^|\s)[a-z][a-z0-9:_-]*-\[[^\]]+\](?!:)/`
+// 선행 하이픈(`-mt-[3px]`·`-z-[1]`)까지 받는다. 음수 유틸을 빼먹은 채로 "6건 중 6건"을
+// 세면 그 숫자가 목록의 완전성을 보증하는 것처럼 읽힌다 (2026-08-28 리뷰).
+const ARBITRARY_VALUE_PATTERN = String.raw`/(^|\s)-?[a-z][a-z0-9:_-]*-\[[^\]]+\](?!:)/`
 
 const NO_ARBITRARY_VALUE = {
   selector: [

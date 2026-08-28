@@ -9,9 +9,6 @@ const VARIANT_CLASS = {
 /**
  * 탭 타깃 48×48px는 `global.css`의 base 레이어가 모든 `button`에 이미 걸어 뒀다.
  * 여기서 다시 지정하지 않는다.
- *
- * 천장: disabled를 컨테이너 0.12 / 내용 0.38로 나누지 않고 전체 0.38로 낮춘다. M3는 둘을
- * 가르지만, 이 앱의 비활성 버튼은 하단 액션 바의 제출 하나뿐이라 차이가 보이는 자리가 없다.
  */
 export function Button({
   variant = 'text',
