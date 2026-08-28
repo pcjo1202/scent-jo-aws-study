@@ -20,18 +20,22 @@ const fsdZones = Object.entries(LAYERS_ABOVE).map(([layer, above]) => ({
 // 토큰을 벗어날 수 있는 경로는 이것 하나만 남는다 (docs/10 「스타일 저작」).
 // 플러그인을 얹지 않는 이유는 필요한 규칙이 이 하나뿐이기 때문이다.
 //
-// 자손 결합자여야 한다. 직계 자식(`>`)이면 `className="…"` 형태만 잡고,
-// `className={cond ? … : …}`·`className={cn(…)}`·템플릿 리터럴이 전부 빠져나간다.
-// 조건부 클래스는 선택지 카드의 상태 분기에서 기본형이 되므로 그쪽이 오히려 주 경로다.
+// `className` 안으로 범위를 좁히지 않는다. 좁히면 **클래스 문자열을 상수로 뽑는 순간**
+// 규칙이 꺼진다 — `const VARIANT_CLASS = { filled: 'bg-[#abc]' }`처럼 상태별 클래스를
+// 레코드로 두는 것은 컴포넌트에서 기본형이라 그쪽이 오히려 주 경로다.
+// 프로브 6건 중 4건만 잡히던 것을 6건으로 올린 변경이다 (SJO-18).
+//
+// 대신 유틸 모양을 요구한다 — `<접두사>-[값]`이어야 걸린다. `[값]` 하나만 보면
+// 배열 인덱싱이나 정규식 문자열까지 오탐한다.
 //
 // `(?!:)`로 임의 **variant**는 통과시킨다 — `data-[state=open]:`·`[&>svg]:`는
-// 값이 아니라 선택자라 토큰 체계를 우회하지 않는다. 아코디언이 전자를 쓰게 된다.
-const ARBITRARY_VALUE_PATTERN = String.raw`/\[[^\]]+\](?!:)/`
+// 값이 아니라 선택자라 토큰 체계를 우회하지 않는다.
+const ARBITRARY_VALUE_PATTERN = String.raw`/(^|\s)[a-z][a-z0-9:_-]*-\[[^\]]+\](?!:)/`
 
 const NO_ARBITRARY_VALUE = {
   selector: [
-    `JSXAttribute[name.name="className"] Literal[value=${ARBITRARY_VALUE_PATTERN}]`,
-    `JSXAttribute[name.name="className"] TemplateElement[value.raw=${ARBITRARY_VALUE_PATTERN}]`,
+    `Literal[value=${ARBITRARY_VALUE_PATTERN}]`,
+    `TemplateElement[value.raw=${ARBITRARY_VALUE_PATTERN}]`,
   ].join(', '),
   message:
     'Tailwind 임의값(예: p-[13px], bg-[#abc])을 쓰지 않는다. 필요한 값이 토큰에 없으면 DESIGN.md를 먼저 고친다. (data-[…]: 같은 임의 variant는 허용된다)',

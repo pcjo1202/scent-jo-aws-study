@@ -82,7 +82,8 @@ import { ChoiceList } from '@/shared/ui'
 **Tailwind v4 유틸로 쓴다.** `src/shared/styles/tokens.css`가 `--ref-*`/`--sys-*` 계층을 소유하고, `src/shared/styles/global.css`가 `@theme inline`으로 그것을 유틸에 노출한다. 고른 이유는 `docs/10-conventions.md` 「스타일 저작」.
 
 - **Tailwind 기본 팔레트·타입스케일·radius는 지워져 있다.** `bg-red-500`·`text-3xl`은 존재하지 않는 클래스다. 색은 역할 이름으로 부른다 — `bg-surface-container-low` · `text-on-surface-variant` · `border-outline-variant`
-- **임의값 문법을 쓰지 않는다.** `p-[13px]`·`bg-[#abc]`는 린트가 막는다 — 문자열·템플릿·`cn()` 인자 전부. 필요한 값이 토큰에 없으면 `DESIGN.md`를 먼저 고친다. 임의 *variant*(`data-[state=open]:`)는 값이 아니라 선택자라 허용된다
+- **임의값 문법을 쓰지 않는다.** `p-[13px]`·`bg-[#abc]`는 린트가 막는다 — `className` 안이든 **클래스 상수·레코드로 뽑아 뒀든** 파일 어디서나 걸린다 (`const VARIANT_CLASS = { … }`가 규칙을 우회하던 구멍은 SJO-18에서 막았다). 필요한 값이 토큰에 없으면 `DESIGN.md`를 먼저 고친다. 임의 *variant*(`data-[state=open]:`·`[&>svg]:`)는 값이 아니라 선택자라 허용된다
+- **토큰 값을 유틸로 못 쓰는 자리는 `global.css`의 `@layer components`로 내린다.** 상태 레이어 불투명도(`--sys-state-*`)·`env(safe-area-inset-bottom)`·칩의 터치 영역이 그렇다. 유틸로 쓰면 임의값이 되고, 그건 위 규칙이 막는 문법이다
 - **반응형 분기는 `medium:`(≥600) · `expanded:`(≥840) 둘뿐이다.** `compact`가 기본이라 접두사가 없다. Tailwind 기본 `sm:`·`md:`·`lg:`는 지워져 있다 — DESIGN.md 「window size class」와 겹치는 값이 하나도 없어서다
 - **`dark:` variant를 쓰지 않는다.** 색은 토큰 계층에서 뒤집힌다. 마크업에 다크 분기를 만들면 그 자리만 테마를 두 벌 관리하게 된다
 - 타입스케일은 역할 클래스 하나가 크기·행간·굵기·자간을 다 나른다 — `text-body-large` 하나면 되고 `leading-*`·`font-*`를 덧붙이지 않는다
