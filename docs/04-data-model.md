@@ -215,7 +215,7 @@ PART 3은 서술 위주라 구조를 얕게 잡는다. 과도한 구조화는 �
 ## 추출 파이프라인
 
 ```
-pnpm data:extract    PDF → data/           (로컬, gitignored)
+pnpm data:extract    SOURCE_PDF_DIR → data/   (둘 다 로컬, gitignored)
 pnpm data:verify     스키마·개수·분포 검증
 pnpm data:publish    manifest 생성 → S3 업로드
 pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
@@ -224,6 +224,12 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 **anatomy는 optional 자산이다.** 자산화(E2)가 미완이면 `data:publish`가 anatomy를 제외하고 올리고, `data:verify`도 문제·노트만으로 통과한다. anatomy가 완성되면 다음 버전(v2 등)에 포함해 올린다. `/anatomy` 화면(E7)은 anatomy가 포함된 데이터 버전부터 동작한다 — v1 배포와 E5~E8은 판독 완료를 기다리지 않는다.
 
 ### data:extract
+
+**입력은 `scripts/.env`의 `SOURCE_PDF_DIR`이 가리키는 디렉터리다.** 없으면 즉시 실패한다 (2026-08-28 결정, SJO-4).
+
+원본 PDF는 저작권 자료라 레포에 두지 않고 기기마다 로컬 경로가 다르다 (`MEMORY.md` 「데이터」). 레포 안에 사본을 만들면 저작권 자료가 하나 더 생기고 원본과 갈라진다. 레포 내 고정 경로를 폴백으로 두지도 않는다 — 아무도 쓰지 않는 경로가 하나 늘 뿐이다.
+
+디렉터리 안에서 파일을 고르는 기준은 `01-requirements.md` 「자료 구성」의 **번호 접두사**다 (`4.`·`5.` = 문제은행, `3.` = 모바일 노트). 그 번호가 자료를 지칭하는 정본이다.
 
 | 대상 | 방법 |
 |---|---|
