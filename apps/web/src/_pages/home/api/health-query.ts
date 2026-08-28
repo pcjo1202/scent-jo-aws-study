@@ -17,8 +17,8 @@ export const healthKeys = {
 export function healthQuery(apiUrl: string) {
   return queryOptions({
     queryKey: healthKeys.byApiUrl(apiUrl),
-    queryFn: async (): Promise<HealthResponse> => {
-      const response = await fetch(`${apiUrl}/health`)
+    queryFn: async ({ signal }): Promise<HealthResponse> => {
+      const response = await fetch(`${apiUrl}/health`, { signal })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }

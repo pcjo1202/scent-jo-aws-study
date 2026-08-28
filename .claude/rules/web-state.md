@@ -63,7 +63,12 @@ if (isLoading) return <Spinner />
 </QueryBoundary>
 ```
 
-`useQuery`를 쓸 자리는 **로딩 중에도 이전 데이터를 계속 보여줘야 하는 경우**(필터 전환 등)뿐이다. 그때는 이유를 주석으로 남긴다.
+`useQuery`를 쓸 자리는 둘뿐이다. 그때는 이유를 주석으로 남긴다.
+
+- **로딩 중에도 이전 데이터를 계속 보여줘야 하는 경우** (필터 전환 등) — `useSuspenseQuery`는 `placeholderData`를 받지 않는다
+- **조건이 갖춰지기 전에는 돌면 안 되는 경우** — `useSuspenseQuery`는 `enabled`를 받지 않는다. `skipToken`으로도 못 피한다 (`queryFn`에서 `SkipToken`이 `Exclude`돼 있다)
+
+둘 다 `UseSuspenseQueryOptions`가 `UseQueryOptions`에서 `queryFn`·`enabled`·`throwOnError`·`placeholderData`를 `OmitKeyof`하기 때문이다.
 
 ## 서버 컴포넌트는 prefetch로 넘긴다
 

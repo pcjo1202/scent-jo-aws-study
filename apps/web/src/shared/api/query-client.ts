@@ -3,7 +3,7 @@ import { defaultShouldDehydrateQuery, environmentManager, QueryClient } from '@t
 // 하이드레이션 직후 같은 데이터를 곧바로 다시 받지 않을 만큼의 최소 신선도.
 const DEFAULT_STALE_TIME_MS = 60_000
 
-function makeQueryClient(): QueryClient {
+function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: { staleTime: DEFAULT_STALE_TIME_MS },
