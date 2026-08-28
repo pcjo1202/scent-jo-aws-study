@@ -31,8 +31,8 @@ _최종 갱신: 2026-08-28_
 | 항목 | 상태 |
 |---|---|
 | CDN 배포 버전 | 없음 |
-| 로컬 `data/` | 없음 |
-| 원본 PDF 위치 | `~/Downloads/AWS_SAA` (로컬만) |
+| 로컬 `data/` | `questions.json` 1019문항 (3.0MB). `data:extract` 산출물 |
+| 원본 PDF 위치 | `~/Downloads/AWS_SAA` (로컬만). `scripts/.env`의 `SOURCE_PDF_DIR`이 가리킨다 |
 | 해부서 판독 진행 | **0 / 61쪽** — PART 1·2·3 전부 미판독 |
 
 ## 데이터베이스
