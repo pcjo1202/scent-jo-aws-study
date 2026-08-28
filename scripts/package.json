@@ -2,5 +2,20 @@
   "name": "@aws-study/scripts",
   "version": "0.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "extract": "node --env-file=.env src/extract.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@aws-study/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.2",
+    "eslint": "^9.39.5",
+    "typescript-eslint": "^8.68.0",
+    "eslint-config-prettier": "^10.1.8"
+  }
 }

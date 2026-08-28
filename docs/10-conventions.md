@@ -198,8 +198,9 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 | `eslint.config.base.mjs` | `typescript-eslint` recommended + `eslint-config-prettier/flat` |
 | `apps/web/eslint.config.mjs` | `eslint-config-next/core-web-vitals` + `/typescript` + `eslint-config-prettier/flat` + FSD zones |
 | `apps/api/eslint.config.mjs` | base + 타입 인지 규칙(`projectService`) |
+| `scripts/eslint.config.mjs` | base 그대로. 파서가 치명 영역이라 린트 대상에서 빼지 않는다 |
 
-`packages/shared`는 타입 20줄이라 설정을 두지 않는다. Next 16에서 `next lint`가 제거됐으므로 각 패키지 스크립트는 `eslint .` 이다.
+`packages/shared`는 타입 20줄이라 설정을 두지 않는다. `scripts`는 다르다 — `08-testing.md`의 치명 영역 4종 중 추출 파서가 여기 있어 린트가 닿지 않으면 안 된다. Next 16에서 `next lint`가 제거됐으므로 각 패키지 스크립트는 `eslint .` 이다.
 
 **web은 base를 펼치지 않는다.** `eslint-config-next/typescript`가 `typescript-eslint`의 base·eslint-recommended·recommended를 그대로 품고 있어, base까지 펼치면 `@typescript-eslint` 플러그인이 두 번 정의돼 flat config가 `Cannot redefine plugin`으로 죽는다. web은 next 설정에 prettier와 FSD zones만 얹는다. api는 next 설정이 없으므로 base를 그대로 펼친다.
 
