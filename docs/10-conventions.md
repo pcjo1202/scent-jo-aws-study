@@ -11,6 +11,7 @@
 |---|---|---|
 | 범용 코드 규약 — 함수 선언문·네이밍·SSOT·매직넘버·early return·helper·주석·에러·타입 | `.claude/rules/code-conventions.md` | `**/*.{ts,tsx,mjs}`를 읽을 때 자동 |
 | web 규칙 — FSD 레이어·배럴 금지·`'use client'`·토큰 | `apps/web/CLAUDE.md` | `apps/web` 파일을 읽을 때 자동 |
+| web 상태 관리 — 4단 경계·`queryOptions`·키 팩토리·suspense | `.claude/rules/web-state.md` | `apps/web/**/*.{ts,tsx}`를 읽을 때 자동 |
 | api 규칙 — 모듈 배치·전역 가드·DTO·오류 응답 | `apps/api/CLAUDE.md` | `apps/api` 파일을 읽을 때 자동 |
 | 결정의 근거 | 이 문서 | 사람이 펼침 |
 
@@ -70,6 +71,40 @@ ESLint `import/no-restricted-paths`의 zone으로 레이어 방향을 막는다.
 web만 `@/*` → `apps/web/src/*` 하나를 둔다. 레이어별 별칭을 만들지 않는 이유는 `import/no-restricted-paths`의 zone이 실제 경로 기준이라, 별칭이 늘면 경계 검사가 새어 나가기 때문이다.
 
 api·scripts는 별칭을 두지 않는다. 모듈 트리가 얕아 상대경로로 충분하고, 별칭을 붙이면 SWC와 Vitest 양쪽에 해석 설정을 중복으로 넣어야 한다.
+
+## 상태 관리 — 왜 4단으로 가르나
+
+규칙 자체는 `.claude/rules/web-state.md`에 있다. 여기엔 그 경계를 그렇게 그은 이유만 적는다.
+
+경계가 없으면 화면마다 로딩·에러 분기를 새로 짜게 된다. **이 규약의 동기는 기능이 아니라 보일러플레이트 제거다.**
+
+### 왜 TanStack Query인가
+
+`docs/02-features.md`가 요구하는 것이 캐시·재시도·무효화다 — 오답 복습 세트는 제출할 때마다 갱신되고, 대시보드 통계는 여러 화면에서 같은 값을 본다. 이걸 `useEffect` + `useState`로 각자 짜면 화면 수만큼 같은 코드가 생긴다. Redux/Zustand 계열은 **서버 데이터를 클라이언트 상태로 복사**하게 만들어 캐시가 둘이 되고, 그 순간부터 동기화가 사람 일이 된다.
+
+`fetch` + Next 캐시만으로 가지 않는 이유는 **클라이언트 상호작용 후의 갱신** 때문이다. 답안 제출 → 진도·통계 무효화는 서버 캐시 태그로도 되지만, 그러려면 상호작용마다 서버 왕복이 생긴다.
+
+### 왜 suspense가 기본인가
+
+`useQuery` + `isLoading`/`isError` 분기는 화면 9개에 그대로 9번 복제된다. `useSuspenseQuery`는 `data`가 항상 있는 타입을 주므로 **분기 자체가 사라지고**, 로딩·오류 표현이 경계 컴포넌트 한 곳으로 모인다. `docs/02`의 「정적 데이터(CDN) 실패」가 요구하는 "오류 + 재시도"도 그 한 곳에서 구현된다.
+
+대가는 **폭포수 위험**이다. 형제 컴포넌트가 각자 suspend하면 순차 로딩이 된다. 그래서 서버 컴포넌트가 `prefetchQuery`로 요청을 먼저 띄운다 — 병렬로 출발하고, 클라이언트는 이미 나간 요청을 이어받는다.
+
+`prefetchQuery`를 `await`하지 않는 것은 TTFB 때문이다. `await`하면 페이지 첫 바이트가 api 응답을 기다린다. 대신 `dehydrate`에 pending 쿼리를 포함시켜 스트리밍으로 넘긴다.
+
+### 왜 `getQueryClient`가 `_app`이 아니라 `shared/api`인가
+
+프로바이더는 `_app`이 맞다. 그러나 **`_pages`의 서버 컴포넌트가 prefetch를 위해 같은 클라이언트 팩토리를 부른다.** FSD 경계상 `_pages`는 `_app`을 가져올 수 없고, `import/no-restricted-paths`가 이를 막는다. 팩토리를 `shared/api`로 내리면 프로바이더(`_app`)와 prefetch(`_pages`)가 둘 다 아래로만 가져온다.
+
+### 왜 Jotai를 지금 설치하지 않나
+
+경계는 정하되 **의존성은 첫 사용처가 생길 때 넣는다.** 착수 시점에 전역 UI 상태가 0곳이라, 지금 설치하면 사용처 없는 dependency가 lockfile에 남는다. 4단 경계에서 Jotai 칸을 비워두지 않는 이유는, 규칙이 없으면 그 자리가 Query나 Context로 잘못 채워지기 때문이다.
+
+Jotai를 고른 이유는 **Provider 없이 동작**해서다. Zustand도 가볍지만 store 파일을 만들어야 하고, Context는 값이 바뀔 때마다 구독 트리 전체가 리렌더된다. atom 하나가 곧 상태 하나인 쪽이 이 앱 규모에서 가장 적게 쓴다.
+
+### 왜 오프라인 제출 큐는 Query가 아닌가
+
+`docs/02-features.md` 「백엔드 요청 실패」가 `localStorage` 큐 + `POST /attempts/batch` 재전송을 이미 구체적으로 정했다. 요구가 **탭을 닫아도 살아남는 지속 큐**인데 Query의 mutation 캐시는 메모리다. persister를 붙이면 되지만, 그건 명세가 정한 것보다 큰 장치를 들이는 것이다. Query는 조회 캐시를 맡고 큐는 명세대로 따로 만든다 (SJO-22).
 
 ## apps/api — 왜 Nest 기본 모듈 구조인가
 
