@@ -44,9 +44,10 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 |---|---|
 | `.claude/rules/code-conventions.md` | TS·TSX·mjs를 읽을 때 — 함수 선언문·네이밍·SSOT·매직넘버·early return·주석·에러·타입 |
 | `apps/web/CLAUDE.md` | `apps/web` 파일을 읽을 때 — FSD 레이어·배럴 금지·`'use client'` |
+| `.claude/rules/web-state.md` | `apps/web`의 TS·TSX를 읽을 때 — 4단 경계·`queryOptions`·키 팩토리·suspense 기본 |
 | `apps/api/CLAUDE.md` | `apps/api` 파일을 읽을 때 — 모듈 배치·전역 가드·DTO·오류 응답 |
 
-규칙을 추가할 곳은 이 셋 중 하나다. 이 파일은 **전역에 걸리는 것만** 담는다.
+규칙을 추가할 곳은 이 넷 중 하나다. 이 파일은 **전역에 걸리는 것만** 담는다.
 
 ## 어기기 쉬운 규칙
 
