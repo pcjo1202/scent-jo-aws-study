@@ -82,8 +82,10 @@ M3 원본은 `md.sys.color.surface` 형태다. 우리는 단일 제품이라 `md
 --ref-{palette}-{tone}          --ref-neutral-10
 --sys-color-{role}              --sys-color-on-surface
 --sys-typescale-{role}-{prop}   --sys-typescale-body-large-size
---sys-shape-{size}              --sys-shape-medium
+--sys-shape-corner-{size}       --sys-shape-corner-medium
 --sys-state-{state}-opacity     --sys-state-hover-opacity
+--sys-motion-duration-{step}    --sys-motion-duration-short2
+--sys-motion-easing-{name}      --sys-motion-easing-standard
 --comp-{component}-{prop}       --comp-choice-container-color
 ```
 
@@ -281,7 +283,7 @@ M3의 색 역할을 그대로 쓴다. 명명은 `--sys-color-<role>`이고, **�
 | 그룹 | 역할 |
 |---|---|
 | Primary | `primary` · `primary-container` |
-| Secondary | `secondary` · `secondary-container` |
+| Secondary | `secondary-container` |
 | Error | `error` · `error-container` |
 | **Correct** *(확장)* | `correct` · `correct-container` |
 | Neutral | `surface` · `surface-variant` |
@@ -289,6 +291,8 @@ M3의 색 역할을 그대로 쓴다. 명명은 `--sys-color-<role>`이고, **�
 | Outline | `outline` · `outline-variant` |
 
 **Tertiary를 쓰지 않는다.** 세 번째 강조색이 필요한 화면이 없다. 역할을 정의해두면 결국 아무 데나 쓰이게 된다.
+
+**같은 이유로 bare `secondary`도 두지 않는다.** 이 앱에서 secondary 계열이 쓰이는 곳은 선택된 선택지와 선택된 필터 칩뿐이고 둘 다 `secondary-container` / `on-secondary-container` 쌍이다. 강조색으로서의 `secondary`는 쓸 자리가 없다.
 
 surface container 계열의 내용색은 전부 `on-surface` 또는 `on-surface-variant`를 쓴다. M3 규약 그대로다.
 

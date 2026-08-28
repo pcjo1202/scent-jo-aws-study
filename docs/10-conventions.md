@@ -106,6 +106,50 @@ Jotai를 고른 이유는 **Provider 없이 동작**해서다. Zustand도 가볍
 
 `docs/02-features.md` 「백엔드 요청 실패」가 `localStorage` 큐 + `POST /attempts/batch` 재전송을 이미 구체적으로 정했다. 요구가 **탭을 닫아도 살아남는 지속 큐**인데 Query의 mutation 캐시는 메모리다. persister를 붙이면 되지만, 그건 명세가 정한 것보다 큰 장치를 들이는 것이다. Query는 조회 캐시를 맡고 큐는 명세대로 따로 만든다 (SJO-22).
 
+## 스타일 저작 — 왜 Tailwind v4 + `@theme inline`인가
+
+값과 규칙은 `DESIGN.md`가 소유한다. 여기엔 **그 값을 무엇으로 써서 화면에 올리는가**의 근거만 적는다.
+
+### 토큰 계층은 Tailwind 바깥에 둔다
+
+`--ref-*` / `--sys-*`는 `apps/web/src/shared/styles/tokens.css`에 **순수 CSS 커스텀 프로퍼티**로 있다. Tailwind는 그 위에 얹히는 소비자일 뿐이다.
+
+이 순서를 뒤집지 않는 이유는 `DESIGN.md`가 **팔레트 교체 경로를 reference 계층 하나로 한정**했기 때문이다. Material Theme Builder가 뱉는 것도 CSS 변수다. 토큰을 Tailwind 설정 안에 넣으면 교체가 프레임워크 마이그레이션이 된다.
+
+### `@theme`이 아니라 `@theme inline`이다
+
+색 역할은 `[data-theme='dark']`에서 재매핑된다. 일반 `@theme`은 값을 자기 변수로 한 번 복사하므로 `:root` 시점의 라이트 값이 굳고 다크 전환을 따라가지 못한다. `@theme inline`은 `var(--sys-color-*)`를 유틸에 그대로 심어 참조가 살아 있다.
+
+**결과적으로 `dark:` variant를 한 번도 쓰지 않는다.** 색이 토큰 계층에서 뒤집히므로 마크업에 다크 분기가 생기지 않는다 — `DESIGN.md`가 3계층 토큰을 고른 이유가 이 지점에서 회수된다.
+
+### 왜 유틸 프레임워크인가 — 네임스페이스 리셋
+
+`DESIGN.md`의 핵심 제약은 "임의 색·임의 크기·임의 간격을 쓰지 않는다"이고, 유틸 프레임워크는 보통 그 제약과 충돌한다. 여기서는 반대로 **강제 수단**이 된다.
+
+```css
+@theme {
+  --color-*: initial;   /* bg-red-500 이 존재하지 않는 클래스가 된다 */
+  --text-*: initial;    /* text-3xl 도 마찬가지 */
+  --radius-*: initial;
+}
+```
+
+기본 팔레트·스케일을 통째로 지우고 `--sys-*`에서 파생된 것만 남기면, **토큰 밖의 값은 타이핑할 수 없다.** 리뷰가 잡아야 할 일을 빌드가 잡는다. 타입스케일은 `--text-{role}`에 `--line-height`·`--font-weight`·`--letter-spacing` 세 모디파이어가 붙어 한 클래스가 네 속성을 다 나르므로, 「우리 스케일」 8역할이 유틸 8개로 1:1 대응한다.
+
+간격은 설정할 것이 없다. Tailwind 기본 `--spacing`이 4px라 `p-1·2·3·4·6·8·12`가 곧 `DESIGN.md`의 4dp 그리드(4·8·12·16·24·32·48)다.
+
+남는 구멍은 임의값 문법(`bg-[#abc]`·`p-[13px]`) 하나뿐이라 `apps/web/eslint.config.mjs`의 `no-restricted-syntax`로 막는다. 규칙이 하나뿐이라 Tailwind 린트 플러그인을 얹지 않는다.
+
+### 기각한 것
+
+| | 왜 |
+|---|---|
+| CSS Modules | 임의값을 막을 수단이 리뷰뿐이다. 위의 네임스페이스 리셋에 해당하는 장치가 없다 |
+| vanilla-extract·CSS-in-JS | 토큰이 이미 CSS 변수라 런타임·빌드타임 스타일 엔진이 얹을 값이 없다 |
+| Tailwind 설정에 팔레트 직접 정의 | 다크 재매핑과 팔레트 교체 경로가 둘 다 프레임워크 안으로 들어간다 |
+
+스캔 루트는 `@import 'tailwindcss' source('../../..')`로 못 박는다. Tailwind의 기본 스캔 기준이 **cwd**라 turbo가 레포 루트에서 돌면 `apps/web`을 통째로 놓친다.
+
 ## apps/api — 왜 Nest 기본 모듈 구조인가
 
 Nest가 프레임워크 수준에서 정하는 건 **CLI 관용**뿐이다 — 모듈 하나에 폴더 하나, `.module`·`.controller`·`.service` 점 접미사. FSD처럼 레이어 간 의존 방향을 규정하지는 않는다. 그 위 아키텍처는 커뮤니티 선택이고 크게 셋이다.

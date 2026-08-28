@@ -79,6 +79,13 @@ import { ChoiceList } from '@/shared/ui'
 
 `DESIGN.md`가 정의한 `--sys-*` 토큰과 4dp 그리드 값만 쓴다. 임의 색·임의 간격을 쓰지 않는다. 색 역할은 `on-` 쌍으로 가져와 대비가 깨지지 않게 한다.
 
+**Tailwind v4 유틸로 쓴다.** `src/shared/styles/tokens.css`가 `--ref-*`/`--sys-*` 계층을 소유하고, `src/shared/styles/global.css`가 `@theme inline`으로 그것을 유틸에 노출한다. 고른 이유는 `docs/10-conventions.md` 「스타일 저작」.
+
+- **Tailwind 기본 팔레트·타입스케일·radius는 지워져 있다.** `bg-red-500`·`text-3xl`은 존재하지 않는 클래스다. 색은 역할 이름으로 부른다 — `bg-surface-container-low` · `text-on-surface-variant` · `border-outline-variant`
+- **임의값 문법을 쓰지 않는다.** `p-[13px]`·`bg-[#abc]`는 린트가 막는다. 필요한 값이 토큰에 없으면 `DESIGN.md`를 먼저 고친다
+- **`dark:` variant를 쓰지 않는다.** 색은 토큰 계층에서 뒤집힌다. 마크업에 다크 분기를 만들면 그 자리만 테마를 두 벌 관리하게 된다
+- 타입스케일은 역할 클래스 하나가 크기·행간·굵기·자간을 다 나른다 — `text-body-large` 하나면 되고 `leading-*`·`font-*`를 덧붙이지 않는다
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
