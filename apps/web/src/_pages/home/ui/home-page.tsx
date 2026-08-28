@@ -3,6 +3,7 @@ import { withRelatedProject } from '@vercel/related-projects'
 
 import { getQueryClient } from '@/shared/api/query-client'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
+import { StatusBanner } from '@/shared/ui/status-banner'
 import { ThemeToggle } from '@/shared/ui/theme-toggle'
 
 import { healthQuery } from '../api/health-query'
@@ -31,7 +32,7 @@ export function HomePage() {
     <main className="mx-auto flex max-w-reading flex-col gap-6 px-screen py-6">
       <h1>AWS SAA-C03 학습</h1>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <QueryBoundary pending={<p>api 상태 확인 중…</p>}>
+        <QueryBoundary pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}>
           <HealthStatus apiUrl={apiUrl} />
         </QueryBoundary>
       </HydrationBoundary>

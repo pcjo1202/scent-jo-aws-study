@@ -209,6 +209,53 @@
 }
 
 /* 모션은 원래 셋뿐이지만, 그것도 원하지 않는 사용자가 있다 (DESIGN.md 「Motion」). */
+@layer components {
+  /*
+   * 상태 레이어 — `on-` 색을 낮은 불투명도로 덮는다 (DESIGN.md 「Interaction states」).
+   * 유틸이 아니라 CSS로 두는 이유: 불투명도가 `--sys-state-*` 토큰이라 Tailwind로 쓰면
+   * `opacity-[0.08]` 같은 임의값이 되는데 그건 린트가 막는 문법이다.
+   *
+   * `currentColor`를 덮으므로 요소의 글자색이 곧 레이어 색이다 — 선택지 카드는 `on-surface`,
+   * 채워진 버튼은 `on-primary`가 되어 조합마다 색을 따로 정의할 필요가 없다.
+   */
+  .state-layer {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .state-layer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity var(--sys-motion-duration-short2) var(--sys-motion-easing-standard);
+  }
+
+  /* 터치에서 hover가 남으면 직전에 누른 항목이 선택된 것처럼 보인다. */
+  @media (hover: hover) {
+    .state-layer:hover:not(:disabled, [aria-disabled='true'])::before {
+      opacity: var(--sys-state-hover-opacity);
+    }
+  }
+
+  /* focus는 레이어와 링 둘 다다. 링은 위 `:focus-visible`이 전역으로 담당한다. */
+  .state-layer:focus-visible::before {
+    opacity: var(--sys-state-focus-opacity);
+  }
+
+  .state-layer:active:not(:disabled, [aria-disabled='true'])::before {
+    opacity: var(--sys-state-pressed-opacity);
+  }
+
+  .state-layer:disabled,
+  .state-layer[aria-disabled='true'] {
+    opacity: var(--sys-state-disabled-content-opacity);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

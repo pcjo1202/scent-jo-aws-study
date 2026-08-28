@@ -55,13 +55,15 @@ const { data, isLoading, isError } = useQuery(healthQuery(apiUrl))
 if (isLoading) return <Spinner />
 ```
 
-로딩·오류 경계는 `@/shared/ui/query-boundary`의 `QueryBoundary`가 세운다. 화면은 `pending`만 넘긴다.
+로딩·오류 경계는 `@/shared/ui/query-boundary`의 `QueryBoundary`가 세운다. 화면은 `pending`만 넘기면 되고, 오류 fallback은 기본값(「불러오지 못했다」 + 「다시 시도」)이 받는다.
 
 ```tsx
-<QueryBoundary pending={<p>불러오는 중…</p>}>
+<QueryBoundary pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}>
   <HealthStatus apiUrl={apiUrl} />
 </QueryBoundary>
 ```
+
+**상태 코드로 갈라야 하면 `fallback`을 넘긴다.** `docs/02-features.md` 「API 오류의 화면 표현」이 403에는 재시도를 금지하고 404는 목록으로 돌려보내라고 한다. `fallback`은 `error`를 받지만 **그 값을 화면에 렌더하지 않는다** — 분기에만 쓴다.
 
 `useQuery`를 쓸 자리는 둘뿐이다. 그때는 이유를 주석으로 남긴다.
 
