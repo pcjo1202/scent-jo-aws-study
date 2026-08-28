@@ -113,6 +113,9 @@
  * 다크에서 재매핑되지 않으므로 아래 [data-theme] 블록에 나타나지 않는다.
  * ───────────────────────────────────────────────────────────── */
 :root {
+  /* 화면은 reference를 직접 참조하지 않는다. 타입페이스도 예외를 두지 않는다. */
+  --sys-typescale-font-plain: var(--ref-typeface-plain);
+
   /* 타입스케일 — DESIGN.md 「Typography · 우리 스케일」의 8역할만 만든다.
      M3 15개 중 display-*, headline-large/medium, title-large, label-small은
      「쓰지 않는 역할」이라 정의하지 않는다 — 정의하면 결국 쓰이게 된다.
@@ -169,10 +172,13 @@
   --sys-shape-corner-extra-large: 28px;
   --sys-shape-corner-full: 9999px;
 
-  /* 상태 레이어 불투명도 — M3 값 그대로. dragged(0.16)는 이 앱에 드래그가 없어 빼둔다. */
+  /* 상태 레이어 불투명도 — M3 값 그대로. dragged(0.16)는 이 앱에 드래그가 없어 빼둔다.
+     disabled는 제출 버튼이 "필요 개수를 정확히 채웠을 때만 활성"이라 반드시 쓰인다. */
   --sys-state-hover-opacity: 0.08;
   --sys-state-focus-opacity: 0.12;
   --sys-state-pressed-opacity: 0.12;
+  --sys-state-disabled-container-opacity: 0.12;
+  --sys-state-disabled-content-opacity: 0.38;
 
   /* 모션 — 이 셋뿐이다. medium 이상과 emphasized 계열은 쓰지 않는다.
      같은 화면을 1019번 반복하므로 200ms가 1019번이면 3분 24초다 (DESIGN.md 「Motion」). */
@@ -184,10 +190,17 @@
      672px는 16px 한글로 약 42자다. */
   --sys-layout-reading-width: 42rem;
   --sys-layout-margin: 16px; /* compact */
+
+  /* window size class 경계. compact(<600)가 기본이라 위로 둘만 이름이 필요하다.
+     이 값이 곧 Tailwind 브레이크포인트가 된다 (global.css) — 화면이 갈리는 지점은 하나다. */
+  --sys-layout-breakpoint-medium: 600px;
+  --sys-layout-breakpoint-expanded: 840px;
 }
 
-/* medium(600–839) · expanded(≥840)의 화면 여백은 같은 값이라 분기가 하나면 된다. */
-@media (min-width: 600px) {
+/* medium·expanded의 화면 여백은 같은 값이라 분기가 하나면 된다.
+   미디어 쿼리는 커스텀 프로퍼티를 읽지 못하므로 `theme()`으로 브레이크포인트를 꺼낸다 —
+   리터럴 600px을 여기 다시 적으면 경계가 두 곳이 된다. */
+@media (width >= theme(--breakpoint-medium)) {
   :root {
     --sys-layout-margin: 24px;
   }
@@ -198,7 +211,9 @@
  * 색을 두 벌 관리하는 게 아니라 매핑을 두 벌 관리한다.
  *
  * `system` 상태는 인라인 스크립트가 prefers-color-scheme를 읽어 light/dark로 확정하므로
- * 여기에 @media (prefers-color-scheme) 분기를 두지 않는다 (shared/lib/theme.ts).
+ * 여기에 @media (prefers-color-scheme) 분기를 두지 않는다 (_app/theme-script.tsx).
+ * 분기를 CSS에도 두면 매핑이 두 벌이 된다. 대가는 JS가 꺼진 브라우저가 항상 라이트로
+ * 보인다는 것인데, 이 앱은 라우팅·인증·데이터가 전부 JS라 그 환경에서 동작하지 않는다.
  * ───────────────────────────────────────────────────────────── */
 [data-theme='dark'] {
   --sys-color-primary: var(--ref-primary-80);

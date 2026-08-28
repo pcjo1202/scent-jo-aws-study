@@ -25,6 +25,10 @@ const MODE_LABEL: Record<ThemeMode, string> = {
  *
  * 선택값을 컴포넌트 상태로 들지 않는다. 저장소가 localStorage라 그쪽이 SSOT이고,
  * 복사본을 두면 화면과 `data-theme`이 갈라질 수 있다.
+ *
+ * 천장: localStorage가 막힌 브라우저(사파리 프라이빗)에서는 저장이 던져 라디오가 "시스템"으로
+ * 되돌아간 채 화면만 바뀐다. 저장소를 SSOT로 둔 대가이고, 그 환경에서 테마는 어차피
+ * 새로고침에 유지되지 않는다. 다른 탭의 변경도 반영하지 않는다 — 개인용 v1이라 미룬다.
  */
 export function ThemeToggle() {
   const mode = useSyncExternalStore(subscribeThemeMode, readThemeMode, readServerThemeMode)

@@ -81,9 +81,6 @@ importers:
       '@aws-study/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@tailwindcss/postcss':
-        specifier: ^4.3.3
-        version: 4.3.3
       '@tanstack/react-query':
         specifier: ^5.102.8
         version: 5.102.8(react@19.2.8)
@@ -93,9 +90,6 @@ importers:
       next:
         specifier: ^16.3.3
         version: 16.3.3(@babel/core@7.29.7)(@types/node@22.20.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      postcss:
-        specifier: ^8.5.26
-        version: 8.5.26
       react:
         specifier: ^19.2.0
         version: 19.2.8
@@ -105,10 +99,10 @@ importers:
       react-error-boundary:
         specifier: ^6.1.3
         version: 6.1.3(@types/react@19.2.18)(react@19.2.8)
-      tailwindcss:
+    devDependencies:
+      '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
-    devDependencies:
       '@types/node':
         specifier: ^22.10.0
         version: 22.20.1
@@ -124,6 +118,12 @@ importers:
       eslint-config-next:
         specifier: ^16.3.3
         version: 16.3.3(@typescript-eslint/parser@8.68.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      postcss:
+        specifier: ^8.5.26
+        version: 8.5.26
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
       typescript:
         specifier: ^5.9.2
         version: 5.9.3

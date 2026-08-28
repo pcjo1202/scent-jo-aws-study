@@ -19,9 +19,22 @@
   --font-*: initial;
   --font-weight-*: initial;
   --tracking-*: initial;
+  /* --leading-*도 지운다. `leading-relaxed` 하나면 body-large의 행간 28px이 되돌아가는데,
+     그게 DESIGN.md가 "이 앱에서 가장 중요한 단일 수치"라고 못 박은 값이다. */
+  --leading-*: initial;
   --radius-*: initial;
+  /* max-w-2xl이 42rem이라 max-w-reading과 값이 겹친다. 역할 이름을 우회하는 경로를 남기지 않는다. */
+  --container-*: initial;
   /* 그림자를 쓰지 않는다. 높이는 surface-container 단계로 표현한다 (DESIGN.md 「Elevation」). */
   --shadow-*: initial;
+
+  /* Tailwind 기본 sm/md/lg(640/768/1024)는 DESIGN.md의 window size class(600/840)와
+     겹치는 값이 하나도 없다. 남겨두면 다음 화면 이슈가 768px에서 갈리고 아무도 못 잡는다.
+     미디어 쿼리는 커스텀 프로퍼티를 읽지 못하므로 여기만 리터럴이고,
+     tokens.css는 `theme(--breakpoint-medium)`으로 이 값을 되받는다. */
+  --breakpoint-*: initial;
+  --breakpoint-medium: 600px;
+  --breakpoint-expanded: 840px;
 }
 
 /*
@@ -112,7 +125,7 @@
   --font-weight-medium: 500;
 
   /* preflight가 --default-font-family로 이 값을 읽어 html에 건다. 웹폰트를 로드하지 않는다. */
-  --font-sans: var(--ref-typeface-plain);
+  --font-sans: var(--sys-typescale-font-plain);
 
   --radius-corner-none: var(--sys-shape-corner-none);
   --radius-corner-extra-small: var(--sys-shape-corner-extra-small);
@@ -122,8 +135,9 @@
   --radius-corner-extra-large: var(--sys-shape-corner-extra-large);
   --radius-corner-full: var(--sys-shape-corner-full);
 
-  /* max-w-reading · px-screen. 간격은 Tailwind 기본 --spacing이 4px라 p-1·2·3·4·6·8·12가
-     곧 4dp 그리드(4·8·12·16·24·32·48)다 — 따로 정의할 것이 없다. */
+  /* max-w-reading · px-screen. 간격은 Tailwind 기본 --spacing이 4px라 유틸이 내는 값이
+     전부 4의 배수가 된다. DESIGN.md가 열거한 4·8·12·16·24·32·48이 그 안에 들어오지만
+     `gap-5`(20px) 같은 다른 배수도 유효하다 — 열거 목록까지 강제하지는 않는다. */
   --container-reading: var(--sys-layout-reading-width);
   --spacing-screen: var(--sys-layout-margin);
 
@@ -174,15 +188,20 @@
     font-weight: var(--sys-typescale-title-small-weight);
   }
 
-  /* 탭 타깃 하한 (DESIGN.md 「Accessibility」 48×48px). 개별 컴포넌트가 시각 높이를 더 작게
-     가져가야 하면 ::after로 터치 영역만 넓힌다 — 칩이 그 경우다 (DESIGN.md 「칩」). */
+  /* 탭 타깃 하한 (DESIGN.md 「Accessibility」 48×48px).
+     논리 프로퍼티(min-block-size)를 쓰지 않는다 — 유틸이 내는 것은 min-height라,
+     이름이 다르면 컴포넌트가 덮어썼는지 눈으로 확인할 수 없다.
+     칩은 시각 높이가 32px이므로 `min-h-8`로 덮고 ::after로 터치 영역만 넓힌다
+     (DESIGN.md 「칩」 — 칩을 48px로 키우면 카테고리 라벨이 본문을 밀어낸다). */
   button,
   [role='button'] {
-    min-block-size: 48px;
-    min-inline-size: 48px;
+    min-height: 48px;
+    min-width: 48px;
   }
 
-  /* 포커스 링을 지우지 않는다. 키보드가 1급 입력 수단이다 (DESIGN.md 「키보드」). */
+  /* 포커스 링을 지우지 않는다. 키보드가 1급 입력 수단이다 (DESIGN.md 「키보드」).
+     여기 한 곳에서만 정의한다 — 컴포넌트마다 다시 만들면 링이 화면마다 달라진다
+     (DESIGN.md 「Accessibility」가 primary 2px · offset 2px로 못 박았다). */
   :focus-visible {
     outline: 2px solid var(--sys-color-primary);
     outline-offset: 2px;
