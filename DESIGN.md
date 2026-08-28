@@ -321,45 +321,59 @@ M3에는 `error`가 있지만 **"정답"에 해당하는 역할이 없다.** 채
 
 ### 팔레트
 
-**Material 기본 스킴(baseline)에서 시작한다.** 직접 만들지 않는다. 접근성이 이미 검증돼 있고, 우리에겐 브랜드 색 제약이 없다.
+**scent-jo 시그니처 주황 `#E68236`에서 재생성했다.** 소스는 `scent-jo-blog` 레포 `DESIGN.md`의 `signatureStart`다. Material 기본 스킴(보라 `#6750A4`)으로 시작했다가 이 값으로 갈아끼웠고, **`--ref-*` 계층만 바꿔 라이트·다크가 함께 이동했다.** 3계층 토큰을 쓴 대가가 여기서 돌아왔다.
 
-키 컬러를 바꾸고 싶어지면 [Material Theme Builder](https://www.figma.com/community/plugin/1034969338659738588/Material-Theme-Builder)나 `material-color-utilities`로 스킴 전체를 다시 생성하면 된다. **reference 계층만 갈아끼우면 되므로 한 번의 교체로 끝난다.** 3계층 토큰을 쓴 대가가 여기서 돌아온다.
+**`#E68236`은 소스이지 `primary` 값이 아니다.** 흰 글자 대비 2.76:1이라 UI 최소 3:1도 못 넘는다 — M3 톤으로 64라 검은 글자를 얹는 밝은 면적색이다. `primary` 역할은 톤 40이므로 재생성 결과인 `#964900`이 정본이고 원본 hex는 입력으로만 쓰인다. 블로그도 이 색을 면적색으로 쓰지 않는다(`background-clip: text`).
+
+생성기는 `@material/material-color-utilities` 0.4.0이고 계열마다 다르게 뽑았다.
+
+| 계열 | 생성 |
+|---|---|
+| `primary` · `neutral` · `neutral-variant` | `CorePalette.of('#E68236')` |
+| `secondary` | `TonalPalette.fromHueAndChroma(67.48, 16)` |
+| `error` · `correct` | **재생성하지 않는다.** Material 기본값 유지 |
+
+`secondary`만 hue를 옮긴 이유는 색역이다. 주황은 톤 90에서 sRGB가 chroma 14.3까지만 허용해, 같은 hue의 `primary`(chroma 48 목표)와 `secondary`(16)가 **같은 경계값으로 눌려 한 색이 된다.** 보라에서는 20.2/16.1로 갈려 안 나던 문제다. hue 67.48은 임의값이 아니라 M3 `SchemeVibrant`가 이 소스의 secondary에 쓰는 값(소스 52.48 + 회전 15.00)이고, chroma 16은 baseline secondary 값이다. Vibrant를 통째로 쓰지 않은 것은 그쪽 neutral chroma가 10으로 baseline(4)의 2.5배라 배경이 복숭아색이 되기 때문이다 — 원칙 1과 충돌한다.
+
+**`error`·`correct`는 브랜드가 아니라 의미색이다.** 정답 초록·오답 빨강을 브랜드에 맞춰 흔들지 않는다.
+
+키 컬러를 다시 바꾸려면 위 두 줄의 소스만 갈고 `--ref-*`를 재생성한다. **`--sys-*` 계층은 손대지 않는다.**
 
 #### Light
 
 | 역할 | 값 | 역할 | 값 |
 |---|---|---|---|
-| `primary` | `#6750A4` | `on-primary` | `#FFFFFF` |
-| `primary-container` | `#EADDFF` | `on-primary-container` | `#21005D` |
-| `secondary-container` | `#E8DEF8` | `on-secondary-container` | `#1D192B` |
+| `primary` | `#964900` | `on-primary` | `#FFFFFF` |
+| `primary-container` | `#FFDCC7` | `on-primary-container` | `#311300` |
+| `secondary-container` | `#FDDDBD` | `on-secondary-container` | `#281805` |
 | `error` | `#B3261E` | `on-error` | `#FFFFFF` |
 | `error-container` | `#F9DEDC` | `on-error-container` | `#410E0B` |
 | `correct` | `#2E6B33` | `on-correct` | `#FFFFFF` |
 | `correct-container` | `#B0F0B4` | `on-correct-container` | `#00210A` |
-| `surface` | `#FEF7FF` | `on-surface` | `#1D1B20` |
-| `surface-variant` | `#E7E0EC` | `on-surface-variant` | `#49454F` |
-| `surface-container-lowest` | `#FFFFFF` | `surface-container-low` | `#F7F2FA` |
-| `surface-container` | `#F3EDF7` | `surface-container-high` | `#ECE6F0` |
-| `surface-container-highest` | `#E6E0E9` | | |
-| `outline` | `#79747E` | `outline-variant` | `#CAC4D0` |
+| `surface` | `#FFF8F5` | `on-surface` | `#201A17` |
+| `surface-variant` | `#F4DED3` | `on-surface-variant` | `#52443C` |
+| `surface-container-lowest` | `#FFFFFF` | `surface-container-low` | `#FEF1EB` |
+| `surface-container` | `#F8EBE6` | `surface-container-high` | `#F2E6E0` |
+| `surface-container-highest` | `#ECE0DA` | | |
+| `outline` | `#84746A` | `outline-variant` | `#D7C3B8` |
 
 #### Dark
 
 | 역할 | 값 | 역할 | 값 |
 |---|---|---|---|
-| `primary` | `#D0BCFF` | `on-primary` | `#381E72` |
-| `primary-container` | `#4F378B` | `on-primary-container` | `#EADDFF` |
-| `secondary-container` | `#4A4458` | `on-secondary-container` | `#E8DEF8` |
+| `primary` | `#FFB787` | `on-primary` | `#502400` |
+| `primary-container` | `#723600` | `on-primary-container` | `#FFDCC7` |
+| `secondary-container` | `#58432C` | `on-secondary-container` | `#FDDDBD` |
 | `error` | `#F2B8B5` | `on-error` | `#601410` |
 | `error-container` | `#8C1D18` | `on-error-container` | `#F9DEDC` |
 | `correct` | `#95D89A` | `on-correct` | `#00390F` |
 | `correct-container` | `#145223` | `on-correct-container` | `#B0F0B4` |
-| `surface` | `#141218` | `on-surface` | `#E6E0E9` |
-| `surface-variant` | `#49454F` | `on-surface-variant` | `#CAC4D0` |
-| `surface-container-lowest` | `#0F0D13` | `surface-container-low` | `#1D1B20` |
-| `surface-container` | `#211F26` | `surface-container-high` | `#2B2930` |
-| `surface-container-highest` | `#36343B` | | |
-| `outline` | `#938F99` | `outline-variant` | `#49454F` |
+| `surface` | `#18120F` | `on-surface` | `#ECE0DA` |
+| `surface-variant` | `#52443C` | `on-surface-variant` | `#D7C3B8` |
+| `surface-container-lowest` | `#120D0A` | `surface-container-low` | `#201A17` |
+| `surface-container` | `#241E1B` | `surface-container-high` | `#2F2925` |
+| `surface-container-highest` | `#3A3330` | | |
+| `outline` | `#9F8D83` | `outline-variant` | `#52443C` |
 
 ### 대비 검증
 
@@ -367,21 +381,36 @@ M3에는 `error`가 있지만 **"정답"에 해당하는 역할이 없다.** 채
 
 | 조합 | Light | Dark |
 |---|---|---|
-| `on-surface` / `surface` | 16.23 | 14.35 |
-| `on-surface-variant` / `surface` | 8.88 | 10.91 |
-| `on-surface` / `surface-container` | 14.85 | 12.57 |
-| `on-primary` / `primary` | 6.44 | 7.71 |
-| `on-secondary-container` / `secondary-container` | 13.24 | 7.19 |
+| `on-surface` / `surface` | 16.37 | 14.34 |
+| `on-surface-variant` / `surface` | 8.88 | 10.94 |
+| `on-surface` / `surface-container` | 14.75 | 12.72 |
+| `on-primary` / `primary` | 6.46 | 7.77 |
+| `on-primary-container` / `primary-container` | 13.33 | 7.27 |
+| `on-secondary-container` / `secondary-container` | 13.29 | 7.21 |
 | `on-error` / `error` | 6.54 | 7.66 |
-| `error` / `surface` | 6.21 | 10.89 |
+| `error` / `surface` | 6.22 | 10.86 |
+| `on-error-container` / `error-container` | 12.77 | 7.17 |
 | `on-correct` / `correct` | 6.43 | 7.89 |
-| `correct` / `surface` | 6.11 | 11.13 |
+| `correct` / `surface` | 6.12 | 11.10 |
 | `on-correct-container` / `correct-container` | 13.07 | 7.06 |
-| `outline` / `surface` | 4.33 † | 5.87 |
+| `outline` / `surface` | 4.27 † | 5.84 |
+| `primary` / `surface` | 6.15 ‡ | 10.93 |
 
 † `outline`은 테두리·구분선이므로 UI 컴포넌트 기준 3:1이 적용된다. 통과.
+‡ `primary`는 링크·아이콘으로 배경 위에 직접 놓이므로 3:1이 적용된다. 통과.
 
-**팔레트를 바꾸면 이 표를 다시 계산한다.** 값만 바꾸고 표를 방치하면 문서가 거짓말이 된다.
+**이 표는 `tokens.css`에서 기계로 뽑는다.** `--sys-color-*` → `--ref-*` → hex로 해석해 계산하므로 손으로 옮겨 적지 않는다. 계산 방식은 이 표의 알려진 값을 재현하는지로 검증했다.
+
+### 색으로만 갈리지 않는 쌍
+
+주황으로 옮기며 **정상 시각에서는 통과하지만 적록색약에서 약해지는 쌍**이 생겼다. ΔE는 CIE76이고 2.3이 식별 한계(JND)다.
+
+| 쌍 | 정상 | 적록색약 | 보라 시절 |
+|---|---|---|---|
+| `primary` / `error` (Light) | 28.0 | **4.2** | 80.5 |
+| `error-container` / `secondary-container` (Light) | 15.2 | 12.4 | 16.5 |
+
+`primary`와 `error`는 둘 다 따뜻한 색이라 적록색약에서 붙는다. **hue를 더 벌리려면 브랜드색을 버려야 하므로 벌리지 않는다.** 대신 이 둘이 색으로 구분될 일이 없게 한다 — 「색 단독 전달 금지」가 아이콘·텍스트 병기를 이미 강제하고, `primary`(버튼·링크)와 `error`(오답 배너)는 형태와 위치가 다르다. **색이 의미를 나르는 유일한 쌍인 `correct` × `error`는 재생성 대상이 아니어서 그대로다** (적록색약 ΔE 19.4 Light / 58.0 Dark).
 
 ### surface container를 화면에 매핑
 
@@ -775,6 +804,7 @@ M3 칩 높이는 32dp인데 탭 타겟 최소는 48dp다. 충돌하는 게 아�
 | 로고 · 파비콘 | 개인용에 불필요. 필요해지면 그때 |
 | 일러스트 · 빈 상태 그래픽 | 텍스트로 충분 |
 | 커스텀 폰트 (Pretendard) | 시스템 폰트로 1019문항을 읽어본 뒤 판단 |
-| 키 컬러 변경 | Material 기본 스킴으로 시작. 바꾸려면 reference 계층만 재생성 |
+
+키 컬러는 **결정됐다** — scent-jo 시그니처 주황 `#E68236`에서 재생성한 팔레트를 쓴다 (「팔레트」). 시그니처 그라데이션(`#E68236 → #F7A863`)은 아직 도입하지 않는다. 블로그는 로고타입·GNB 강조 링크·CTA 배너에 쓰는데 이 앱 화면 9개엔 셋 다 없다 — 칠할 표면이 생기면(= 위 표의 로고를 결정하면) 그때 연다.
 
 가장 바뀌기 쉬운 것은 **팔레트**다. 실제 화면을 보고 조정한다. **토큰 아키텍처 · 색 역할 · 타입 스케일 체계는 바꾸지 않는다.**

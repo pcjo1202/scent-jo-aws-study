@@ -4,8 +4,25 @@
  * 이 파일은 Tailwind를 모른다. global.css가 `@theme inline`으로 여기를 소비한다.
  * 그렇게 나눈 이유는 docs/10-conventions.md 「스타일 저작」.
  *
- * reference 값은 Material 기본 스킴이고 톤 번호는 M3 원본 그대로다
- * (material-web `tokens/versions/v0_192/_md-ref-palette.scss`와 대조 확인).
+ * reference 값은 scent-jo 시그니처 주황 `#E68236`에서 재생성했고 톤 번호는 M3 원본 그대로다.
+ * 생성기는 `@material/material-color-utilities` 0.4.0이고 계열마다 이렇게 뽑았다.
+ *
+ *   primary · neutral · neutral-variant   CorePalette.of('#E68236')
+ *   secondary                             TonalPalette.fromHueAndChroma(67.48, 16)
+ *
+ * secondary만 hue를 옮긴 이유: 주황은 톤 90에서 sRGB가 chroma 14.3까지만 허용해, 같은 hue의
+ * primary(chroma 48 목표)와 secondary(16)가 **같은 경계값으로 눌려 한 색이 된다.** 보라
+ * baseline에서는 20.2/16.1로 갈려 안 나던 문제다. hue 67.48은 임의값이 아니라 M3 `SchemeVibrant`가
+ * 이 소스의 secondary에 쓰는 값(소스 52.48 + 회전 15.00)이고, chroma 16은 baseline secondary 값이다.
+ * Vibrant를 통째로 쓰지 않은 것은 그쪽 neutral chroma가 10으로 baseline(4)의 2.5배라 배경이
+ * 복숭아색이 되기 때문이다 — 「조용한 UI」를 깬다.
+ *
+ * 생성기가 맞는지는 `CorePalette.of`에 M3 baseline 소스 `#6750A4`를 넣어 교체 전 값이 나오는지로
+ * 확인했다 — primary·secondary는 정확히 재현되고, neutral만 HCT 솔버 차이로 1/255 어긋난다.
+ * 발행된 `_md-ref-palette.scss`와 값을 직접 대조하던 방식은 여기서 끝난다. 소스가 바뀌었으므로
+ * 대조 대상도 그 scss가 아니라 **위 두 줄의 출력**이다.
+ *
+ * error·correct는 브랜드색이 아니라 의미색이라 재생성 대상이 아니다. Material 기본값 그대로 둔다.
  */
 
 /* ─────────────────────────────────────────────────────────────
@@ -13,17 +30,17 @@
  * 테마가 바뀌어도 이 블록은 그대로다. 팔레트를 갈아끼울 때 고치는 곳은 여기 하나다.
  * ───────────────────────────────────────────────────────────── */
 :root {
-  --ref-primary-10: #21005d;
-  --ref-primary-20: #381e72;
-  --ref-primary-30: #4f378b;
-  --ref-primary-40: #6750a4;
-  --ref-primary-80: #d0bcff;
-  --ref-primary-90: #eaddff;
+  --ref-primary-10: #311300;
+  --ref-primary-20: #502400;
+  --ref-primary-30: #723600;
+  --ref-primary-40: #964900;
+  --ref-primary-80: #ffb787;
+  --ref-primary-90: #ffdcc7;
   --ref-primary-100: #ffffff;
 
-  --ref-secondary-10: #1d192b;
-  --ref-secondary-30: #4a4458;
-  --ref-secondary-90: #e8def8;
+  --ref-secondary-10: #281805;
+  --ref-secondary-30: #58432c;
+  --ref-secondary-90: #fdddbd;
 
   --ref-error-10: #410e0b;
   --ref-error-20: #601410;
@@ -43,24 +60,24 @@
   --ref-correct-90: #b0f0b4;
   --ref-correct-100: #ffffff;
 
-  --ref-neutral-4: #0f0d13;
-  --ref-neutral-6: #141218;
-  --ref-neutral-10: #1d1b20;
-  --ref-neutral-12: #211f26;
-  --ref-neutral-17: #2b2930;
-  --ref-neutral-22: #36343b;
-  --ref-neutral-90: #e6e0e9;
-  --ref-neutral-92: #ece6f0;
-  --ref-neutral-94: #f3edf7;
-  --ref-neutral-96: #f7f2fa;
-  --ref-neutral-98: #fef7ff;
+  --ref-neutral-4: #120d0a;
+  --ref-neutral-6: #18120f;
+  --ref-neutral-10: #201a17;
+  --ref-neutral-12: #241e1b;
+  --ref-neutral-17: #2f2925;
+  --ref-neutral-22: #3a3330;
+  --ref-neutral-90: #ece0da;
+  --ref-neutral-92: #f2e6e0;
+  --ref-neutral-94: #f8ebe6;
+  --ref-neutral-96: #fef1eb;
+  --ref-neutral-98: #fff8f5;
   --ref-neutral-100: #ffffff;
 
-  --ref-neutral-variant-30: #49454f;
-  --ref-neutral-variant-50: #79747e;
-  --ref-neutral-variant-60: #938f99;
-  --ref-neutral-variant-80: #cac4d0;
-  --ref-neutral-variant-90: #e7e0ec;
+  --ref-neutral-variant-30: #52443c;
+  --ref-neutral-variant-50: #84746a;
+  --ref-neutral-variant-60: #9f8d83;
+  --ref-neutral-variant-80: #d7c3b8;
+  --ref-neutral-variant-90: #f4ded3;
 
   /* 웹폰트를 로드하지 않는다 (DESIGN.md 「Typography · 폰트」). Roboto는 한글 글리프가
      없어 어차피 폴백으로 넘어가므로 부르는 값이 0이다. brand 타입페이스는 없다. */
