@@ -264,6 +264,29 @@
   }
 
   /*
+   * 하단 액션 바 (DESIGN.md 「하단 액션 바」). compact에서 고정하는 이유는 긴 지문을 다
+   * 스크롤해야 버튼에 닿는 것이 1019번 반복할 동작으로 부적절하기 때문이다. expanded에서는
+   * 읽기 칼럼이 짧아 그럴 이유가 없으므로 문서 흐름 안으로 돌아온다.
+   *
+   * 그림자를 쓰지 않는다 — 떠 있다는 신호는 상단 경계선이 담당한다 (「Styles · Elevation」).
+   * 높이 64px과 safe-area는 Tailwind 임의값이 되므로 여기 둔다.
+   */
+  .action-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    min-height: 64px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  @media (width >= theme(--breakpoint-expanded)) {
+    .action-bar {
+      position: static;
+      padding-bottom: 0;
+    }
+  }
+
+  /*
    * 칩은 시각 높이와 터치 영역이 다르다 (DESIGN.md 「칩 · 시각 높이와 터치 영역이 다르다」).
    * base 레이어가 모든 button에 걸어 둔 48px을 여기서 덮고, 넓혀야 할 것은 터치 영역뿐이므로
    * 가상 요소로 뺀다. 칩을 48px로 키우면 카테고리 라벨이 본문을 밀어낸다.
