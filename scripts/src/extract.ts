@@ -9,6 +9,9 @@ import { parseComparisons, type Comparison } from './notes/parse-comparison.ts'
 import { parseDesktopOneLiners, parseImportanceByTitle } from './notes/desktop-notes.ts'
 import { buildSeamOracle } from './text/seam-oracle.ts'
 import { buildSeamLookup } from './text/seam-lookup.ts'
+import { buildServiceAliases } from './tagging/service-aliases.ts'
+import { tagQuestion, type QuestionTopics } from './tagging/tag-question.ts'
+import { findTaggingAnomalies } from './tagging/tagging-anomalies.ts'
 
 /** 원본 PDF에서 학습 데이터를 뽑아 `data/`에 쓴다 (`04-data-model.md` 「data:extract」). */
 
@@ -17,15 +20,22 @@ const EXPECTED_ONE_LINER_COUNT = 203
 const EXPECTED_COMPARISON_COUNT = 48
 /** `01-requirements.md` 「요약 노트」. 분포를 출력만 하면 장식 한 줄이 카테고리가 돼도 안 잡힌다. */
 const EXPECTED_CATEGORY_COUNT = 11
+/** `01-requirements.md` 「요약 노트」. 한 서비스가 카테고리 둘에 실려 203이 아니다. */
+const EXPECTED_UNIQUE_SERVICE_COUNT = 202
 const DATA_DIR = fileURLToPath(new URL('../../data/', import.meta.url))
 
 type Notes = { oneLiners: OneLiner[]; comparisons: Comparison[]; unknownSeams: number }
+type TaggedQuestion = ParsedQuestion & QuestionTopics
 
 function main() {
   const questions = parseQuestions()
   const notes = parseNotes()
+  const tagged = tagQuestions(questions, notes.oneLiners)
 
-  const anomalies = reportQuestions(questions) + reportNotes(notes)
+  const anomalies =
+    reportQuestions(questions) +
+    reportNotes(notes) +
+    reportTagging(tagged, new Set(notes.oneLiners.map((item) => item.category)))
   if (anomalies > 0) {
     console.error(`이상치 ${anomalies}건 — data/ 를 쓰지 않는다`)
     process.exitCode = 1
@@ -33,7 +43,7 @@ function main() {
   }
 
   mkdirSync(DATA_DIR, { recursive: true })
-  write('questions.json', questions)
+  write('questions.json', tagged)
   write('oneliners.json', { items: notes.oneLiners })
   write('comparisons.json', { items: notes.comparisons })
 }
@@ -76,6 +86,19 @@ function parseNotes(): Notes {
   }
 }
 
+/**
+ * 문제은행에는 주제 태그가 없다. 노트의 서비스명을 사전으로 삼아 파생시킨다
+ * (`04-data-model.md` 「자동 태깅」).
+ */
+function tagQuestions(questions: ParsedQuestion[], oneLiners: OneLiner[]): TaggedQuestion[] {
+  const aliases = buildServiceAliases(oneLiners)
+  console.log(
+    `별칭 ${aliases.length}개 · 사전 서비스 ${new Set(aliases.map((entry) => entry.service)).size}개`,
+  )
+
+  return questions.map((question) => ({ ...question, ...tagQuestion(question, aliases) }))
+}
+
 /** 이상치 건수를 돌려준다. 전수 검증은 `data:verify`(SJO-7)의 몫이고, 여기서는 산출을 막는다. */
 function reportQuestions(questions: ParsedQuestion[]) {
   const ids = questions.map((question) => question.id)
@@ -116,6 +139,8 @@ function reportNotes({ oneLiners, comparisons, unknownSeams }: Notes) {
     '한줄노트 개수 불일치': oneLiners.length === EXPECTED_ONE_LINER_COUNT ? 0 : 1,
     '카테고리 종수 불일치':
       new Set(oneLiners.map((item) => item.category)).size === EXPECTED_CATEGORY_COUNT ? 0 : 1,
+    '고유 서비스명 개수 불일치':
+      new Set(oneLiners.map((item) => item.service)).size === EXPECTED_UNIQUE_SERVICE_COUNT ? 0 : 1,
     '비교쌍 개수 불일치': comparisons.length === EXPECTED_COMPARISON_COUNT ? 0 : 1,
     // 두 판본을 합쳐도 공백을 못 정한 자리. 0이 아니면 원본 구성이 바뀐 것이다.
     '판본을 합쳐도 미결인 이음매': unknownSeams,
@@ -129,7 +154,9 @@ function reportNotes({ oneLiners, comparisons, unknownSeams }: Notes) {
     ).length,
   }
 
-  console.log(`한줄노트 ${oneLiners.length}개 (기대 ${EXPECTED_ONE_LINER_COUNT})`)
+  console.log(
+    `한줄노트 ${oneLiners.length}개 (기대 ${EXPECTED_ONE_LINER_COUNT}) · 고유 서비스명 ${new Set(oneLiners.map((item) => item.service)).size}개 (기대 ${EXPECTED_UNIQUE_SERVICE_COUNT})`,
+  )
   console.log(`카테고리 분포: ${formatDistribution(oneLiners.map((item) => item.category))}`)
   console.log(
     `비교쌍 ${comparisons.length}쌍 (기대 ${EXPECTED_COMPARISON_COUNT}) · 구성원 ${members.length}명`,
@@ -140,6 +167,38 @@ function reportNotes({ oneLiners, comparisons, unknownSeams }: Notes) {
   for (const [label, count] of Object.entries(counts)) console.log(`${label}: ${count}개`)
 
   return Object.values(counts).reduce((sum, n) => sum + n, 0)
+}
+
+/**
+ * 이상치 건수를 돌려준다. 판정은 `tagging/tagging-anomalies.ts`가 하고 여기서는
+ * 출력만 한다 — 게이트를 따로 테스트하려면 순수 함수여야 한다.
+ */
+function reportTagging(questions: TaggedQuestion[], knownCategories: Set<string>) {
+  const anomalies = findTaggingAnomalies(questions, knownCategories)
+
+  console.log(
+    `태깅 대상 ${questions.length}개 (기대 ${EXPECTED_QUESTION_COUNT}) · 미태깅 ${anomalies.untagged}개 (${formatShare(anomalies.untagged, questions.length)}, 상한 ${anomalies.untaggedLimit}개)`,
+  )
+  console.log(
+    `문항당 카테고리 수: ${formatDistribution(questions.map((question) => `${question.categories.length}개`))}`,
+  )
+  console.log(
+    `태깅 카테고리 분포 (상한 ${anomalies.limit}개): ${anomalies.countsByCategory
+      .map(([category, count]) => `${category} ${count}(${formatShare(count, questions.length)})`)
+      .join(' · ')}`,
+  )
+  for (const [category, count] of anomalies.overweight) {
+    console.log(`카테고리 편중 «${category}»: ${count}개 — 상한 ${anomalies.limit}개`)
+  }
+  for (const [label, count] of Object.entries(anomalies.anomalyCounts)) {
+    console.log(`${label}: ${count}건`)
+  }
+
+  return Object.values(anomalies.anomalyCounts).reduce((sum, count) => sum + count, 0)
+}
+
+function formatShare(count: number, total: number) {
+  return `${((count / total) * 100).toFixed(1)}%`
 }
 
 function formatDistribution(values: Array<string | number>) {
