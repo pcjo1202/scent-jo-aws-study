@@ -5,22 +5,24 @@
  * 그렇게 나눈 이유는 docs/10-conventions.md 「스타일 저작」.
  *
  * reference 값은 scent-jo 시그니처 주황 `#E68236`에서 재생성했고 톤 번호는 M3 원본 그대로다.
- * 생성기는 `@material/material-color-utilities` 0.4.0이고 계열마다 이렇게 뽑았다.
+ * 값은 `@material/material-color-utilities` 0.4.0으로 한 번 생성해 여기 박아 넣은 것이다
+ * (런타임 의존성이 아니다 — 이 레포에 설치돼 있지 않다). 계열마다 이렇게 뽑았다.
  *
  *   primary · neutral · neutral-variant   CorePalette.of('#E68236')
  *   secondary                             TonalPalette.fromHueAndChroma(67.48, 16)
  *
- * secondary만 hue를 옮긴 이유: 주황은 톤 90에서 sRGB가 chroma 14.3까지만 허용해, 같은 hue의
- * primary(chroma 48 목표)와 secondary(16)가 **같은 경계값으로 눌려 한 색이 된다.** 보라
- * baseline에서는 20.2/16.1로 갈려 안 나던 문제다. hue 67.48은 임의값이 아니라 M3 `SchemeVibrant`가
- * 이 소스의 secondary에 쓰는 값(소스 52.48 + 회전 15.00)이고, chroma 16은 baseline secondary 값이다.
+ * secondary만 hue를 옮긴 이유: 주황은 톤 90에서 sRGB가 chroma 14.06까지만 허용해, 같은 hue의
+ * primary(chroma 52.91)와 secondary(16)가 **같은 경계값으로 눌려 한 색이 된다.** 보라
+ * baseline에서는 20.24/16.10으로 갈려 안 나던 문제다. hue 67.48은 임의값이 아니라 M3 `SchemeVibrant`가
+ * 이 소스의 secondary에 쓰는 값(소스 hue 52.48 + 회전 15.00)이고, chroma 16은 baseline secondary 값이다.
  * Vibrant를 통째로 쓰지 않은 것은 그쪽 neutral chroma가 10으로 baseline(4)의 2.5배라 배경이
- * 복숭아색이 되기 때문이다 — 「조용한 UI」를 깬다.
+ * 복숭아색이 되기 때문이다 — DESIGN.md 원칙 2(색에 의미를 최소한만 싣는다)와 충돌한다.
  *
  * 생성기가 맞는지는 `CorePalette.of`에 M3 baseline 소스 `#6750A4`를 넣어 교체 전 값이 나오는지로
- * 확인했다 — primary·secondary는 정확히 재현되고, neutral만 HCT 솔버 차이로 1/255 어긋난다.
- * 발행된 `_md-ref-palette.scss`와 값을 직접 대조하던 방식은 여기서 끝난다. 소스가 바뀌었으므로
- * 대조 대상도 그 scss가 아니라 **위 두 줄의 출력**이다.
+ * 확인했다. `a1.tone(40)`·`a2.tone(90)`은 발행값과 정확히 일치하지만 **neutral은 11개 톤 전부가
+ * 최대 6/255까지 어긋난다** (톤 94에서 최대). 발행된 baseline이 구버전 MCU로 생성됐기 때문이고,
+ * 따라서 이 파일의 neutral을 `_md-ref-palette.scss`와 대조하는 옛 방식은 더 이상 성립하지 않는다.
+ * 값을 다시 확인하려면 위 두 줄을 같은 버전으로 실행해 이 블록과 대조한다.
  *
  * error·correct는 브랜드색이 아니라 의미색이라 재생성 대상이 아니다. Material 기본값 그대로 둔다.
  */

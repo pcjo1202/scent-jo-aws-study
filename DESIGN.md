@@ -333,7 +333,7 @@ M3에는 `error`가 있지만 **"정답"에 해당하는 역할이 없다.** 채
 | `secondary` | `TonalPalette.fromHueAndChroma(67.48, 16)` |
 | `error` · `correct` | **재생성하지 않는다.** Material 기본값 유지 |
 
-`secondary`만 hue를 옮긴 이유는 색역이다. 주황은 톤 90에서 sRGB가 chroma 14.3까지만 허용해, 같은 hue의 `primary`(chroma 48 목표)와 `secondary`(16)가 **같은 경계값으로 눌려 한 색이 된다.** 보라에서는 20.2/16.1로 갈려 안 나던 문제다. hue 67.48은 임의값이 아니라 M3 `SchemeVibrant`가 이 소스의 secondary에 쓰는 값(소스 52.48 + 회전 15.00)이고, chroma 16은 baseline secondary 값이다. Vibrant를 통째로 쓰지 않은 것은 그쪽 neutral chroma가 10으로 baseline(4)의 2.5배라 배경이 복숭아색이 되기 때문이다 — 원칙 1과 충돌한다.
+`secondary`만 hue를 옮긴 이유는 색역이다. 주황은 톤 90에서 sRGB가 chroma 14.06까지만 허용해, 같은 hue의 `primary`(chroma 52.91)와 `secondary`(16)가 **같은 경계값으로 눌려 한 색이 된다.** 보라에서는 20.24/16.10으로 갈려 안 나던 문제다. hue 67.48은 임의값이 아니라 M3 `SchemeVibrant`가 이 소스의 secondary에 쓰는 값(소스 52.48 + 회전 15.00)이고, chroma 16은 baseline secondary 값이다. Vibrant를 통째로 쓰지 않은 것은 그쪽 neutral chroma가 10으로 baseline(4)의 2.5배라 배경이 복숭아색이 되기 때문이다 — 1019문항을 읽는 표면이 색을 나르면 원칙 2와 충돌한다.
 
 **`error`·`correct`는 브랜드가 아니라 의미색이다.** 정답 초록·오답 빨강을 브랜드에 맞춰 흔들지 않는다.
 
@@ -377,7 +377,7 @@ M3에는 `error`가 있지만 **"정답"에 해당하는 역할이 없다.** 채
 
 ### 대비 검증
 
-전 조합을 실측했다. WCAG 기준은 본문 4.5:1, 큰 텍스트·UI 컴포넌트 3:1이다.
+**`on-` 쌍 전부와, 배경 위에 단독으로 놓이는 유채 역할을 실측했다.** WCAG 기준은 본문 4.5:1, 큰 텍스트·UI 컴포넌트 3:1이다. 표면끼리의 대비(`surface-container-*` 단계 간)는 tonal elevation이라 기준 적용 대상이 아니므로 넣지 않는다.
 
 | 조합 | Light | Dark |
 |---|---|---|
@@ -395,22 +395,41 @@ M3에는 `error`가 있지만 **"정답"에 해당하는 역할이 없다.** 채
 | `on-correct-container` / `correct-container` | 13.07 | 7.06 |
 | `outline` / `surface` | 4.27 † | 5.84 |
 | `primary` / `surface` | 6.15 ‡ | 10.93 |
+| `outline-variant` / `surface` | 1.61 § | 1.99 § |
 
 † `outline`은 테두리·구분선이므로 UI 컴포넌트 기준 3:1이 적용된다. 통과.
 ‡ `primary`는 링크·아이콘으로 배경 위에 직접 놓이므로 3:1이 적용된다. 통과.
+§ **3:1 미달이지만 기준 적용 대상이 아니다.** `outline-variant`는 필수 정보를 나르지 않는 장식 구분선이고, 의미가 걸린 경계(선택지 카드 테두리 등)는 `outline`(4.27 / 5.84)을 쓴다. 보라 시절도 1.62 / 1.99로 같아 이번 교체의 회귀가 아니다. `surface-container-low`가 `surface` 대비 1.05라 카드 경계가 사실상 이 선 하나에 의존하므로, **카드 테두리에는 `outline-variant`를 쓰지 않는다.**
 
-**이 표는 `tokens.css`에서 기계로 뽑는다.** `--sys-color-*` → `--ref-*` → hex로 해석해 계산하므로 손으로 옮겨 적지 않는다. 계산 방식은 이 표의 알려진 값을 재현하는지로 검증했다.
+**팔레트를 바꾸면 이 표를 다시 계산한다.** 값만 바꾸고 표를 방치하면 문서가 거짓말이 된다. 계산은 `tokens.css`를 파싱해 `--sys-color-*` → `--ref-*` → hex로 해석한 값으로 하고, 손으로 옮겨 적지 않는다. 계산 방식 자체는 교체 전 표의 알려진 값을 재현하는지로 검증한다.
 
 ### 색으로만 갈리지 않는 쌍
 
-주황으로 옮기며 **정상 시각에서는 통과하지만 적록색약에서 약해지는 쌍**이 생겼다. ΔE는 CIE76이고 2.3이 식별 한계(JND)다.
+**팔레트가 전부 따뜻한 색이 되면서 적록색약에서 붙는 쌍이 생겼다.** 색각 이상에서는 색상환이 청–황 축으로 눌리므로, 주황·빨강·초록이 모두 노란 쪽으로 모인다. 보라 시절에는 `secondary`가 차가운 쪽에 있어 생기지 않던 문제다.
 
-| 쌍 | 정상 | 적록색약 | 보라 시절 |
+유채 역할 7개의 전 조합 42쌍을 Light·Dark × 3개 모델(Machado 2009 deutan/protan, Viénot 1999 deutan)로 실측했다. ΔE는 CIE76, 식별 한계(JND)는 2.3. "색각 최악"은 세 모델 중 최솟값이다.
+
+| 쌍 | 정상 | 색각 최악 | 보라 시절 |
 |---|---|---|---|
-| `primary` / `error` (Light) | 28.0 | **4.2** | 80.5 |
-| `error-container` / `secondary-container` (Light) | 15.2 | 12.4 | 16.5 |
+| `primary` / `error` (Light) | 28.0 | **2.0** | 73.4 |
+| `secondary-container` / `correct-container` (Dark) | 36.9 | **2.2** | 30.3 |
+| `secondary-container` / `correct-container` (Light) | 38.0 | 2.6 | 31.5 |
+| `primary-container` / `error-container` (Dark) | 23.6 | 2.9 | 67.8 |
+| `error` / `correct` (Light) | 88.8 | 10.3 | 10.3 |
+| `error` / `correct` (Dark) | 55.8 | 9.9 | 9.9 |
+| `error-container` / `correct-container` (Light) | 44.5 | 15.3 | 15.3 |
+| `error-container` / `correct-container` (Dark) | 77.1 | 8.8 | 8.8 |
 
-`primary`와 `error`는 둘 다 따뜻한 색이라 적록색약에서 붙는다. **hue를 더 벌리려면 브랜드색을 버려야 하므로 벌리지 않는다.** 대신 이 둘이 색으로 구분될 일이 없게 한다 — 「색 단독 전달 금지」가 아이콘·텍스트 병기를 이미 강제하고, `primary`(버튼·링크)와 `error`(오답 배너)는 형태와 위치가 다르다. **색이 의미를 나르는 유일한 쌍인 `correct` × `error`는 재생성 대상이 아니어서 그대로다** (적록색약 ΔE 19.4 Light / 58.0 Dark).
+**42쌍 중 JND 미만이 2건이다.** `error` × `correct`는 재생성 대상이 아니어서 보라 시절과 값이 같다 — 정오 판정 자체는 팔레트 교체로 나빠지지 않았다.
+
+**팔레트를 고쳐서 풀지 않는다.** 색각 이상에서 따뜻한 색끼리 벌리려면 `secondary`를 차가운 쪽으로 보내야 하는데, 그러면 브랜드에서 파생시킨다는 전제가 무너진다. 대신 **원칙 3이 이미 무조건 강제하는 것**으로 받는다 — 정보를 색 단독으로 전달하지 않는다.
+
+이 팔레트에서 구속력이 생기는 지점은 둘이다.
+
+- **`primary`는 정오를 나르지 않는다.** 「색 사용 규칙」이 `primary`를 링크와 주 버튼에만 묶어두므로 `error`와 의미가 경쟁하지 않는다. 형태·위치도 다르다(알약 버튼 vs 전체 폭 배너). 이 잠금이 풀리면 위 2.0이 바로 문제가 된다
+- **정답 선택지를 `correct-container` 채움으로만 표시하지 않는다.** 선택된 선택지가 `secondary-container`라서, 적록색약 사용자에게 "내가 고른 것"과 "정답"이 같은 면색이 된다. 아이콘·텍스트 병기가 필수이고, 면 채움 대신 `correct` 테두리를 쓰면 색으로도 갈린다(색각 최악 14.2)
+
+두 번째는 채점 결과 컴포넌트를 만들 때 지켜야 한다.
 
 ### surface container를 화면에 매핑
 
