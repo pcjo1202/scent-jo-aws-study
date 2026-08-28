@@ -1,0 +1,202 @@
+/*
+ * Tailwind 진입점. 토큰 계층(tokens.css)을 유틸로 노출하고 UA 기본 스타일을 정규화한다.
+ * 이 구성을 고른 근거는 docs/10-conventions.md 「스타일 저작」.
+ *
+ * source()로 스캔 루트를 못 박는다 — Tailwind의 기본 스캔 기준이 cwd라, turbo가 레포
+ * 루트에서 돌면 apps/web을 통째로 놓쳐 클래스가 하나도 생성되지 않는다.
+ */
+@import 'tailwindcss' source('../../..');
+@import './tokens.css';
+
+/*
+ * Tailwind 기본 팔레트·스케일을 지운다. `bg-red-500`·`text-3xl`·`shadow-lg`·`font-bold`가
+ * 존재하지 않는 클래스가 되어, DESIGN.md의 "임의 색·임의 크기를 쓰지 않는다"를 리뷰가 아니라
+ * 빌드가 강제한다. 남는 구멍인 임의값 문법(`bg-[#abc]`)은 eslint.config.mjs가 막는다.
+ */
+@theme {
+  --color-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+  --font-weight-*: initial;
+  --tracking-*: initial;
+  --radius-*: initial;
+  /* 그림자를 쓰지 않는다. 높이는 surface-container 단계로 표현한다 (DESIGN.md 「Elevation」). */
+  --shadow-*: initial;
+}
+
+/*
+ * `@theme`이 아니라 `@theme inline`이다. 일반 @theme은 값을 자기 변수로 한 번 복사하므로
+ * :root 시점의 라이트 값이 굳어 [data-theme='dark']의 재매핑을 따라가지 못한다.
+ * inline은 var(--sys-*)를 유틸에 그대로 심어 참조가 살아 있다.
+ *
+ * 그 결과 `dark:` variant를 한 번도 쓰지 않는다 — 색은 토큰 계층에서 뒤집힌다.
+ */
+@theme inline {
+  --color-primary: var(--sys-color-primary);
+  --color-on-primary: var(--sys-color-on-primary);
+  --color-primary-container: var(--sys-color-primary-container);
+  --color-on-primary-container: var(--sys-color-on-primary-container);
+
+  --color-secondary-container: var(--sys-color-secondary-container);
+  --color-on-secondary-container: var(--sys-color-on-secondary-container);
+
+  --color-error: var(--sys-color-error);
+  --color-on-error: var(--sys-color-on-error);
+  --color-error-container: var(--sys-color-error-container);
+  --color-on-error-container: var(--sys-color-on-error-container);
+
+  --color-correct: var(--sys-color-correct);
+  --color-on-correct: var(--sys-color-on-correct);
+  --color-correct-container: var(--sys-color-correct-container);
+  --color-on-correct-container: var(--sys-color-on-correct-container);
+
+  --color-surface: var(--sys-color-surface);
+  --color-on-surface: var(--sys-color-on-surface);
+  --color-surface-variant: var(--sys-color-surface-variant);
+  --color-on-surface-variant: var(--sys-color-on-surface-variant);
+
+  --color-surface-container-lowest: var(--sys-color-surface-container-lowest);
+  --color-surface-container-low: var(--sys-color-surface-container-low);
+  --color-surface-container: var(--sys-color-surface-container);
+  --color-surface-container-high: var(--sys-color-surface-container-high);
+  --color-surface-container-highest: var(--sys-color-surface-container-highest);
+
+  --color-outline: var(--sys-color-outline);
+  --color-outline-variant: var(--sys-color-outline-variant);
+
+  /* 타입스케일 8역할. 한 클래스가 크기·행간·굵기·자간을 다 나르므로 `text-body-large` 하나면
+     되고 leading-*·font-*를 덧붙이지 않는다. 15개 밖의 크기를 만들 여지가 없어진다. */
+  --text-headline-small: var(--sys-typescale-headline-small-size);
+  --text-headline-small--line-height: var(--sys-typescale-headline-small-line-height);
+  --text-headline-small--font-weight: var(--sys-typescale-headline-small-weight);
+  --text-headline-small--letter-spacing: var(--sys-typescale-headline-small-tracking);
+
+  --text-title-medium: var(--sys-typescale-title-medium-size);
+  --text-title-medium--line-height: var(--sys-typescale-title-medium-line-height);
+  --text-title-medium--font-weight: var(--sys-typescale-title-medium-weight);
+  --text-title-medium--letter-spacing: var(--sys-typescale-title-medium-tracking);
+
+  --text-title-small: var(--sys-typescale-title-small-size);
+  --text-title-small--line-height: var(--sys-typescale-title-small-line-height);
+  --text-title-small--font-weight: var(--sys-typescale-title-small-weight);
+  --text-title-small--letter-spacing: var(--sys-typescale-title-small-tracking);
+
+  --text-body-large: var(--sys-typescale-body-large-size);
+  --text-body-large--line-height: var(--sys-typescale-body-large-line-height);
+  --text-body-large--font-weight: var(--sys-typescale-body-large-weight);
+  --text-body-large--letter-spacing: var(--sys-typescale-body-large-tracking);
+
+  --text-body-medium: var(--sys-typescale-body-medium-size);
+  --text-body-medium--line-height: var(--sys-typescale-body-medium-line-height);
+  --text-body-medium--font-weight: var(--sys-typescale-body-medium-weight);
+  --text-body-medium--letter-spacing: var(--sys-typescale-body-medium-tracking);
+
+  --text-body-small: var(--sys-typescale-body-small-size);
+  --text-body-small--line-height: var(--sys-typescale-body-small-line-height);
+  --text-body-small--font-weight: var(--sys-typescale-body-small-weight);
+  --text-body-small--letter-spacing: var(--sys-typescale-body-small-tracking);
+
+  --text-label-large: var(--sys-typescale-label-large-size);
+  --text-label-large--line-height: var(--sys-typescale-label-large-line-height);
+  --text-label-large--font-weight: var(--sys-typescale-label-large-weight);
+  --text-label-large--letter-spacing: var(--sys-typescale-label-large-tracking);
+
+  --text-label-medium: var(--sys-typescale-label-medium-size);
+  --text-label-medium--line-height: var(--sys-typescale-label-medium-line-height);
+  --text-label-medium--font-weight: var(--sys-typescale-label-medium-weight);
+  --text-label-medium--letter-spacing: var(--sys-typescale-label-medium-tracking);
+
+  /* 굵기는 둘뿐이다. 시스템 한글 폰트의 700은 기기마다 편차가 크고, 텍스트가 빽빽한 화면에
+     과하다 (DESIGN.md 「Typography · 폰트」). */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+
+  /* preflight가 --default-font-family로 이 값을 읽어 html에 건다. 웹폰트를 로드하지 않는다. */
+  --font-sans: var(--ref-typeface-plain);
+
+  --radius-corner-none: var(--sys-shape-corner-none);
+  --radius-corner-extra-small: var(--sys-shape-corner-extra-small);
+  --radius-corner-small: var(--sys-shape-corner-small);
+  --radius-corner-medium: var(--sys-shape-corner-medium);
+  --radius-corner-large: var(--sys-shape-corner-large);
+  --radius-corner-extra-large: var(--sys-shape-corner-extra-large);
+  --radius-corner-full: var(--sys-shape-corner-full);
+
+  /* max-w-reading · px-screen. 간격은 Tailwind 기본 --spacing이 4px라 p-1·2·3·4·6·8·12가
+     곧 4dp 그리드(4·8·12·16·24·32·48)다 — 따로 정의할 것이 없다. */
+  --container-reading: var(--sys-layout-reading-width);
+  --spacing-screen: var(--sys-layout-margin);
+
+  --ease-standard: var(--sys-motion-easing-standard);
+  --duration-short2: var(--sys-motion-duration-short2);
+  --duration-short4: var(--sys-motion-duration-short4);
+}
+
+/*
+ * UA 기본 스타일 정규화. preflight가 h1의 32px/700을 이미 걷어내므로, 여기서는 그 자리에
+ * 우리 타입스케일을 앉힌다. 클래스를 잊은 요소가 본문 크기로 렌더되는 것을 막는 것이 목적이다.
+ */
+@layer base {
+  /* 네이티브 스크롤바·폼 컨트롤이 테마를 따라오게 한다. data-theme은 인라인 스크립트가
+     항상 light|dark 중 하나로 확정하므로 prefers-color-scheme 분기가 필요 없다. */
+  html {
+    color-scheme: light;
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--sys-color-surface);
+    color: var(--sys-color-on-surface);
+    font-size: var(--sys-typescale-body-large-size);
+    line-height: var(--sys-typescale-body-large-line-height);
+    font-weight: var(--sys-typescale-body-large-weight);
+    letter-spacing: var(--sys-typescale-body-large-tracking);
+  }
+
+  h1 {
+    font-size: var(--sys-typescale-headline-small-size);
+    line-height: var(--sys-typescale-headline-small-line-height);
+    font-weight: var(--sys-typescale-headline-small-weight);
+  }
+
+  h2 {
+    font-size: var(--sys-typescale-title-medium-size);
+    line-height: var(--sys-typescale-title-medium-line-height);
+    font-weight: var(--sys-typescale-title-medium-weight);
+  }
+
+  h3 {
+    font-size: var(--sys-typescale-title-small-size);
+    line-height: var(--sys-typescale-title-small-line-height);
+    font-weight: var(--sys-typescale-title-small-weight);
+  }
+
+  /* 탭 타깃 하한 (DESIGN.md 「Accessibility」 48×48px). 개별 컴포넌트가 시각 높이를 더 작게
+     가져가야 하면 ::after로 터치 영역만 넓힌다 — 칩이 그 경우다 (DESIGN.md 「칩」). */
+  button,
+  [role='button'] {
+    min-block-size: 48px;
+    min-inline-size: 48px;
+  }
+
+  /* 포커스 링을 지우지 않는다. 키보드가 1급 입력 수단이다 (DESIGN.md 「키보드」). */
+  :focus-visible {
+    outline: 2px solid var(--sys-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* 모션은 원래 셋뿐이지만, 그것도 원하지 않는 사용자가 있다 (DESIGN.md 「Motion」). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
