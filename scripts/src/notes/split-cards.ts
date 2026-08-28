@@ -35,7 +35,9 @@ export function splitNoteSections(rawText: string): NoteSections {
   const onelinerCover = groups.findIndex((group) => group.some(matches(ONELINER_COVER)))
   const comparisonCover = groups.findIndex((group) => group.some(matches(COMPARISON_COVER)))
   if (onelinerCover < 0 || comparisonCover < 0) {
-    throw new Error(`노트 절 표지를 찾지 못했다: 한줄노트 ${onelinerCover} · 비교노트 ${comparisonCover}`)
+    throw new Error(
+      `노트 절 표지를 찾지 못했다: 한줄노트 ${onelinerCover} · 비교노트 ${comparisonCover}`,
+    )
   }
   if (onelinerCover > comparisonCover) {
     throw new Error('비교노트 표지가 한줄노트 표지보다 앞에 있다 — 원본 구성이 바뀌었다')

@@ -18,7 +18,10 @@ describe('parseComparisons', () => {
       ['가 vs 나'],
       ['            가'],
       ['선택 신호                    탈락 신호'],
-      ['왼쪽 신호 하나 / 왼쪽 신호      오른쪽 신호 하나 /', '둘                          오른쪽 신호 둘'],
+      [
+        '왼쪽 신호 하나 / 왼쪽 신호      오른쪽 신호 하나 /',
+        '둘                          오른쪽 신호 둘',
+      ],
       ['★ 결정적 차이     가의 차이가 여기서 접히고', '                  뒷줄로 이어진다'],
       // 접힌 뒷줄이 다음 구성원명과 같은 그룹으로 온다.
       ['            나'],
@@ -53,7 +56,9 @@ describe('parseComparisons', () => {
   })
 
   it('두 줄로 접힌 결정적 차이가 다음 구성원명과 섞이지 않는다', () => {
-    expect(comparisons[0]?.members[0]?.keyDifference).toBe('가의 차이가 여기서 접히고 뒷줄로 이어진다')
+    expect(comparisons[0]?.members[0]?.keyDifference).toBe(
+      '가의 차이가 여기서 접히고 뒷줄로 이어진다',
+    )
     expect(comparisons[0]?.members[1]?.name).toBe('나')
     expect(comparisons[0]?.members[1]?.keyDifference).toBe('나의 차이')
   })
@@ -74,7 +79,13 @@ describe('parseComparisons', () => {
 })
 
 describe('parseComparisons — 원본 구성이 바뀌면 멈춘다', () => {
-  const card = [['가 vs 나'], ['   가'], ['선택 신호    탈락 신호'], ['왼쪽    오른쪽'], ['★ 결정적 차이    차이']]
+  const card = [
+    ['가 vs 나'],
+    ['   가'],
+    ['선택 신호    탈락 신호'],
+    ['왼쪽    오른쪽'],
+    ['★ 결정적 차이    차이'],
+  ]
 
   it('PC판에 중요도가 없는 제목이면 던진다', () => {
     expect(() => parseComparisons(card, new Map())).toThrow('중요도 표기가 없는 비교쌍')

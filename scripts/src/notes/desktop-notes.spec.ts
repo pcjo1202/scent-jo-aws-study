@@ -41,7 +41,10 @@ describe('parseDesktopOneLiners — 표 장식 우회 경로', () => {
   })
 
   it('③ 들여쓰인 이어지는 줄은 노트로 간다 — 열 안 여백은 공백 하나로 접는다', () => {
-    expect(cards[0]?.note).toEqual(['설명이 여기서 끊기고 양쪽 정렬로 벌어진 자리', '뒷줄로 이어진다'])
+    expect(cards[0]?.note).toEqual([
+      '설명이 여기서 끊기고 양쪽 정렬로 벌어진 자리',
+      '뒷줄로 이어진다',
+    ])
   })
 
   it('② 들여쓰기 없이 이어지는 줄의 첫 조각은 서비스명이 접힌 것이다', () => {
@@ -65,9 +68,11 @@ describe('parseDesktopOneLiners — 표 장식 우회 경로', () => {
 describe('parseImportanceByTitle', () => {
   it('제목 뒤 ★ 개수를 읽는다 — 모바일 판본에 없는 값이다', () => {
     const importance = parseImportanceByTitle(
-      ['가 vs 나                     [★★★]', '다 vs 라        [★]', '★ 결정적 차이   본문의 별은 세지 않는다'].join(
-        '\n',
-      ),
+      [
+        '가 vs 나                     [★★★]',
+        '다 vs 라        [★]',
+        '★ 결정적 차이   본문의 별은 세지 않는다',
+      ].join('\n'),
     )
 
     expect([...importance]).toEqual([
