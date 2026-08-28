@@ -102,21 +102,21 @@ pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 
 **세션 운영: 이슈 하나 = 세션 하나.** `/done` 후 세션을 끝내고 다음 이슈는 새 세션에서 `/start`. 재개에 필요한 건 전부 밖에 있다(Linear 계획·유언장 코멘트, MEMORY.md, LESSONS.md). 이슈 도중에 끊어야 하면 `/context-save`.
 
-### 그 세션은 하위 워크트리에서 연다
+### 그 세션은 별도 워크트리에서 연다
 
-**구현 이슈는 Orca 하위 워크트리를 만들어 그 첫 터미널의 claude에게 넘긴다.** 메인 워크트리는 디스패치와 Linear 관리용으로 비워 둔다.
+**구현 이슈는 Orca 워크트리를 새로 만들어 그 첫 터미널의 claude에게 넘긴다.** 메인 워크트리는 디스패치와 Linear 관리용으로 비워 둔다 — 문서 이슈는 메인에서 해도 된다.
 
 ```bash
-orca worktree create --repo id:<repoId> --name sjo-<N>-<영문-kebab> \
+orca worktree create --name sjo-<N>-<영문-kebab> \
   --no-parent --agent claude --prompt "$(cat <브리프 파일>)" --json
 ```
 
-`repoId`는 `orca worktree current --json`에 있다. CLI 사용법 전문은 **`orca-cli` 스킬**이 정본이다.
+`--repo`는 생략한다 — 메인 워크트리에서 부르면 Orca가 추론한다. `--no-parent`가 만드는 것은 **독립 워크트리**이지 하위가 아니다(계보만 끊고 base는 그대로 레포 기본값). CLI 전문은 **`orca-cli` 스킬**이 정본이다.
 
-- **같은 디렉터리에서 두 세션을 돌리면 병렬이 원천적으로 불가능하다** — `/start` 2번이 각자 브랜치를 만드는데 디렉터리가 하나면 나중 것이 앞 것을 밀어낸다
-- **병렬 조합은 `Blocked by`가 아니라 파일 도메인으로 판정한다.** 차단이 없어도 같은 디렉터리를 만지는 이슈는 동시에 보내지 않는다 (예: `scripts/` 파서 이슈들은 첫 이슈가 패키지 골격을 정할 때까지 직렬). 상한은 위 게이트의 **2개**
+- **같은 디렉터리에서 두 세션을 돌리면 병렬이 원천적으로 불가능하다** — `/start`를 두 번 돌리면 각자 브랜치를 만드는데, 디렉터리가 하나면 앞 세션의 작업물이 뒷 브랜치로 끌려간다
+- **상한은 위 게이트의 2개.** 어떤 조합을 동시에 보내도 되는지는 `TASKS.md` 「다음 작업 고르는 법」이 정본이다
 - **브리프에 담을 것** — `/start SJO-N`을 첫 줄로 두고, 그 이슈에만 해당하는 것을 번호로 적는다: ① 낡은 체크박스·docs 서술 ② 미결정 항목 ③ 원문 대조가 필요한 지점 ④ 병렬 워크트리와 겹치는 파일. 마지막 줄은 `/done`으로 닫고 세션을 종료하라는 지시. **이슈 본문에는 "무엇이 이미 낡았는지"가 없다** — 그건 직전 세션만 알고 브리프로만 전달된다
-- **Orca가 만든 브랜치명은 이 레포 규약이 아니다.** 워크트리 브랜치는 base로만 남고, 세션 안의 `/start` 2번이 `<type>/sjo-N-<kebab>`을 따로 만든다. 규약 위반으로 오해해 고치지 않는다
+- **Orca가 만든 브랜치명은 이 레포 규약이 아니다.** 세션 안의 `/start` 2단계가 `origin/main`에서 `<type>/sjo-N-<kebab>`을 따로 만들고, Orca 브랜치는 같은 커밋에 유휴 ref로 남는다. 규약 위반으로 오해해 고치지 않는다 — 워크트리를 지울 때 함께 정리된다
 
 ## 스킬 라우팅
 
@@ -125,7 +125,7 @@ orca worktree create --repo id:<repoId> --name sjo-<N>-<영문-kebab> \
 | 상황 | 사용 |
 |---|---|
 | 이슈 착수 / 종료 | `/start` / `/done` (위 작업 흐름) |
-| 이슈 구현 세션 열기 | **Orca 하위 워크트리** (위 「그 세션은 하위 워크트리에서 연다」). CLI는 `orca-cli` 스킬 |
+| 이슈 구현 세션 열기 | **`orca worktree create`** (위 「그 세션은 별도 워크트리에서 연다」). CLI는 `orca-cli` 스킬 |
 | 새 기능·설계 논의, 명세에 없는 결정 | `superpowers:brainstorming` — 설계 승인 전 구현 금지 |
 | 버그·원인 불명 동작 | `superpowers:systematic-debugging` — 재현 먼저, 추측 수정 금지 |
 | 구현 스타일 | **ponytail full** 기준: 최소 diff, YAGNI, 사다리(필요한가→재사용→stdlib→최소 구현) |
@@ -141,7 +141,7 @@ orca worktree create --repo id:<repoId> --name sjo-<N>-<영문-kebab> \
 | 같은 실수가 규칙으로도 반복되면 | **hookify**로 훅 승격 |
 | 세션 마감·재개 | `/context-save` · `/context-restore` |
 
-**쓰지 않는 것**: `/ship`·`/land-and-deploy`(main 직접 커밋), `/spec`·`/autoplan`·`/plan-*-review`(Linear 이슈 + docs/가 대체), `/investigate`(systematic-debugging으로 통일). 제안이 떠도 따르지 않는다.
+**쓰지 않는 것**: `/wt`(`--parent-worktree active --base-branch <현재 브랜치>`로 만들어 「base는 항상 `main`」을 깬다 — 위 절의 명령을 직접 쓴다), `/ship`·`/land-and-deploy`(main 직접 커밋), `/spec`·`/autoplan`·`/plan-*-review`(Linear 이슈 + docs/가 대체), `/investigate`(systematic-debugging으로 통일). 제안이 떠도 따르지 않는다.
 
 ## 수정 전 논의가 필요한 파일
 
