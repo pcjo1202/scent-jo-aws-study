@@ -15,6 +15,8 @@ import { buildSeamLookup } from './text/seam-lookup.ts'
 const EXPECTED_QUESTION_COUNT = 1019
 const EXPECTED_ONE_LINER_COUNT = 203
 const EXPECTED_COMPARISON_COUNT = 48
+/** `01-requirements.md` 「요약 노트」. 분포를 출력만 하면 장식 한 줄이 카테고리가 돼도 안 잡힌다. */
+const EXPECTED_CATEGORY_COUNT = 11
 const DATA_DIR = fileURLToPath(new URL('../../data/', import.meta.url))
 
 type Notes = { oneLiners: OneLiner[]; comparisons: Comparison[]; unknownSeams: number }
@@ -112,6 +114,8 @@ function reportNotes({ oneLiners, comparisons, unknownSeams }: Notes) {
   const members = comparisons.flatMap((comparison) => comparison.members)
   const counts = {
     '한줄노트 개수 불일치': oneLiners.length === EXPECTED_ONE_LINER_COUNT ? 0 : 1,
+    '카테고리 종수 불일치':
+      new Set(oneLiners.map((item) => item.category)).size === EXPECTED_CATEGORY_COUNT ? 0 : 1,
     '비교쌍 개수 불일치': comparisons.length === EXPECTED_COMPARISON_COUNT ? 0 : 1,
     // 두 판본을 합쳐도 공백을 못 정한 자리. 0이 아니면 원본 구성이 바뀐 것이다.
     '판본을 합쳐도 미결인 이음매': unknownSeams,

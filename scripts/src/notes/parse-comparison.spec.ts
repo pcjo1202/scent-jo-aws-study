@@ -76,6 +76,27 @@ describe('parseComparisons', () => {
       rejectSignals: '오른쪽만 있는 줄',
     })
   })
+
+  it('들여쓴 줄은 안에 넓은 여백이 있어도 오른쪽 열 하나로 본다', () => {
+    // 조각 수로 먼저 가르면 오른쪽 열 전용 줄이 두 열로 쪼개져 왼쪽으로 샌다.
+    const [comparison] = parseComparisons(
+      [
+        ['가 vs 나'],
+        ['   가'],
+        ['선택 신호    탈락 신호'],
+        ['왼쪽        오른쪽'],
+        ['                오른쪽 이어지는     내용'],
+        ['★ 결정적 차이    차이'],
+      ],
+      IMPORTANCE,
+      () => true,
+    )
+
+    expect(comparison?.members[0]).toMatchObject({
+      selectSignals: '왼쪽',
+      rejectSignals: '오른쪽 오른쪽 이어지는 내용',
+    })
+  })
 })
 
 describe('parseComparisons — 원본 구성이 바뀌면 멈춘다', () => {
@@ -99,5 +120,26 @@ describe('parseComparisons — 원본 구성이 바뀌면 멈춘다', () => {
     expect(() => parseComparisons([['선택 신호    탈락 신호']], IMPORTANCE)).toThrow(
       '구성원명 없이 신호 표가 시작됐다',
     )
+  })
+
+  it('마지막 구성원 뒤에 배정되지 않은 줄이 남으면 던진다', () => {
+    // 조용히 버리면 마지막 구성원의 접힌 결정적 차이가 오류 없이 사라진다.
+    expect(() => parseComparisons([...card, ['              접힌 뒷줄']], IMPORTANCE)).toThrow(
+      '구성원에 배정되지 않고 남은 줄 1개',
+    )
+  })
+
+  it('구성원명 앞에 배정할 수 없는 들여쓴 줄이 남으면 던진다', () => {
+    // 접힌 결정적 차이는 카드당 최대 1줄이다. 그보다 많으면 해석이 성립하지 않는다.
+    // (정확히 두 줄로 접힌 구성원명은 들여쓰기가 같아 여기서 못 가른다 — `data:verify`의 몫)
+    const folded = [
+      ...card,
+      ['        접힌 줄 하나'],
+      ['        접힌 줄 둘'],
+      ['        구성원명'],
+      ['선택 신호    탈락 신호'],
+    ]
+
+    expect(() => parseComparisons(folded, IMPORTANCE)).toThrow('배정할 수 없는 들여쓴 줄 2개')
   })
 })

@@ -1,3 +1,5 @@
+import { cleanNoteLines } from '../text/page-decoration.ts'
+
 /**
  * 모바일 노트 PDF(파일 3)의 `pdftotext -layout` 출력을 빈 줄 단위 그룹으로 자른다.
  *
@@ -10,10 +12,6 @@
  * (`LESSONS.md` 2026-08-28 「정제 전 텍스트로 집계해…」).
  */
 
-/** pdftotext가 페이지 경계에 끼워 넣는 개행 문자. */
-const PAGE_BREAK = /\f/g
-/** 페이지 푸터. 저작권 표시 한 줄이다. */
-const PAGE_FOOTER = /^\s*©/
 /** 절 표지. 원본이 두 절을 각각 표지 한 장으로 연다. */
 const ONELINER_COVER = /^\s*한줄노트\s*$/
 const COMPARISON_COVER = /^\s*비교노트\s*$/
@@ -26,11 +24,7 @@ export type NoteSections = {
 }
 
 export function splitNoteSections(rawText: string): NoteSections {
-  const lines = rawText
-    .replace(PAGE_BREAK, '')
-    .split('\n')
-    .filter((line) => !PAGE_FOOTER.test(line))
-  const groups = groupByBlankLines(lines)
+  const groups = groupByBlankLines(cleanNoteLines(rawText))
 
   const onelinerCover = groups.findIndex((group) => group.some(matches(ONELINER_COVER)))
   const comparisonCover = groups.findIndex((group) => group.some(matches(COMPARISON_COVER)))
@@ -49,14 +43,13 @@ export function splitNoteSections(rawText: string): NoteSections {
   }
 }
 
-/** 열 경계가 들여쓰기로 표현되므로 앞 공백은 남기고 뒤만 다듬는다. */
 function groupByBlankLines(lines: string[]) {
   const groups: string[][] = []
   let current: string[] = []
 
   for (const line of lines) {
     if (line.trim()) {
-      current.push(line.trimEnd())
+      current.push(line)
       continue
     }
     if (current.length > 0) {

@@ -10,8 +10,10 @@
  * 판본에서도 줄 끝이었던 자리만 미결로 남고, 그 수를 함께 돌려준다 — 0이면 원문의
  * 공백을 그대로 복원한 것이다.
  *
- * 판본들의 공백을 지운 문자열이 다르면 던진다. 그 자체가 두 판본을 서로의 정답지로
- * 쓰는 대조 검증이다.
+ * 판본들이 어긋나면 던진다 — 공백을 지운 문자열이 다를 때는 물론, 같은 자리를 한쪽은
+ * 공백으로 다른 쪽은 붙은 것으로 읽었을 때도 그렇다. 후자를 다수결로 넘기면 이 모듈이
+ * 내건 "추정하지 않는다"가 깨지고, 하필 잘못 넣은 공백(단어를 쪼갠다) 쪽으로 기운다.
+ * 그 대조 자체가 두 판본을 서로의 정답지로 쓰는 검증이다.
  */
 
 export type MergedText = {
@@ -40,6 +42,9 @@ export function mergeRenderings(renderings: string[][]): MergedText {
   for (let i = 0; i + 1 < chars.length; i += 1) {
     const votes = read.map((rendering) => rendering.separators[i])
     const hasSpace = votes.includes(true)
+    if (hasSpace && votes.includes(false)) {
+      throw new Error(`판본이 같은 자리를 다르게 읽었다 (${i}번째 글자 뒤)`)
+    }
     if (!hasSpace && !votes.includes(false)) unknownSeams += 1
 
     text += (hasSpace ? ' ' : '') + chars[i + 1]

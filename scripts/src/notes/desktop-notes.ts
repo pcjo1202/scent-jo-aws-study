@@ -1,3 +1,4 @@
+import { COLUMN_GAP, cleanNoteLines } from '../text/page-decoration.ts'
 import type { OneLinerLines } from './parse-oneliner.ts'
 
 /**
@@ -17,12 +18,9 @@ import type { OneLinerLines } from './parse-oneliner.ts'
  * 신호로 삼는다. 카테고리 목록은 모바일 파싱 결과에서 받는다(하드코딩하지 않는다).
  */
 
-const PAGE_BREAK = /\f/g
-const PAGE_FOOTER = /^\s*©/
 const TABLE_HEADER = /서비스명\s{2,}카테고리/
 /** 한줄노트 표가 끝나는 자리. 뒤는 비교노트다. */
 const COMPARISON_SECTION = /^\s*Part 2/
-const COLUMN_GAP = / {2,}/
 /** 비교쌍 제목 줄. 제목 뒤 오른쪽 끝에 중요도가 붙는다. */
 const COMPARISON_TITLE = /^\s*(\S.*?)\s{2,}\[(★+)\]\s*$/
 
@@ -33,7 +31,7 @@ export function parseDesktopOneLiners(
   const cards: OneLinerLines[] = []
   let open: OneLinerLines | undefined
 
-  for (const line of cleanLines(rawText)) {
+  for (const line of cleanNoteLines(rawText)) {
     if (COMPARISON_SECTION.test(line)) break
     if (!line.trim() || TABLE_HEADER.test(line)) continue
     // 카테고리 런이 바뀌는 자리의 섹션 제목. 지우지 않으면 직전 행의 노트 끝에 붙는다.
@@ -62,18 +60,10 @@ export function parseDesktopOneLiners(
 export function parseImportanceByTitle(rawText: string): Map<string, number> {
   const importance = new Map<string, number>()
 
-  for (const line of cleanLines(rawText)) {
+  for (const line of cleanNoteLines(rawText)) {
     const title = COMPARISON_TITLE.exec(line)
     if (title) importance.set(title[1]!.trim(), title[2]!.length)
   }
 
   return importance
-}
-
-function cleanLines(rawText: string) {
-  return rawText
-    .replace(PAGE_BREAK, '')
-    .split('\n')
-    .filter((line) => !PAGE_FOOTER.test(line))
-    .map((line) => line.trimEnd())
 }

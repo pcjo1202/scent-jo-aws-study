@@ -26,6 +26,13 @@ describe('mergeRenderings', () => {
     expect(mergeRenderings([['가나     다라']])).toEqual({ text: '가나 다라', unknownSeams: 0 })
   })
 
+  it('같은 자리를 한쪽은 공백, 다른 쪽은 붙은 것으로 읽었으면 던진다', () => {
+    // 다수결로 넘기면 "추정하지 않는다"가 깨지고 하필 단어를 쪼개는 쪽으로 기운다.
+    expect(() => mergeRenderings([['가나 다라'], ['가나다라']])).toThrow(
+      '판본이 같은 자리를 다르게 읽었다',
+    )
+  })
+
   it('판본이 서로 다른 글자를 읽었으면 던진다', () => {
     expect(() => mergeRenderings([['가나다'], ['가나라']])).toThrow(
       '판본이 서로 다른 내용을 읽었다',
