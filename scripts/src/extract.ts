@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { SOURCE_FILE_NUMBERS, findSourcePdf, readPdfText } from './source-pdfs.ts'
 import { splitQuestionBlocks } from './questions/split-blocks.ts'
 import { parseQuestion, type ParsedQuestion } from './questions/parse-question.ts'
-import { buildSeamOracle } from './questions/seam-oracle.ts'
+import { buildSeamOracle } from './text/seam-oracle.ts'
 
 /** 원본 PDF에서 학습 데이터를 뽑아 `data/`에 쓴다 (`04-data-model.md` 「data:extract」). */
 

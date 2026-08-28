@@ -1,7 +1,7 @@
 import type { ChoiceKey } from '@aws-study/shared'
 import type { QuestionBlock } from './split-blocks.ts'
-import { joinWrappedLines } from './join-wrapped-lines.ts'
-import type { SeamOracle } from './seam-oracle.ts'
+import { joinWrappedLines } from '../text/join-wrapped-lines.ts'
+import type { SeamOracle } from '../text/seam-oracle.ts'
 
 /**
  * 문항 블록 하나를 구조로 바꾼다 (`04-data-model.md` 「Question」).
