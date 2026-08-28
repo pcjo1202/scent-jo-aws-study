@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 
-import { QueryProvider } from '@/_app/providers/query-provider'
 import { DARK_SCHEME_QUERY, THEME_STORAGE_KEY } from '@/shared/lib/theme'
+
+import { QueryProvider } from '@/_app/providers/query-provider'
 
 import '@/shared/styles/global.css'
 

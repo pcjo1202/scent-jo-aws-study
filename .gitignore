@@ -28,3 +28,6 @@ dist/
 .claude/skills/react-best-practices/
 # gstack 도구 부산물 (browse 로그)
 .gstack/
+
+# playwright MCP가 QA 중에 남기는 스냅샷·콘솔 로그. 세션 산출물이라 커밋하지 않는다.
+.playwright-mcp/
