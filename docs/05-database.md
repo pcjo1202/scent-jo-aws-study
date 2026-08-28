@@ -191,6 +191,7 @@ Nest가 CDN 인덱스를 메모리에 캐시한다.
 | 답안 채점 | `answer` |
 | 카테고리별 통계 | `categories` |
 | 문항 id 유효성 검증 | 키 존재 여부 |
+| 선택지 키 유효성 검증 | `choiceCount` |
 | 모의고사 추첨 | 전체 id 목록 |
 
 **캐시 정책**
@@ -237,14 +238,14 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트�
 // 요청
 {
   questionId: number
-  selected: Array<'A'|'B'|'C'|'D'|'E'>
+  selected: Array<'A'|'B'|'C'|'D'|'E'|'F'>
   source: 'sequential' | 'review' | 'exam'
   sessionId?: string        // source가 'exam'이면 필수
   durationMs?: number
   advancesPointer?: boolean // sequential 전용. 기본 true, 필터 모드는 false
 }
 // 응답 — sequential | review
-{ isCorrect: boolean, answer: Array<'A'|'B'|'C'|'D'|'E'> }
+{ isCorrect: boolean, answer: Array<'A'|'B'|'C'|'D'|'E'|'F'> }
 // 응답 — exam (정오를 돌려주지 않는다)
 { accepted: true }
 
@@ -252,7 +253,7 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트�
 // 요청 — answeredAt(클라이언트 발생 시각)을 created_at으로 기록한다
 { items: Array<{
   questionId: number
-  selected: Array<'A'|'B'|'C'|'D'|'E'>
+  selected: Array<'A'|'B'|'C'|'D'|'E'|'F'>
   source: 'sequential' | 'review' | 'exam'
   sessionId?: string
   durationMs?: number
@@ -273,7 +274,7 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트�
   startedAt: string
   finishedAt: string | null
   score: number | null
-  answers: Record<number, Array<'A'|'B'|'C'|'D'|'E'>>   // 문항별 최신 답안
+  answers: Record<number, Array<'A'|'B'|'C'|'D'|'E'|'F'>>   // 문항별 최신 답안
   results: ExamResult[] | null    // 종료된 세션에만. 진행 중이면 null
 }
 
@@ -283,8 +284,8 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트�
 
 type ExamResult = {
   questionId: number
-  selected: Array<'A'|'B'|'C'|'D'|'E'> | null   // null = 미응답
-  answer: Array<'A'|'B'|'C'|'D'|'E'>
+  selected: Array<'A'|'B'|'C'|'D'|'E'|'F'> | null   // null = 미응답
+  answer: Array<'A'|'B'|'C'|'D'|'E'|'F'>
   isCorrect: boolean
 }
 
@@ -316,7 +317,8 @@ type ExamResult = {
 | 진행 중 세션이 있는데 새 세션 생성 | 409 |
 | 종료된 세션에 답안 제출 | 409 |
 | 종료된 세션을 삭제 시도 | 409 |
-| `questionId` 범위 밖 / 선택지 키 불일치 | 400 |
+| `questionId` 범위 밖 | 400 |
+| `selected`에 그 문항의 `choiceCount` 범위를 벗어난 키 (예: 선택지 4개 문항에 `'E'`) | 400 |
 | exam 시도의 `questionId`가 세션 `question_ids`에 없음 | 400 |
 | JWT의 `email`이 `ALLOWED_EMAIL`과 불일치 | 403 |
 | `finish` 시 세션 `content_version`이 카탈로그 현재 버전과 불일치 | 409 |
