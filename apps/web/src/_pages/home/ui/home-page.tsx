@@ -3,6 +3,7 @@ import { withRelatedProject } from '@vercel/related-projects'
 
 import { getQueryClient } from '@/shared/api/query-client'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
+import { ThemeToggle } from '@/shared/ui/theme-toggle'
 
 import { healthQuery } from '../api/health-query'
 
@@ -25,13 +26,16 @@ export function HomePage() {
   void queryClient.prefetchQuery(healthQuery(apiUrl))
 
   return (
-    <main>
+    // 읽기 칼럼 상한과 화면 여백은 토큰이 정한다 (DESIGN.md 「Layout」).
+    // px-screen이 compact 16px / medium·expanded 24px로 알아서 갈린다.
+    <main className="mx-auto flex max-w-reading flex-col gap-6 px-screen py-6">
       <h1>AWS SAA-C03 학습</h1>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <QueryBoundary pending={<p>api 상태 확인 중…</p>}>
           <HealthStatus apiUrl={apiUrl} />
         </QueryBoundary>
       </HydrationBoundary>
+      <ThemeToggle />
     </main>
   )
 }
