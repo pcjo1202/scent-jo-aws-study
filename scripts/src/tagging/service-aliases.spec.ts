@@ -68,7 +68,7 @@ describe('buildServiceAliases', () => {
     const service = 'Amazon Managed Service for Apache Flink'
     const items = [note(service, '메시징'), note(service, '분석')]
 
-    const entry = buildServiceAliases(items, NO_SUPPLEMENTS).find((it) => it.alias === service)
+    const entry = buildServiceAliases(items, NO_SUPPLEMENTS).find((entry) => entry.alias === service)
 
     expect(entry?.categories).toEqual(expect.arrayContaining(['메시징', '분석']))
     expect(entry?.categories).toHaveLength(2)
@@ -85,10 +85,45 @@ describe('buildServiceAliases', () => {
       koreanAliases: [],
     }
 
-    const entry = buildServiceAliases(items, supplements).find((it) => it.alias === 'S3')
+    const entry = buildServiceAliases(items, supplements).find((entry) => entry.alias === 'S3')
 
     expect(entry?.service).toBe('Amazon S3')
     expect(entry?.categories).toEqual(['스토리지'])
+  })
+
+  it('한 서비스가 별칭을 여럿 내도 한 표다', () => {
+    const items = [
+      note('S3 Replication (CRR/SRR)', '스토리지'),
+      note('S3 Bucket Policy', '보안'),
+      note('S3 Object Lock', '보안'),
+    ]
+    const supplements: AliasSupplements = {
+      roots: [{ root: 'S3', service: 'Amazon S3' }],
+      koreanAliases: [],
+    }
+
+    // 스토리지 1표(별칭은 `S3 Replication (CRR/SRR)`·`S3 Replication` 둘) vs 보안 2표.
+    const entry = buildServiceAliases(items, supplements).find((it) => it.alias === 'S3')
+
+    expect(entry?.categories).toEqual(['보안'])
+  })
+
+  it('벤더 접두사를 뗀 별칭으로도 루트 투표에 참여한다', () => {
+    const items = [note('AWS Shield Standard', '보안'), note('AWS Shield Advanced', '보안')]
+    const supplements: AliasSupplements = {
+      roots: [{ root: 'Shield', service: 'AWS Shield' }],
+      koreanAliases: [],
+    }
+
+    const entry = buildServiceAliases(items, supplements).find((it) => it.alias === 'Shield')
+
+    expect(entry?.categories).toEqual(['보안'])
+  })
+
+  it('벤더 접두사를 떼면 일반 명사가 되는 이름은 별칭으로 만들지 않는다', () => {
+    const aliases = buildServiceAliases([note('AWS Batch', '컴퓨트')], NO_SUPPLEMENTS)
+
+    expect(aliases.map((entry) => entry.alias)).toEqual(['AWS Batch'])
   })
 
   it('자식이 없는 루트는 던진다 — 카테고리를 지어내지 않는다', () => {

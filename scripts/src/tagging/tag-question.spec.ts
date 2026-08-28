@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { ChoiceKey } from '@aws-study/shared'
 import type { OneLiner } from '../notes/parse-oneliner.ts'
 import { buildServiceAliases, type AliasSupplements } from './service-aliases.ts'
 import { tagQuestion, type TaggableQuestion } from './tag-question.ts'
@@ -22,11 +23,13 @@ const NOTES = [
 ]
 const ALIASES = buildServiceAliases(NOTES, NO_SUPPLEMENTS)
 
-function question(stem: string, choices: string[], answer: string[]): TaggableQuestion {
+const CHOICE_KEYS: ChoiceKey[] = ['A', 'B', 'C', 'D', 'E', 'F']
+
+function question(stem: string, choices: string[], answer: ChoiceKey[]): TaggableQuestion {
   return {
     stem,
-    choices: choices.map((text, index) => ({ key: 'ABCDEF'[index] as never, text })),
-    answer: answer as never,
+    choices: choices.map((text, index) => ({ key: CHOICE_KEYS[index]!, text })),
+    answer,
   }
 }
 

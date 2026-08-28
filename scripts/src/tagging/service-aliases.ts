@@ -59,6 +59,17 @@ const KOREAN_ALIASES: KoreanAlias[] = [
   { alias: '람다', service: 'AWS Lambda' }, // 0
 ]
 
+/**
+ * 벤더 접두사를 떼면 일반 명사가 되어 남의 서비스에 걸리는 별칭.
+ *
+ * `AWS Batch` → `Batch`가 `S3 Batch Operations`를 말하는 문항 4개(216·446·740·912)를
+ * 먹었다. `AWS Batch`가 붙은 8문항의 절반이다. 사전에 같은 모양이 더 있지만
+ * (`Config`·`Backup`·`Artifact`·`Inspector`·`Organizations`·`Amplify`·`Shield`) 이
+ * 코퍼스에서 벤더명 없이 걸린 문항은 전부 0건이라 넣지 않는다 — 안 터진 것을 미리
+ * 막으면 진짜 언급까지 놓친다 (2026-08-28 실측).
+ */
+const AMBIGUOUS_STRIPPED_ALIASES = new Set(['Batch'])
+
 export const NOTE_SUPPLEMENTS: AliasSupplements = {
   roots: ROOT_SERVICES,
   koreanAliases: KOREAN_ALIASES,
@@ -123,23 +134,35 @@ export function buildServiceAliases(
 }
 
 /**
- * 루트의 카테고리는 그 루트로 시작하는 노트 항목의 다수결이다.
+ * 루트의 카테고리는 그 루트로 시작하는 별칭을 가진 **서비스**의 다수결이다.
  *
- * `S3 Bucket Policy`는 보안이지만 나머지 17개 `S3 *`는 전부 스토리지다 — 소수
- * 항목 하나 때문에 루트를 포기하지 않고, 자식이 아예 없으면 지어내지 않고 던진다.
+ * 표는 서비스당 하나다. 한 서비스가 별칭을 여럿 내도(`S3 Replication (CRR/SRR)`)
+ * 한 표이고, 벤더 접두사를 뗀 별칭으로 참여하는 것도 받는다 — `AWS Shield Standard`는
+ * 이름이 `Shield`로 시작하지 않지만 `Shield Standard`가 시작한다.
+ *
+ * `S3 Bucket Policy`는 보안이지만 나머지 18개 `S3 *`는 스토리지다 — 소수 항목 하나
+ * 때문에 루트를 포기하지 않고, 표가 아예 없으면 지어내지 않고 던진다.
+ *
+ * 동률은 이름순으로 가른다. 승자가 노트를 읽은 순서에 좌우되면 노트 한 줄이 바뀔 때
+ * 루트 하나의 카테고리가 통째로 뒤집힌다.
  */
 function categoriesOfRoot(root: string, derived: ServiceAlias[]): string[] {
   const prefix = `${root.toLowerCase()} `
+  const votedServices = new Set<string>()
   const tally = new Map<string, number>()
+
   for (const entry of derived) {
     if (!entry.alias.toLowerCase().startsWith(prefix)) continue
+    if (votedServices.has(entry.service)) continue
+
+    votedServices.add(entry.service)
     for (const category of entry.categories) tally.set(category, (tally.get(category) ?? 0) + 1)
   }
 
-  const ranked = [...tally].sort(([, a], [, b]) => b - a)
+  const ranked = [...tally].sort(([nameA, a], [nameB, b]) => b - a || nameA.localeCompare(nameB))
   const top = ranked[0]
   if (top === undefined) {
-    throw new Error(`루트 «${root}»으로 시작하는 노트 항목이 없다 — 카테고리를 정할 수 없다`)
+    throw new Error(`루트 «${root}»으로 시작하는 별칭을 가진 서비스가 없다 — 카테고리를 정할 수 없다`)
   }
 
   return [top[0]]
@@ -154,7 +177,10 @@ function expandAliases(service: string): string[] {
 
     aliases.add(trimmed)
     const withoutVendor = trimmed.match(VENDOR_PREFIX)
-    if (withoutVendor) aliases.add(withoutVendor[1]!.trim())
+    if (!withoutVendor) return
+
+    const stripped = withoutVendor[1]!.trim()
+    if (!AMBIGUOUS_STRIPPED_ALIASES.has(stripped)) aliases.add(stripped)
   }
 
   const parenthesized = service.match(PARENTHESIZED)
@@ -167,7 +193,7 @@ function expandAliases(service: string): string[] {
     const inner = parenthesized[2]!.replace(LEGACY_NAME_PREFIX, '')
     if (!inner.includes('/')) add(inner)
   }
-  if (base.includes(DASH_SEPARATOR)) add(base.replace(DASH_SEPARATOR, ' '))
+  if (base.includes(DASH_SEPARATOR)) add(base.replaceAll(DASH_SEPARATOR, ' '))
   if (base.includes(SLASH_SEPARATOR)) for (const part of base.split(SLASH_SEPARATOR)) add(part)
 
   return [...aliases]

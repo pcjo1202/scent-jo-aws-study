@@ -8,8 +8,8 @@ import type { ServiceAlias } from './service-aliases.ts'
  * 등장하는 Athena 문제"가 데이터베이스로 분류된다.
  */
 
-/** `04` 「Question」의 `categories`는 1~3개다. */
-const MAX_CATEGORIES = 3
+/** `04` 「Question」의 `categories`는 0~3개다. 자르는 쪽과 재는 쪽이 같은 값을 봐야 한다. */
+export const MAX_CATEGORIES = 3
 /**
  * 최상위 점수의 1/N 미만인 카테고리는 버린다. 점수는 그 카테고리 서비스가 지문에
  * **몇 번 언급됐는지**다 — 배경으로 한 번 스치는 이름과 문제의 주제를 가른다.

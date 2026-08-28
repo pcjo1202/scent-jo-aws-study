@@ -174,11 +174,10 @@ function reportNotes({ oneLiners, comparisons, unknownSeams }: Notes) {
  * 출력만 한다 — 게이트를 따로 테스트하려면 순수 함수여야 한다.
  */
 function reportTagging(questions: TaggedQuestion[], knownCategories: Set<string>) {
-  const untagged = questions.filter((question) => question.services.length === 0)
   const anomalies = findTaggingAnomalies(questions, knownCategories)
 
   console.log(
-    `태깅 대상 ${questions.length}개 (기대 ${EXPECTED_QUESTION_COUNT}) · 미태깅 ${untagged.length}개 (${formatShare(untagged.length, questions.length)})`,
+    `태깅 대상 ${questions.length}개 (기대 ${EXPECTED_QUESTION_COUNT}) · 미태깅 ${anomalies.untagged}개 (${formatShare(anomalies.untagged, questions.length)}, 상한 ${anomalies.untaggedLimit}개)`,
   )
   console.log(
     `문항당 카테고리 수: ${formatDistribution(questions.map((question) => `${question.categories.length}개`))}`,
@@ -191,9 +190,11 @@ function reportTagging(questions: TaggedQuestion[], knownCategories: Set<string>
   for (const [category, count] of anomalies.overweight) {
     console.log(`카테고리 편중 «${category}»: ${count}개 — 상한 ${anomalies.limit}개`)
   }
-  for (const [label, count] of Object.entries(anomalies.counts)) console.log(`${label}: ${count}개`)
+  for (const [label, count] of Object.entries(anomalies.anomalyCounts)) {
+    console.log(`${label}: ${count}건`)
+  }
 
-  return Object.values(anomalies.counts).reduce((sum, count) => sum + count, 0)
+  return Object.values(anomalies.anomalyCounts).reduce((sum, count) => sum + count, 0)
 }
 
 function formatShare(count: number, total: number) {
