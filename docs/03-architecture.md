@@ -114,7 +114,7 @@ web 프리뷰는 api의 **브랜치 별칭**(`aws-study-api-git-<브랜치>-…`
                                            ④ sub 클레임 → user_id
 ```
 
-Supabase는 **비대칭 JWT 서명**을 쓴다. Nest는 부팅 시 `https://<ref>.supabase.co/auth/v1/jwks`에서 공개키를 받아 메모리에 캐시하고, 이후 요청마다 `kid`로 키를 골라 로컬 검증한다. 요청당 네트워크 왕복이 없고, 키 교체·폐기를 Nest 재배포 없이 할 수 있다.
+Supabase는 **비대칭 JWT 서명**(ES256 · ECC P-256)을 쓴다. Nest는 부팅 시 `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`에서 공개키를 받아 메모리에 캐시하고, 이후 요청마다 `kid`로 키를 골라 로컬 검증한다. 요청당 네트워크 왕복이 없고, 키 교체·폐기를 Nest 재배포 없이 할 수 있다.
 
 브라우저가 Nest를 직접 호출한다. Next.js를 프록시로 두지 않는다. CORS를 한 번 설정하면 되고, 프록시 홉이 하나 줄어든다.
 
