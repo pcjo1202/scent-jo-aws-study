@@ -10,11 +10,22 @@
  * 판정한다. 오라클을 주지 않으면 붙이는 쪽으로 간다 — 놓친 공백
  * ("업로드를사용하여")은 읽는 데 지장이 없지만, 잘못 넣은 공백은 단어를
  * 쪼개("데이 터") 읽기와 서비스명 매칭을 함께 깨뜨린다.
+ *
+ * **줄 끝 하이픈만 예외다.** 거기서는 줄바꿈이 단어 경계가 아니라 토큰 안쪽이다.
  */
 
 import type { SeamOracle } from './seam-oracle.ts'
 
 const HANGUL_SYLLABLE = /[가-힣]/
+/**
+ * 줄 끝 하이픈은 토큰이 이어진다는 뜻이다 — PDF가 `ap-`+`northeast-2`,
+ * `S3 Standard-`+`Infrequent Access`, `(SSE-`+`KMS)` 처럼 하이픈에서 접는다.
+ *
+ * 코퍼스의 하이픈 줄바꿈 50자리가 전부 이 형태다 (2026-08-31 전수, SJO-7 내용
+ * 정확도 검수). 띄우면 서비스명이 쪼개져 읽기와 태깅이 함께 깨진다. 골든
+ * 픽스처는 공백을 지우고 비교하므로 이 자리를 못 잡는다 (`08-testing.md`).
+ */
+const CONTINUES_TOKEN = /-$/
 /**
  * IAM 정책 같은 코드 블록. 들여쓰기가 곧 의미라 줄을 잇지 않는다.
  *
@@ -49,6 +60,8 @@ export function joinWrappedLines(lines: string[], seamHasSpace: SeamOracle = nev
 }
 
 function needsSpace(left: string, right: string, seamHasSpace: SeamOracle) {
+  if (CONTINUES_TOKEN.test(left)) return false
+
   const isHangulSeam = HANGUL_SYLLABLE.test(left.at(-1)!) && HANGUL_SYLLABLE.test(right[0]!)
   return isHangulSeam ? seamHasSpace(left, right) : true
 }
