@@ -32,7 +32,7 @@ _최종 갱신: 2026-08-28_
 |---|---|
 | CDN 배포 버전 | 없음 |
 | 로컬 `data/` | `questions.json` 1019문항 (태그 포함 3.1MB) · `oneliners.json` 203개 · `comparisons.json` 48쌍. `data:extract` 산출물 |
-| 로컬 `tests/fixtures/` | 골든 픽스처 6문항 (`1`·`2`·`44`·`242`·`451`·`494`). 이 기기에서 원문을 읽고 다시 작성했다 (2026-08-28, SJO-6) — 다른 PC의 사본과 별개다. gitignored이므로 새 기기는 `data:pull`(SJO-7)로만 복구된다 |
+| 로컬 `tests/fixtures/` | 골든 픽스처 6문항 (`1`·`2`·`44`·`242`·`451`·`494`). 이 기기에서 원문을 읽고 다시 작성했다 (2026-08-28, SJO-6) — 다른 PC의 사본과 별개다. gitignored이므로 새 기기는 `data:pull`(SJO-8)로만 복구된다 |
 | 원본 PDF 위치 | `~/Downloads/AWS-SAA` (로컬만). `scripts/.env`의 `SOURCE_PDF_DIR`이 가리킨다. 파일명은 **번호 접두사**가 있어야 한다 (`4. aws-saa-c03-q001-500.pdf`) — `findSourcePdf`가 그 번호로 고른다 |
 | `pdftotext` (poppler) | **설치됨** 26.08.0 (`brew install poppler`). 없으면 `data:extract`가 ENOENT로 죽는다 |
 | 해부서 판독 진행 | **0 / 61쪽** — PART 1·2·3 전부 미판독 |
