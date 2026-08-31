@@ -1,6 +1,13 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { buildIndex, chunkFileName, chunkQuestions } from './artifacts/build-chunks.ts'
+import {
+  DEFAULT_VERSION,
+  buildManifest,
+  digest,
+  type FileDigest,
+  toCdnKey,
+} from './artifacts/build-manifest.ts'
 import { SOURCE_FILE_NUMBERS, findSourcePdf, readPdfText } from './source-pdfs.ts'
 import { splitQuestionBlocks } from './questions/split-blocks.ts'
 import { parseQuestion, type ParsedQuestion } from './questions/parse-question.ts'
@@ -24,6 +31,7 @@ const EXPECTED_CATEGORY_COUNT = 11
 /** `01-requirements.md` 「요약 노트」. 한 서비스가 카테고리 둘에 실려 203이 아니다. */
 const EXPECTED_UNIQUE_SERVICE_COUNT = 202
 const DATA_DIR = fileURLToPath(new URL('../../data/', import.meta.url))
+const FIXTURES_DIR = fileURLToPath(new URL('../../tests/fixtures/questions/', import.meta.url))
 
 type Notes = { oneLiners: OneLiner[]; comparisons: Comparison[]; unknownSeams: number }
 type TaggedQuestion = ParsedQuestion & QuestionTopics
@@ -54,15 +62,55 @@ function main() {
  */
 function writeArtifacts(questions: TaggedQuestion[], notes: Notes) {
   const chunks = chunkQuestions(questions)
+  const files: Record<string, FileDigest> = {}
 
   mkdirSync(`${DATA_DIR}chunks/`, { recursive: true })
-  for (const chunk of chunks) write(`chunks/${chunkFileName(chunk.chunk)}`, chunk)
-  write('index.json', { entries: buildIndex(chunks) })
-  write('oneliners.json', { items: notes.oneLiners })
-  write('comparisons.json', { items: notes.comparisons })
+  for (const chunk of chunks) {
+    const name = `chunks/${chunkFileName(chunk.chunk)}`
+    files[toCdnKey(name)] = write(name, chunk)
+  }
+  files[toCdnKey('index.json')] = write('index.json', { entries: buildIndex(chunks) })
+  files[toCdnKey('oneliners.json')] = write('oneliners.json', { items: notes.oneLiners })
+  files[toCdnKey('comparisons.json')] = write('comparisons.json', { items: notes.comparisons })
+  Object.assign(files, digestFixtures())
+
+  const questionCount = chunks.reduce((sum, chunk) => sum + chunk.questions.length, 0)
+  writeFileSync(
+    `${DATA_DIR}manifest.json`,
+    JSON.stringify(
+      buildManifest(files, {
+        version: process.env.DATA_VERSION ?? DEFAULT_VERSION,
+        // 실제 CDN 경로는 랜덤 프리픽스를 포함해 레포에 커밋하지 않는다 (루트 `CLAUDE.md`).
+        base: process.env.DATA_CDN_BASE ?? '',
+        generatedAt: new Date().toISOString(),
+        questionCount,
+      }),
+    ),
+  )
 
   console.log(
-    `청크 ${chunks.length}개 · 인덱스 ${chunks.reduce((n, c) => n + c.questions.length, 0)}행`,
+    `청크 ${chunks.length}개 · 인덱스 ${questionCount}행 · manifest ${Object.keys(files).length}파일`,
+  )
+}
+
+/**
+ * 골든 픽스처도 publish 대상이다 (`04-data-model.md` 「data:publish」 3단계) — 저작권
+ * 자료라 git에 없고 `data:pull`이 데이터와 함께 복원한다.
+ *
+ * 없으면 건너뛴다. 파서를 돌리는 데는 필요 없고, 빠진 것은 `data:verify`가
+ * 「누락된 골든 픽스처」로 잡아 배포를 막는다.
+ */
+function digestFixtures() {
+  if (!existsSync(FIXTURES_DIR)) {
+    console.warn('골든 픽스처가 없다 — manifest에서 빠진다 (pnpm data:pull)')
+    return {}
+  }
+
+  return Object.fromEntries(
+    readdirSync(FIXTURES_DIR).map((name) => [
+      `fixtures/questions/${name}`,
+      digest(readFileSync(`${FIXTURES_DIR}${name}`)),
+    ]),
   )
 }
 
@@ -244,8 +292,10 @@ function countOverlappingRebuttals(questions: ParsedQuestion[]) {
 }
 
 /** CDN에 그대로 올라가는 파일이라 들여쓰기를 넣지 않는다 (`04` 「chunk-NNN.json」의 크기 추정치). */
-function write(name: string, data: unknown) {
-  writeFileSync(`${DATA_DIR}${name}`, JSON.stringify(data))
+function write(name: string, data: unknown): FileDigest {
+  const content = JSON.stringify(data)
+  writeFileSync(`${DATA_DIR}${name}`, content)
+  return digest(content)
 }
 
 main()

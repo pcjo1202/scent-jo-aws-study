@@ -2,7 +2,14 @@ import type { ChoiceKey, Question } from '@aws-study/shared'
 import { describe, expect, it } from 'vitest'
 import type { Comparison } from '../notes/parse-comparison.ts'
 import type { OneLiner } from '../notes/parse-oneliner.ts'
-import { buildIndex, chunkQuestions } from './build-chunks.ts'
+import { buildIndex, chunkFileName, chunkQuestions } from './build-chunks.ts'
+import {
+  DEFAULT_VERSION,
+  type FileDigest,
+  buildManifest,
+  digest,
+  toCdnKey,
+} from './build-manifest.ts'
 import {
   type Artifacts,
   EXPECTED_COMPARISON_COUNT,
@@ -91,14 +98,40 @@ function comparisons(): Comparison[] {
   }))
 }
 
+/** 산출물을 실제로 직렬화해 잰다 — manifest 검사가 보는 것이 그 값이다. */
+function measure(chunks: ReturnType<typeof chunkQuestions>, all: Artifacts['oneLiners']) {
+  const files: Record<string, FileDigest> = {}
+  for (const chunk of chunks) {
+    files[toCdnKey(`chunks/${chunkFileName(chunk.chunk)}`)] = digest(JSON.stringify(chunk))
+  }
+  files[toCdnKey('index.json')] = digest(JSON.stringify({ entries: buildIndex(chunks) }))
+  files[toCdnKey('oneliners.json')] = digest(JSON.stringify({ items: all }))
+  files[toCdnKey('comparisons.json')] = digest(JSON.stringify({ items: comparisons() }))
+  for (const id of EXPECTED_FIXTURE_IDS) {
+    files[`fixtures/questions/${id}.json`] = digest(`픽스처 ${id}`)
+  }
+  return files
+}
+
 function artifacts(): Artifacts {
   const chunks = chunkQuestions(questions())
+  const items = oneLiners()
+  const actualFiles = measure(chunks, items)
+
   return {
     chunks,
     index: buildIndex(chunks),
-    oneLiners: oneLiners(),
+    oneLiners: items,
     comparisons: comparisons(),
     fixtureIds: [...EXPECTED_FIXTURE_IDS],
+    actualFiles,
+    // manifest에 사본을 넣는다 — 같은 객체를 공유하면 한쪽을 깨뜨려도 차이가 안 난다.
+    manifest: buildManifest(structuredClone(actualFiles), {
+      version: DEFAULT_VERSION,
+      base: 'https://cdn.example/aws-saa/v1',
+      generatedAt: '2026-08-31T00:00:00.000Z',
+      questionCount: EXPECTED_QUESTION_COUNT,
+    }),
   }
 }
 
@@ -189,6 +222,28 @@ const BREAKAGES: Array<[label: string, breaks: (broken: Artifacts) => void]> = [
     '서비스가 없는데 카테고리가 붙은 문항',
     (broken) => void (broken.chunks[9]!.questions[0]!.services = []),
   ],
+
+  [
+    'manifest에 없는 산출물 파일',
+    (broken) => void delete broken.manifest.files['questions/chunk-003.json'],
+  ],
+  [
+    '산출물에 없는 manifest 항목',
+    (broken) => void (broken.manifest.files['notes/anatomy.json'] = { bytes: 1, sha256: 'x' }),
+  ],
+  [
+    // 올라간 파일이 조용히 바뀐 모양. 크기가 같으면 bytes로는 안 잡힌다.
+    'manifest의 sha256 불일치',
+    (broken) => void (broken.manifest.files['questions/index.json']!.sha256 = 'f'.repeat(64)),
+  ],
+  [
+    'manifest의 bytes 불일치',
+    (broken) => void (broken.manifest.files['questions/index.json']!.bytes = 1),
+  ],
+  ['manifest 버전이 빔', (broken) => void (broken.manifest.version = '  ')],
+  ['manifest의 문항 수가 산출물과 다름', (broken) => void (broken.manifest.questions.total = 1000)],
+  ['manifest의 청크 수가 산출물과 다름', (broken) => void (broken.manifest.questions.chunks = 10)],
+  ['manifest의 청크 크기가 다름', (broken) => void (broken.manifest.questions.chunkSize = 50)],
 ]
 
 describe('findArtifactAnomalies', () => {
@@ -241,7 +296,9 @@ describe('findArtifactAnomalies', () => {
   })
 
   it('산출물이 비면 통과가 아니라 위반이다 — 0건 검증과 0건 실패를 가른다', () => {
+    const empty = artifacts()
     const anomalies = findArtifactAnomalies({
+      ...empty,
       chunks: [],
       index: [],
       oneLiners: [],

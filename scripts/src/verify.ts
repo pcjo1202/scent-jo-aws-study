@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import type { Chunk, IndexEntry } from '@aws-study/shared'
+import type { Chunk, IndexEntry, Manifest } from '@aws-study/shared'
+import { type FileDigest, digest, toCdnKey } from './artifacts/build-manifest.ts'
 import { type Artifacts, findArtifactAnomalies } from './artifacts/verify-artifacts.ts'
 import type { Comparison } from './notes/parse-comparison.ts'
 import type { OneLiner } from './notes/parse-oneliner.ts'
@@ -22,7 +23,10 @@ function main() {
   const questionCount = artifacts.chunks.reduce((sum, chunk) => sum + chunk.questions.length, 0)
 
   console.log(
-    `대상: 청크 ${artifacts.chunks.length}개 · 문항 ${questionCount}개 · 인덱스 ${artifacts.index.length}행 · 한줄노트 ${artifacts.oneLiners.length}개 · 비교쌍 ${artifacts.comparisons.length}쌍 · 픽스처 ${artifacts.fixtureIds.length}개`,
+    `대상: 청크 ${artifacts.chunks.length}개 · 문항 ${questionCount}개 · 인덱스 ${artifacts.index.length}행 · 한줄노트 ${artifacts.oneLiners.length}개 · 비교쌍 ${artifacts.comparisons.length}쌍 · 픽스처 ${artifacts.fixtureIds.length}개 · manifest ${Object.keys(artifacts.manifest.files).length}파일 (실측 ${Object.keys(artifacts.actualFiles).length}파일)`,
+  )
+  console.log(
+    `manifest: ${artifacts.manifest.version} · base «${artifacts.manifest.base}» · ${artifacts.manifest.generatedAt}`,
   )
   console.log(`정답 개수 분포: ${format(anomalies.answerSizes)}`)
   console.log(`선택지 수 분포: ${format(anomalies.choiceCounts)}`)
@@ -46,14 +50,40 @@ function readArtifacts(): Artifacts {
     .filter((name) => name.endsWith('.json'))
     .sort()
 
+  const fixtureFiles = readdirSync(FIXTURES_DIR)
+
   return {
     chunks: chunkFiles.map((name) => read<Chunk>(`chunks/${name}`)),
     index: read<{ entries: IndexEntry[] }>('index.json').entries,
     oneLiners: read<{ items: OneLiner[] }>('oneliners.json').items,
     comparisons: read<{ items: Comparison[] }>('comparisons.json').items,
-    fixtureIds: readdirSync(FIXTURES_DIR)
+    fixtureIds: fixtureFiles
       .filter((name) => name.endsWith('.json'))
       .map((name) => Number(name.replace('.json', ''))),
+    manifest: read<Manifest>('manifest.json'),
+    actualFiles: measureFiles(chunkFiles, fixtureFiles),
+  }
+}
+
+/** manifest가 적어 둔 값이 아니라 디스크를 다시 잰다 (`artifacts/verify-artifacts.ts`). */
+function measureFiles(chunkFiles: string[], fixtureFiles: string[]): Record<string, FileDigest> {
+  const local = [
+    ...chunkFiles.map((name) => `chunks/${name}`),
+    'index.json',
+    'oneliners.json',
+    'comparisons.json',
+  ]
+
+  return {
+    ...Object.fromEntries(
+      local.map((name) => [toCdnKey(name), digest(readFileSync(`${DATA_DIR}${name}`))]),
+    ),
+    ...Object.fromEntries(
+      fixtureFiles.map((name) => [
+        `fixtures/questions/${name}`,
+        digest(readFileSync(`${FIXTURES_DIR}${name}`)),
+      ]),
+    ),
   }
 }
 

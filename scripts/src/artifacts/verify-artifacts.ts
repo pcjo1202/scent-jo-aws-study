@@ -1,8 +1,9 @@
-import type { Chunk, IndexEntry } from '@aws-study/shared'
+import type { Chunk, IndexEntry, Manifest } from '@aws-study/shared'
 import type { Comparison } from '../notes/parse-comparison.ts'
 import type { OneLiner } from '../notes/parse-oneliner.ts'
 import { findTaggingAnomalies } from '../tagging/tagging-anomalies.ts'
 import { CHUNK_SIZE } from './build-chunks.ts'
+import type { FileDigest } from './build-manifest.ts'
 
 /**
  * 배포할 산출물을 전수로 검증한다 (`08-testing.md` 「data:verify」·`04-data-model.md`).
@@ -32,6 +33,9 @@ export type Artifacts = {
   comparisons: Comparison[]
   /** `tests/fixtures/questions/`에 있는 문항 번호. publish 대상이다. */
   fixtureIds: number[]
+  manifest: Manifest
+  /** CDN 키 → 디스크에서 다시 잰 값. manifest를 그 자신으로 검증하지 않는다. */
+  actualFiles: Record<string, FileDigest>
 }
 
 export type ArtifactAnomalies = {
@@ -56,6 +60,7 @@ export function findArtifactAnomalies(artifacts: Artifacts): ArtifactAnomalies {
     ...countIndexDefects(chunks, index),
     ...countNoteDefects(oneLiners, comparisons),
     '누락된 골든 픽스처': EXPECTED_FIXTURE_IDS.filter((id) => !fixtureIds.includes(id)).length,
+    ...countManifestDefects(artifacts, questions.length),
     ...tagging.anomalyCounts,
   }
 
@@ -192,6 +197,32 @@ function countNoteDefects(oneLiners: OneLiner[], comparisons: Comparison[]) {
     '중요도가 1~3 밖인 비교쌍': comparisons.filter(
       (comparison) => comparison.importance < 1 || comparison.importance > MAX_ANSWER_SIZE,
     ).length,
+  }
+}
+
+/**
+ * manifest가 실제 산출물과 갈라지면 배포가 조용히 반쪽이 된다 (`04` 「manifest.json」).
+ *
+ * 비교 대상은 manifest에 적힌 값이 아니라 **디스크에서 다시 잰 값**이다 — 자기가
+ * 적은 해시로 자기를 검증하면 무엇도 확인하지 못한다.
+ */
+function countManifestDefects({ manifest, chunks, actualFiles }: Artifacts, questionCount: number) {
+  const listed = Object.keys(manifest.files)
+  const actual = Object.keys(actualFiles)
+
+  return {
+    'manifest에 없는 산출물 파일': actual.filter((key) => !(key in manifest.files)).length,
+    '산출물에 없는 manifest 항목': listed.filter((key) => !(key in actualFiles)).length,
+    'manifest의 sha256 불일치': listed.filter(
+      (key) => key in actualFiles && manifest.files[key]!.sha256 !== actualFiles[key]!.sha256,
+    ).length,
+    'manifest의 bytes 불일치': listed.filter(
+      (key) => key in actualFiles && manifest.files[key]!.bytes !== actualFiles[key]!.bytes,
+    ).length,
+    'manifest 버전이 빔': manifest.version.trim() ? 0 : 1,
+    'manifest의 문항 수가 산출물과 다름': manifest.questions.total === questionCount ? 0 : 1,
+    'manifest의 청크 수가 산출물과 다름': manifest.questions.chunks === chunks.length ? 0 : 1,
+    'manifest의 청크 크기가 다름': manifest.questions.chunkSize === CHUNK_SIZE ? 0 : 1,
   }
 }
 
