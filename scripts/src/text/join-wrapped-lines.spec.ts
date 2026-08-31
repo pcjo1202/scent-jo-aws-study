@@ -36,6 +36,11 @@ describe('joinWrappedLines', () => {
     expect(joinWrappedLines(['TCP/', 'UDP 포트'])).toBe('TCP/UDP 포트')
   })
 
+  it('가운뎃점 합성어는 갈라지지 않는다 — 원문에 띄운 형태가 없다', () => {
+    expect(joinWrappedLines(['읽기·', '쓰기 성능'])).toBe('읽기·쓰기 성능')
+    expect(joinWrappedLines(['모니터링', '·감사 요건'])).toBe('모니터링·감사 요건')
+  })
+
   it('띄어 쓴 슬래시는 구분자라 그대로 띄운다 — 비교노트의 신호 목록', () => {
     expect(joinWrappedLines(['신호 하나 /', '신호 둘'])).toBe('신호 하나 / 신호 둘')
   })

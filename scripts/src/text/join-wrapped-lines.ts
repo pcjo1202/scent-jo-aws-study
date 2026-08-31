@@ -12,7 +12,8 @@
  * 쪼개("데이 터") 읽기와 서비스명 매칭을 함께 깨뜨린다.
  *
  * **예외는 줄바꿈이 단어 경계가 아닌 자리다** — 줄 끝의 하이픈·슬래시, 그리고
- * 다음 줄이 조사로 시작하는 자리. 셋 다 토큰 안쪽이라 띄우면 어절이 갈라진다.
+ * 가운뎃점, 그리고 다음 줄이 조사로 시작하는 자리. 전부 토큰 안쪽이라 띄우면
+ * 어절이 갈라진다.
  */
 
 import type { SeamOracle } from './seam-oracle.ts'
@@ -31,7 +32,9 @@ const HANGUL_SYLLABLE = /[가-힣]/
  * 비교노트의 `신호 하나 /`처럼 띄어 쓴 슬래시는 구분자라 그대로 띄운다.
  * 하이픈은 반대로 앞이 공백이어도 잇는다 — 코퍼스의 유일한 사례가 `-`+`>`다.
  */
-const CONTINUES_TOKEN = /-$|\S\/$/
+const CONTINUES_TOKEN = /[-·]$|\S\/$/
+/** 가운뎃점으로 시작하는 줄도 앞 낱말에 붙는다. 원문에 띄운 가운뎃점은 0건이다. */
+const CONTINUES_FROM_LEFT = /^·/
 /**
  * 다음 줄이 조사 하나로 시작하면 앞말에 붙는다 — `Amazon EC2`+`를`, `(ARN)`+`이`.
  * 조사는 앞말과 띄어 쓰지 않으므로 여기서 띄우면 어절이 갈라진다.
@@ -78,7 +81,7 @@ export function joinWrappedLines(lines: string[], seamHasSpace: SeamOracle = nev
 
 function needsSpace(left: string, right: string, seamHasSpace: SeamOracle) {
   if (CONTINUES_TOKEN.test(left)) return false
-  if (LEADING_PARTICLE.test(right)) return false
+  if (CONTINUES_FROM_LEFT.test(right) || LEADING_PARTICLE.test(right)) return false
 
   const isHangulSeam = HANGUL_SYLLABLE.test(left.at(-1)!) && HANGUL_SYLLABLE.test(right[0]!)
   return isHangulSeam ? seamHasSpace(left, right) : true
