@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { buildIndex, chunkFileName, chunkQuestions } from './artifacts/build-chunks.ts'
 import { SOURCE_FILE_NUMBERS, findSourcePdf, readPdfText } from './source-pdfs.ts'
 import { splitQuestionBlocks } from './questions/split-blocks.ts'
 import { parseQuestion, type ParsedQuestion } from './questions/parse-question.ts'
@@ -42,10 +43,27 @@ function main() {
     return
   }
 
-  mkdirSync(DATA_DIR, { recursive: true })
-  write('questions.json', tagged)
+  writeArtifacts(tagged, notes)
+}
+
+/**
+ * 배포 가능한 파일 세트를 쓴다 (`04-data-model.md` 「chunk-NNN.json」·「index.json」).
+ *
+ * 문항 통합본은 두지 않는다 — 청크를 이으면 같은 데이터라 둘을 다 두면 갈라질
+ * 자리가 생기고, CDN에 올라가지 않아 `data:pull`로도 복구되지 않는다.
+ */
+function writeArtifacts(questions: TaggedQuestion[], notes: Notes) {
+  const chunks = chunkQuestions(questions)
+
+  mkdirSync(`${DATA_DIR}chunks/`, { recursive: true })
+  for (const chunk of chunks) write(`chunks/${chunkFileName(chunk.chunk)}`, chunk)
+  write('index.json', { entries: buildIndex(chunks) })
   write('oneliners.json', { items: notes.oneLiners })
   write('comparisons.json', { items: notes.comparisons })
+
+  console.log(
+    `청크 ${chunks.length}개 · 인덱스 ${chunks.reduce((n, c) => n + c.questions.length, 0)}행`,
+  )
 }
 
 function parseQuestions() {
@@ -225,8 +243,9 @@ function countOverlappingRebuttals(questions: ParsedQuestion[]) {
   }).length
 }
 
+/** CDN에 그대로 올라가는 파일이라 들여쓰기를 넣지 않는다 (`04` 「chunk-NNN.json」의 크기 추정치). */
 function write(name: string, data: unknown) {
-  writeFileSync(`${DATA_DIR}${name}`, `${JSON.stringify(data, null, 2)}\n`)
+  writeFileSync(`${DATA_DIR}${name}`, JSON.stringify(data))
 }
 
 main()
