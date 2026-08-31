@@ -31,6 +31,37 @@ describe('joinWrappedLines', () => {
     expect(joinWrappedLines(['Lambda -', '> 다음 단계'])).toBe('Lambda -> 다음 단계')
   })
 
+  it('슬래시로 끝나면 붙인다 — A/B 복합어가 슬래시에서 접힌다', () => {
+    expect(joinWrappedLines(['내구성/', '고가용성 요건'])).toBe('내구성/고가용성 요건')
+    expect(joinWrappedLines(['TCP/', 'UDP 포트'])).toBe('TCP/UDP 포트')
+  })
+
+  it('띄어 쓴 슬래시는 구분자라 그대로 띄운다 — 비교노트의 신호 목록', () => {
+    expect(joinWrappedLines(['신호 하나 /', '신호 둘'])).toBe('신호 하나 / 신호 둘')
+  })
+
+  it('다음 줄이 조사로 시작하면 앞말에 붙인다 — 라틴 토큰과 조사가 갈리면 안 된다', () => {
+    expect(joinWrappedLines(['Amazon EC2', '를 사용한다'])).toBe('Amazon EC2를 사용한다')
+    expect(joinWrappedLines(['(ARN)', '은 고유하다'])).toBe('(ARN)은 고유하다')
+    expect(joinWrappedLines(['NLB', '에서 처리한다'])).toBe('NLB에서 처리한다')
+  })
+
+  it('조사처럼 생겼어도 어절이 이어지면 띄운다 — «인스턴스»는 조사가 아니다', () => {
+    expect(joinWrappedLines(['Amazon EC2', '인스턴스를 만든다'])).toBe(
+      'Amazon EC2 인스턴스를 만든다',
+    )
+    expect(joinWrappedLines(['NLB', '와의 연결'])).toBe('NLB와의 연결')
+    expect(joinWrappedLines(['DB', '로드가 높다'])).toBe('DB 로드가 높다')
+  })
+
+  it('«이»는 붙이지 않는다 — 조사와 지시관형사가 섞여 반례가 있다', () => {
+    // "이 요구사항"의 «이»는 조사가 아니다. 붙이면 오히려 틀린다.
+    expect(joinWrappedLines(['(비용 효율적)', '이 요구사항을 만족한다'])).toBe(
+      '(비용 효율적) 이 요구사항을 만족한다',
+    )
+    expect(joinWrappedLines(['(ARN)', '이 필요하다'])).toBe('(ARN) 이 필요하다')
+  })
+
   it('코드 줄은 잇지 않고 상대 들여쓰기만 남긴다', () => {
     const joined = joinWrappedLines(['    {', '      "Effect": "Allow"', '    }'])
 
