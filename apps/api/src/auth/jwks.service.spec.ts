@@ -31,6 +31,7 @@ beforeAll(async () => {
 
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
 
+  // listen 이후이므로 주소는 항상 AddressInfo다 (파이프로 열지 않았다)
   jwksUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/auth/v1/.well-known/jwks.json`
 })
 
@@ -42,6 +43,9 @@ afterAll(async () => {
 
 it('공개키를 요청마다 받지 않는다 — 연속 검증에 네트워크는 한 번', async () => {
   const service = new JwksService(new ConfigService({ SUPABASE_JWKS_URL: jwksUrl }))
+
+  // 생성자는 네트워크를 타지 않는다 — 첫 검증에서야 받는다 (부팅이 JWKS 장애로 죽지 않는 이유)
+  expect(requestCount).toBe(0)
 
   await jwtVerify(token, service.resolveKey)
   await jwtVerify(token, service.resolveKey)

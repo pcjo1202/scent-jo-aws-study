@@ -4,7 +4,7 @@ import { Controller, Get } from '@nestjs/common'
 import type { INestApplication } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { Test } from '@nestjs/testing'
-import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose'
+import { SignJWT, createLocalJWKSet, errors, exportJWK, generateKeyPair } from 'jose'
 import type { JWK, KeyLike } from 'jose'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -67,6 +67,16 @@ async function signToken(options: TokenOptions = {}) {
 // getHttpServer()의 반환 타입이 any다. Express 어댑터가 주는 것은 http.Server다
 function httpServer() {
   return app.getHttpServer() as Server
+}
+
+async function signTokenWithoutExpiry() {
+  return new SignJWT({ email: ALLOWED_EMAIL })
+    .setProtectedHeader({ alg: SIGNING_ALGORITHM, kid: KID })
+    .setIssuer(ISSUER)
+    .setAudience('authenticated')
+    .setSubject(USER_ID)
+    .setIssuedAt()
+    .sign(signingKey)
 }
 
 function callProbe(token?: string) {
@@ -151,5 +161,65 @@ describe('SupabaseJwtGuard — docs/08 §3 9케이스', () => {
     const response = await request(httpServer()).get('/health').expect(200)
 
     expect(response.body).toMatchObject({ status: 'ok', service: 'api' })
+  })
+})
+
+describe('9케이스 밖 — 코드 리뷰에서 나온 경로', () => {
+  it('exp가 없는 토큰은 401 — jose는 exp가 없으면 만료 검사를 건너뛴다', async () => {
+    await callProbe(await signTokenWithoutExpiry()).expect(401)
+  })
+
+  it('email 대소문자가 달라도 통과한다 — env 오타로 소유자가 잠기지 않는다', async () => {
+    await callProbe(await signToken({ email: 'Owner@Example.COM' })).expect(200)
+  })
+})
+
+describe('JWKS 조회 실패는 401이 아니라 503', () => {
+  async function createAppWithFailingJwks(failure: Error) {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          ignoreEnvFile: true,
+          load: [() => ({ SUPABASE_JWT_ISSUER: ISSUER, ALLOWED_EMAIL })],
+        }),
+        AuthModule,
+      ],
+      controllers: [ProbeController],
+    })
+      .overrideProvider(JwksService)
+      .useValue({ resolveKey: () => Promise.reject(failure) })
+      .compile()
+
+    const failingApp = moduleRef.createNestApplication()
+    await failingApp.init()
+
+    return failingApp
+  }
+
+  it('네트워크 실패는 503 — 401이면 프론트가 재로그인 루프에 빠진다', async () => {
+    const failingApp = await createAppWithFailingJwks(new Error('getaddrinfo ENOTFOUND'))
+
+    try {
+      await request(failingApp.getHttpServer() as Server)
+        .get('/probe')
+        .set('Authorization', `Bearer ${await signToken()}`)
+        .expect(503)
+    } finally {
+      await failingApp.close()
+    }
+  })
+
+  it('JWKS가 아닌 응답도 503 — 옛 경로(/auth/v1/jwks)가 여기로 떨어진다', async () => {
+    const failingApp = await createAppWithFailingJwks(new errors.JWKSInvalid())
+
+    try {
+      await request(failingApp.getHttpServer() as Server)
+        .get('/probe')
+        .set('Authorization', `Bearer ${await signToken()}`)
+        .expect(503)
+    } finally {
+      await failingApp.close()
+    }
   })
 })

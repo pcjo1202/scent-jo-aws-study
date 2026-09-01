@@ -16,6 +16,11 @@ import { Public } from './public.decorator'
  * 9케이스 통과는 "가드가 돈다"는 증거이지 "빠짐없이 막는다"는 증거가 아니다.
  * `@Public()`을 안 붙인 라우트가 뚫릴 수 있는 경로를 한 파일에 모아 세고,
  * 통과해야 할 것까지 같이 넣어 오탐도 본다 (CLAUDE.md 「강제 장치는 우회 경로로 평가한다」).
+ *
+ * 여기서 세는 것은 이 파일이 만든 라우트다. 남은 구멍은 **누군가 실제 컨트롤러에
+ * `@Public()`을 잘못 붙이는 것**이고, 그건 AppModule의 라우트를 열거해 `IS_PUBLIC_KEY`가
+ * `/health` 하나에만 붙었는지 단언해야 잡힌다. 지금 라우트가 `/health` 하나뿐이라
+ * 값이 작아 미룬다 — 도메인 라우트가 생기는 SJO-13 이후에 넣는다.
  */
 @Controller('unmarked')
 class UnmarkedController {
