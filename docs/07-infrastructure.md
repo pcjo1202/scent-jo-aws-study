@@ -28,7 +28,9 @@
 
   기본값이 대칭(HS256)이면 Nest가 JWT secret을 들고 있어야 한다. 비대칭으로 바꾸면 공개키만 있으면 되고, 키 교체·폐기를 Nest 재배포 없이 할 수 있다.
 
-  전환 후 `https://<ref>.supabase.co/auth/v1/jwks`가 응답하는지 확인한다.
+  전환 후 `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`이 공개키를 반환하는지 확인한다. **`/auth/v1/jwks`는 JWKS 엔드포인트가 아니다** — apikey를 요구해 401이 온다 (2026-08-31 실측, SJO-41).
+
+  응답의 `alg`가 **`ES256`**(ECC P-256)이다. 검증 라이브러리가 EC 키를 다뤄야 한다 — 대칭이면 `keys`가 비어 있으므로 전환 실패를 여기서 가른다.
 
 - [ ] 연결 문자열 확보 — **Supavisor 트랜잭션 모드 `:6543`**
 
