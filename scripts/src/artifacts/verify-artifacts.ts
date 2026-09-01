@@ -25,6 +25,8 @@ export const EXPECTED_FIXTURE_IDS = [1, 2, 44, 242, 451, 494]
 const MIN_CHOICE_COUNT = 4
 const MAX_CHOICE_COUNT = 6
 const MAX_ANSWER_SIZE = 3
+/** `01-requirements.md` 「요약 노트」의 ★. 정답 개수 상한과 우연히 같을 뿐 다른 값이다. */
+const MAX_IMPORTANCE = 3
 
 export type Artifacts = {
   chunks: Chunk[]
@@ -87,6 +89,11 @@ function countChunkShape(chunks: Chunk[]) {
       .slice(0, -1)
       .filter((chunk) => chunk.questions.length !== CHUNK_SIZE).length,
     '빈 청크': chunks.filter((chunk) => chunk.questions.length === 0).length,
+    // 청크 안의 min/max만 보면 흩어진 배치를 못 잡는다. 경계가 순서대로 이어져야 한다.
+    '청크 범위가 이어지지 않음': chunks.filter((chunk, order) => {
+      const previous = chunks[order - 1]
+      return chunk.from > chunk.to || (previous !== undefined && chunk.from !== previous.to + 1)
+    }).length,
     'from·to가 실제 문항 id와 다름': chunks.filter((chunk) => {
       const ids = chunk.questions.map((question) => question.id)
       return ids.length > 0 && (chunk.from !== Math.min(...ids) || chunk.to !== Math.max(...ids))
@@ -126,6 +133,27 @@ function countQuestionDefects(questions: Chunk['questions']) {
     ).length,
     '지문이 빔': questions.filter((question) => !question.stem.trim()).length,
     '해설이 빔': questions.filter((question) => !question.explanation.trim()).length,
+    // 키만 보는 검사는 본문이 통째로 비어도 0을 준다 — 배열이 비면 some()이 전부 false다.
+    '선택지 본문이 빔': questions.filter((question) =>
+      question.choices.some((choice) => !choice.text.trim()),
+    ).length,
+    '오답 해설 본문이 빔': questions.filter((question) =>
+      question.rebuttals.some((rebuttal) => !rebuttal.text.trim()),
+    ).length,
+    '요구사항이 빔': questions.filter(
+      (question) =>
+        question.requirements.length === 0 ||
+        question.requirements.some((requirement) => !requirement.trim()),
+    ).length,
+    /**
+     * `04-data-model.md` 「Question」 — 정답 선택지에는 오답 해설이 없다.
+     *
+     * 개수 불변식이라 절 파싱이 통째로 어긋나도 잡힌다. 키 정합만으로는 `rebuttals`가
+     * 빈 배열이 되는 회귀를 못 본다.
+     */
+    '오답 해설 수가 «선택지 − 정답»과 다름': questions.filter(
+      (question) => question.rebuttals.length !== question.choices.length - question.answer.length,
+    ).length,
     '오답 해설 키가 실재하지 않는 선택지를 가리킴': questions.filter((question) => {
       const keys = new Set(question.choices.map((choice) => choice.key))
       return question.rebuttals.some((rebuttal) => !keys.has(rebuttal.key))
@@ -195,7 +223,7 @@ function countNoteDefects(oneLiners: OneLiner[], comparisons: Comparison[]) {
         !member.name || !member.selectSignals || !member.rejectSignals || !member.keyDifference,
     ).length,
     '중요도가 1~3 밖인 비교쌍': comparisons.filter(
-      (comparison) => comparison.importance < 1 || comparison.importance > MAX_ANSWER_SIZE,
+      (comparison) => comparison.importance < 1 || comparison.importance > MAX_IMPORTANCE,
     ).length,
   }
 }

@@ -59,6 +59,14 @@ describe('joinWrappedLines', () => {
     expect(joinWrappedLines(['DB', '로드가 높다'])).toBe('DB 로드가 높다')
   })
 
+  it('문장이 끝난 자리에는 조사 규칙을 적용하지 않는다 — 부사 «보다»가 조사와 겹친다', () => {
+    expect(joinWrappedLines(['처리할 수 없습니다.', '보다 확장 가능한 방법'])).toBe(
+      '처리할 수 없습니다. 보다 확장 가능한 방법',
+    )
+    // 문장부호가 아니면 그대로 붙인다 — io2 보다 낮다 (조사)
+    expect(joinWrappedLines(['비용이 io2', '보다 낮다'])).toBe('비용이 io2보다 낮다')
+  })
+
   it('«이»는 붙이지 않는다 — 조사와 지시관형사가 섞여 반례가 있다', () => {
     // "이 요구사항"의 «이»는 조사가 아니다. 붙이면 오히려 틀린다.
     expect(joinWrappedLines(['(비용 효율적)', '이 요구사항을 만족한다'])).toBe(

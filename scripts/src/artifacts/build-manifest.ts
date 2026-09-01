@@ -21,7 +21,10 @@ export function digest(content: Buffer | string): FileDigest {
   return { bytes: buffer.byteLength, sha256: createHash('sha256').update(buffer).digest('hex') }
 }
 
-/** `data/` 기준 상대 경로를 CDN 키로 옮긴다. 골든 픽스처는 `fixtures/` 아래 그대로 간다. */
+/** 골든 픽스처의 CDN 키 접두사. `data/` 밖에 있어 `toCdnKey`가 아니라 여기서 붙인다. */
+export const FIXTURE_KEY_PREFIX = 'fixtures/questions/'
+
+/** `data/` 기준 상대 경로를 CDN 키로 옮긴다. 픽스처는 `FIXTURE_KEY_PREFIX`가 맡는다. */
 export function toCdnKey(localPath: string) {
   if (localPath.startsWith('chunks/')) return `questions/${localPath.slice('chunks/'.length)}`
   if (localPath === 'index.json') return 'questions/index.json'

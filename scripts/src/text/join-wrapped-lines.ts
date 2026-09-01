@@ -42,8 +42,14 @@ const CONTINUES_FROM_LEFT = /^·/
  * 조사가 **어절 전체**일 때만 본다. `EC2`+`인스턴스를`처럼 조사로 시작하는 낱말은
  * 띄우는 것이 맞다. 열거에서 **`이`를 뺀 것은 지시관형사와 겹치기 때문**이다 —
  * 코퍼스 10자리 중 셋이 "이 요구사항"류라 붙이면 오히려 틀린다 (2026-09-01 전수,
- * SJO-7). 나머지 조사는 어절 첫머리에 홀로 오는 다른 쓰임이 없다.
+ * SJO-7).
+ *
+ * `보다`처럼 부사와 겹치는 것도 있다. 그쪽은 목록에서 빼는 대신 `SENTENCE_END`로
+ * 가른다 — 조사는 문장이 끝난 자리에 올 수 없다. 코퍼스의 조사 이음매 1090자리
+ * 중 문장부호 뒤는 1자리뿐이고, 그 하나가 부사였다.
  */
+/** 조사는 앞 문장에 붙을 수 없다. 여기서 조사처럼 보이는 것은 다음 문장의 부사다. */
+const SENTENCE_END = /[.?!]$/
 const LEADING_PARTICLE =
   /^(을|를|가|은|는|에|의|와|과|로|으로|에서|에게|부터|까지|만|도|보다|처럼|이나|이며|이고|와의|과의)(?=[\s,.·)]|$)/
 /**
@@ -81,7 +87,8 @@ export function joinWrappedLines(lines: string[], seamHasSpace: SeamOracle = nev
 
 function needsSpace(left: string, right: string, seamHasSpace: SeamOracle) {
   if (CONTINUES_TOKEN.test(left)) return false
-  if (CONTINUES_FROM_LEFT.test(right) || LEADING_PARTICLE.test(right)) return false
+  if (CONTINUES_FROM_LEFT.test(right)) return false
+  if (!SENTENCE_END.test(left) && LEADING_PARTICLE.test(right)) return false
 
   const isHangulSeam = HANGUL_SYLLABLE.test(left.at(-1)!) && HANGUL_SYLLABLE.test(right[0]!)
   return isHangulSeam ? seamHasSpace(left, right) : true

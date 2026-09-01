@@ -3,11 +3,17 @@ import { fileURLToPath } from 'node:url'
 import { buildIndex, chunkFileName, chunkQuestions } from './artifacts/build-chunks.ts'
 import {
   DEFAULT_VERSION,
+  FIXTURE_KEY_PREFIX,
   buildManifest,
   digest,
   type FileDigest,
   toCdnKey,
 } from './artifacts/build-manifest.ts'
+import {
+  EXPECTED_COMPARISON_COUNT,
+  EXPECTED_ONE_LINER_COUNT,
+  EXPECTED_QUESTION_COUNT,
+} from './artifacts/verify-artifacts.ts'
 import { SOURCE_FILE_NUMBERS, findSourcePdf, readPdfText } from './source-pdfs.ts'
 import { splitQuestionBlocks } from './questions/split-blocks.ts'
 import { parseQuestion, type ParsedQuestion } from './questions/parse-question.ts'
@@ -23,9 +29,6 @@ import { findTaggingAnomalies } from './tagging/tagging-anomalies.ts'
 
 /** 원본 PDF에서 학습 데이터를 뽑아 `data/`에 쓴다 (`04-data-model.md` 「data:extract」). */
 
-const EXPECTED_QUESTION_COUNT = 1019
-const EXPECTED_ONE_LINER_COUNT = 203
-const EXPECTED_COMPARISON_COUNT = 48
 /** `01-requirements.md` 「요약 노트」. 분포를 출력만 하면 장식 한 줄이 카테고리가 돼도 안 잡힌다. */
 const EXPECTED_CATEGORY_COUNT = 11
 /** `01-requirements.md` 「요약 노트」. 한 서비스가 카테고리 둘에 실려 203이 아니다. */
@@ -107,11 +110,16 @@ function digestFixtures() {
   }
 
   return Object.fromEntries(
-    readdirSync(FIXTURES_DIR).map((name) => [
-      `fixtures/questions/${name}`,
+    fixtureFileNames().map((name) => [
+      `${FIXTURE_KEY_PREFIX}${name}`,
       digest(readFileSync(`${FIXTURES_DIR}${name}`)),
     ]),
   )
+}
+
+/** `.DS_Store` 같은 부산물이 manifest에 실려 CDN으로 올라가지 않게 확장자로 거른다. */
+function fixtureFileNames() {
+  return readdirSync(FIXTURES_DIR).filter((name) => /\.(json|txt)$/.test(name))
 }
 
 function parseQuestions() {

@@ -22,7 +22,7 @@ import {
 /**
  * 게이트를 우회 경로로 평가한다 (루트 `CLAUDE.md`).
  *
- * 실제 산출물이 42항목 전부 0건인 것은 "검사가 돈다"는 증거가 아니다 — 0건 검증과
+ * 실제 산출물이 전 항목 0건인 것은 "검사가 돈다"는 증거가 아니다 — 0건 검증과
  * 0건 실패가 같은 0을 준다. 검사마다 그것만 깨뜨리는 산출물을 만들어 **검사 수와
  * 검출 수가 같은지** 세고, 정상 산출물에서 오탐이 없는지 함께 본다.
  */
@@ -61,10 +61,12 @@ function question(id: number, answerSize: number): Question {
     stem: `지문 ${id}`,
     choices,
     answer,
-    requirements: [`조건 ${id}`],
+    requirements: [`조건 ${id}`, `조건 ${id} 둘`],
     explanation: `해설 ${id}`,
     // 정답 선택지에는 오답 해설이 없다 (`04` 「Question」).
-    rebuttals: choices.slice(answerSize).map((choice) => ({ key: choice.key, text: '반박' })),
+    rebuttals: choices
+      .slice(answerSize)
+      .map((choice) => ({ key: choice.key, text: `반박 ${choice.key}` })),
     categories: isUntagged ? [] : [CATEGORIES[id % CATEGORIES.length]!],
     services: isUntagged ? [] : [`서비스 ${id % CATEGORIES.length}`],
   }
@@ -156,6 +158,11 @@ const BREAKAGES: Array<[label: string, breaks: (broken: Artifacts) => void]> = [
   ['청크 크기 초과', (broken) => broken.chunks[0]!.questions.push(broken.chunks[1]!.questions[0]!)],
   ['마지막이 아닌 청크가 덜 참', (broken) => void broken.chunks[0]!.questions.pop()],
   ['빈 청크', (broken) => void (broken.chunks[5]!.questions = [])],
+  [
+    // 손으로 고친 산출물이 청크 경계를 흩어 놓은 모양. 개수·중복은 그대로 맞는다.
+    '청크 범위가 이어지지 않음',
+    (broken) => void (broken.chunks[3]!.from = broken.chunks[3]!.from + 5),
+  ],
   ['from·to가 실제 문항 id와 다름', (broken) => void (broken.chunks[0]!.from = 7)],
 
   ['문항 수 불일치', (broken) => rebuild(broken, (all) => all.slice(0, -1))],
@@ -168,6 +175,18 @@ const BREAKAGES: Array<[label: string, breaks: (broken: Artifacts) => void]> = [
   ['정답이 실재하지 않는 선택지를 가리킴', (broken) => void (firstQuestion(broken).answer = ['F'])],
   ['정답 키 중복', (broken) => void (firstQuestion(broken).answer = ['A', 'A'])],
   ['지문이 빔', (broken) => void (firstQuestion(broken).stem = '   ')],
+  [
+    // 절 파싱이 어긋나 본문을 못 붙이면 키·개수는 멀쩡한 채로 본문만 빈다.
+    '선택지 본문이 빔',
+    (broken) => void (firstQuestion(broken).choices[0]!.text = ''),
+  ],
+  ['오답 해설 본문이 빔', (broken) => void (firstQuestion(broken).rebuttals[0]!.text = '  ')],
+  ['요구사항이 빔', (broken) => void (firstQuestion(broken).requirements = [])],
+  [
+    // 오답 해설을 통째로 잃으면 키 정합 검사는 전부 0을 준다.
+    '오답 해설 수가 «선택지 − 정답»과 다름',
+    (broken) => rebuild(broken, (all) => all.map((q) => ({ ...q, rebuttals: [] }))),
+  ],
   ['해설이 빔', (broken) => void (firstQuestion(broken).explanation = '')],
   [
     '오답 해설 키가 실재하지 않는 선택지를 가리킴',

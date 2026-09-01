@@ -1,7 +1,12 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Chunk, IndexEntry, Manifest } from '@aws-study/shared'
-import { type FileDigest, digest, toCdnKey } from './artifacts/build-manifest.ts'
+import {
+  FIXTURE_KEY_PREFIX,
+  type FileDigest,
+  digest,
+  toCdnKey,
+} from './artifacts/build-manifest.ts'
 import { type Artifacts, findArtifactAnomalies } from './artifacts/verify-artifacts.ts'
 import type { Comparison } from './notes/parse-comparison.ts'
 import type { OneLiner } from './notes/parse-oneliner.ts'
@@ -50,7 +55,11 @@ function readArtifacts(): Artifacts {
     .filter((name) => name.endsWith('.json'))
     .sort()
 
-  const fixtureFiles = readdirSync(FIXTURES_DIR)
+  // 디렉터리가 통째로 없어도 ENOENT로 죽지 않는다 — 「누락된 골든 픽스처」로 잡아야
+  // 무엇이 빠졌는지 출력에 남는다.
+  const fixtureFiles = existsSync(FIXTURES_DIR)
+    ? readdirSync(FIXTURES_DIR).filter((name) => /\.(json|txt)$/.test(name))
+    : []
 
   return {
     chunks: chunkFiles.map((name) => read<Chunk>(`chunks/${name}`)),
@@ -80,13 +89,17 @@ function measureFiles(chunkFiles: string[], fixtureFiles: string[]): Record<stri
     ),
     ...Object.fromEntries(
       fixtureFiles.map((name) => [
-        `fixtures/questions/${name}`,
+        `${FIXTURE_KEY_PREFIX}${name}`,
         digest(readFileSync(`${FIXTURES_DIR}${name}`)),
       ]),
     ),
   }
 }
 
+/**
+ * 형태를 좁히지 않는 단언이다. 안전한 근거는 **읽은 값을 바로 판정에 넘기기 때문**이다 —
+ * 구조가 어긋나면 `findArtifactAnomalies`가 개수·키·정합 위반으로 잡아 배포를 막는다.
+ */
 function read<T>(name: string): T {
   return JSON.parse(readFileSync(`${DATA_DIR}${name}`, 'utf8')) as T
 }
