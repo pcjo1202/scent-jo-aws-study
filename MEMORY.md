@@ -4,7 +4,7 @@ git이 알 수 없는 외부 상태의 **현재값**만 적는다. 할 일은 `T
 
 바꿨으면 그 자리에서 덮어쓴다. 이력은 남기지 않는다 (데이터 변경 이력만 `docs/data-changelog.md`).
 
-_최종 갱신: 2026-08-31_
+_최종 갱신: 2026-09-01_
 
 ## 인프라
 
@@ -13,9 +13,11 @@ _최종 갱신: 2026-08-31_
 | Vercel `aws-study-web` | **생성됨** · Root `apps/web` · Next.js · `icn1` · SSO 보호 꺼짐 · Skip deployment 켜짐(기본) · `prj_mFYDO5Dgom098rYuHH4fUWK9Fp0d` |
 | Vercel `aws-study-api` | **생성됨** · Root `apps/api` · **NestJS 자동 감지** · `icn1` · SSO 보호 꺼짐 · **Skip deployment 꺼짐** · `prj_uVsyAepv8G2t0QwrqN7DcANjYXJu` |
 | Related Projects 연결 | **설정됨** — `apps/web/vercel.json`. 프리뷰끼리 짝이 맞는 것 확인 |
-| Supabase 프로젝트 | 미생성 |
-| Supabase JWT 비대칭 서명 전환 | 미적용 |
-| Google OAuth 클라이언트 | 미등록 |
+| Supabase 프로젝트 | **생성됨** · ref `xeaucvsadpmaeuxpfokq` · `ap-northeast-2` |
+| Supabase JWT 비대칭 서명 전환 | **적용됨** · JWKS `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` 200 · `alg=ES256`(EC P-256) · `kid=c1836c43-1d7a-4131-8008-29a156bee9e1`. **`/auth/v1/jwks`는 JWKS 엔드포인트가 아니다** — apikey를 요구해 401 (SJO-41) |
+| Supabase Data API(PostgREST) | **미확인.** `rest/v1/`의 503(PGRST002)은 Data API가 닫혀서가 아니라 **테이블이 0개**라서다 — 껐다는 증거가 아니다. SJO-13이 테이블을 만들기 전에 콘솔에서 확인한다 (`docs/07` §1) |
+| Supabase Email 프로바이더 | **열려 있음** (`email: true` · `disable_signup: false`). Google만 쓰므로 끈다 — 콘솔 작업 |
+| Google OAuth 클라이언트 | **등록됨** · `authorize` 302 → `accounts.google.com` · `redirect_uri`는 Supabase 콜백 |
 | S3 버킷 (`static-cdn.scent-jo.dev`) | **기존 보유** · ap-northeast-2 + CloudFront |
 | S3 버저닝 | **미확인** |
 | CloudFront CORS Response Headers Policy | **미설정** (확인 완료) |

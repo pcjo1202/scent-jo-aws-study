@@ -321,6 +321,7 @@ type ExamResult = {
 | `selected`에 그 문항의 `choiceCount` 범위를 벗어난 키 (예: 선택지 4개 문항에 `'E'`) | 400 |
 | exam 시도의 `questionId`가 세션 `question_ids`에 없음 | 400 |
 | JWT의 `email`이 `ALLOWED_EMAIL`과 불일치 | 403 |
+| JWKS 조회 자체가 실패 (네트워크·타임아웃·JWKS가 아닌 응답) | 503 — 토큰 문제가 아니라 의존 서비스 장애다. 401로 주면 프론트가 세션 만료로 읽고 재로그인 루프에 빠진다 |
 | `finish` 시 세션 `content_version`이 카탈로그 현재 버전과 불일치 | 409 |
 
 ## Nest 모듈 구성
