@@ -1,4 +1,4 @@
-import type { ChoiceKey } from '@aws-study/shared'
+import type { Choice, ChoiceKey } from '@aws-study/shared'
 import type { QuestionBlock } from './split-blocks.ts'
 import { joinWrappedLines } from '../text/join-wrapped-lines.ts'
 import type { SeamOracle } from '../text/seam-oracle.ts'
@@ -28,7 +28,7 @@ const EXPLANATION_HEADING = '정답 해설'
 const REBUTTALS_HEADING = '오답 해설'
 const WHITESPACE = /\s/
 
-export type Choice = { key: ChoiceKey; text: string }
+export type { Choice }
 
 export type ParsedQuestion = {
   id: number
