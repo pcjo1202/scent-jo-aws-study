@@ -4,7 +4,7 @@ git이 알 수 없는 외부 상태의 **현재값**만 적는다. 할 일은 `T
 
 바꿨으면 그 자리에서 덮어쓴다. 이력은 남기지 않는다 (데이터 변경 이력만 `docs/data-changelog.md`).
 
-_최종 갱신: 2026-09-03_
+_최종 갱신: 2026-09-04_
 
 ## 인프라
 
@@ -15,7 +15,7 @@ _최종 갱신: 2026-09-03_
 | Related Projects 연결 | **설정됨** — `apps/web/vercel.json`. 프리뷰끼리 짝이 맞는 것 확인 |
 | Supabase 프로젝트 | **생성됨** · ref `xeaucvsadpmaeuxpfokq` · `ap-northeast-2` |
 | Supabase JWT 비대칭 서명 전환 | **적용됨** · JWKS `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` 200 · `alg=ES256`(EC P-256) · `kid=c1836c43-1d7a-4131-8008-29a156bee9e1`. **`/auth/v1/jwks`는 JWKS 엔드포인트가 아니다** — apikey를 요구해 401 (SJO-41) |
-| Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-03 사람이 콘솔에서 확인. 이전에 본 `rest/v1/`의 503(PGRST002)은 테이블이 0개라서 나온 것이라 판정 근거가 아니었고, 콘솔 확인으로 대체했다. **SJO-13이 테이블을 만든 뒤 한 번 더 본다** — 테이블이 생기면 503의 의미가 달라지므로 그때는 실측으로도 판정할 수 있다 (`docs/07` §1) |
+| Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-04 **실측 확정**(SJO-13). 테이블 3개를 만든 뒤 `exam_sessions`·`attempts`·`study_progress` × publishable·legacy anon 키로 읽기 6건, 쓰기 1건을 쟀고 전부 503(PGRST002)이다. 테이블 0개일 때의 503은 판정 근거가 아니었으나 이제는 갈린다 (`docs/07` §1) |
 | Supabase Email 프로바이더 | **열려 있음** (`email: true` · `disable_signup: false`). Google만 쓰므로 끈다 — 콘솔 작업 |
 | Google OAuth 클라이언트 | **등록됨** · `authorize` 302 → `accounts.google.com` · `redirect_uri`는 Supabase 콜백 |
 | S3 버킷 (`static-cdn.scent-jo.dev`) | **기존 보유** · ap-northeast-2 + CloudFront |
@@ -43,7 +43,10 @@ _최종 갱신: 2026-09-03_
 
 | 항목 | 상태 |
 |---|---|
-| 적용된 마이그레이션 | 없음 |
+| 적용된 마이그레이션 | `20260903171754_0000_init` (2026-09-04 적용) — `exam_sessions`·`attempts`·`study_progress`. 원본은 `apps/api/src/db/migrations/0000_init.sql` |
+| 테이블 상태 | 3개 · check 제약 9 · FK 1 · 명명 인덱스 4 · **행 0**. RLS 셋 다 꺼짐, 정책 0개 (설계 원칙 4) |
+| 제약 우회 프로브 | 2026-09-04 — 위반 11/11 거부(23514 · 23505 · 23503), 정상 5/5 통과 (SJO-13 증거 코멘트) |
+| 풀러 호스트 | `aws-0-ap-northeast-2.pooler.supabase.com:6543`. **`aws-0-` 샤드 접두사가 있다** — docs/03·07의 예시에 빠져 있었다 (2026-09-04 정정) |
 
 ## 확인된 사실
 
