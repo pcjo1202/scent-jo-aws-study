@@ -34,6 +34,35 @@ export function toCdnKey(localPath: string) {
   throw new Error(`CDN 경로를 정할 수 없다: ${localPath}`)
 }
 
+/**
+ * manifest 키를 레포 루트 기준 로컬 경로로 되돌린다. `toCdnKey`의 역이고,
+ * `data/` 밖에 사는 픽스처까지 덮는다 — publish·pull이 둘 다 이 표를 쓴다.
+ */
+export function toLocalPath(cdnKey: string) {
+  if (cdnKey.startsWith(FIXTURE_KEY_PREFIX)) return `tests/${cdnKey}`
+  if (cdnKey.startsWith(CHUNK_KEY_PREFIX)) {
+    return `data/chunks/${cdnKey.slice('questions/'.length)}`
+  }
+  if (cdnKey === 'questions/index.json') return 'data/index.json'
+  if (cdnKey === 'notes/oneliners.json' || cdnKey === 'notes/comparisons.json') {
+    return `data/${cdnKey.slice('notes/'.length)}`
+  }
+  throw new Error(`로컬 경로를 정할 수 없다: ${cdnKey}`)
+}
+
+/**
+ * `<root>/<version>` 형태의 base를 둘로 가른다.
+ *
+ * manifest.json은 버전 경로 **밖**에 있다 (`03-architecture.md` 「경로 레이아웃」) —
+ * 롤백이 그 한 파일을 바꾸는 일이라 버전 안에 두면 자기를 가리키지 못한다.
+ */
+export function splitBase(base: string) {
+  const trimmed = base.replace(/\/$/, '')
+  const cut = trimmed.lastIndexOf('/')
+  if (cut < 0) throw new Error(`base에 버전 경로가 없다: ${base}`)
+  return { root: trimmed.slice(0, cut), version: trimmed.slice(cut + 1) }
+}
+
 export function buildManifest(
   files: Record<string, FileDigest>,
   options: { version: string; base: string; generatedAt: string; questionCount: number },
