@@ -200,7 +200,8 @@
   --sys-state-disabled-content-opacity: 0.38;
 
   /* 모션 — 이 셋뿐이다. medium 이상과 emphasized 계열은 쓰지 않는다.
-     같은 화면을 1019번 반복하므로 200ms가 1019번이면 3분 24초다 (DESIGN.md 「Motion」). */
+     전환은 「누른 것에 대한 응답」에만 둔다. 화면이 바뀌기를 기다리는 자리
+     (문항 전환·채점 결과)는 즉시 표시한다 (DESIGN.md 「Motion」). */
   --sys-motion-duration-short2: 100ms;
   --sys-motion-duration-short4: 200ms;
   --sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
