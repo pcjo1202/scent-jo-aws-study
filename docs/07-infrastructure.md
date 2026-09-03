@@ -36,8 +36,10 @@
 
   세션 모드(`:5432`)나 직접 연결이 아니다. 서버리스에서는 트랜잭션 모드다.
 
+  호스트의 **`aws-0-` 샤드 접두사를 빼먹지 않는다** — 리전 이름만으로는 DNS가 없다. 콘솔이 주는 문자열을 그대로 쓰고, 샤드 번호는 프로젝트마다 다를 수 있다 (2026-09-04 실측, SJO-13).
+
   ```
-  postgres://postgres.<ref>:<pw>@aws-ap-northeast-2.pooler.supabase.com:6543/postgres
+  postgresql://postgres.<ref>:<pw>@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres
   ```
 
 - [ ] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력)

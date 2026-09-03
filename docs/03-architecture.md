@@ -123,7 +123,7 @@ Supabase는 **비대칭 JWT 서명**(ES256 · ECC P-256)을 쓴다. Nest는 부�
 Vercel Functions는 서버리스이므로 **Supavisor 트랜잭션 모드(포트 6543)** 를 쓴다.
 
 ```
-postgres://postgres.<ref>:<pw>@aws-ap-northeast-2.pooler.supabase.com:6543/postgres
+postgresql://postgres.<ref>:<pw>@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres
 ```
 
 **트랜잭션 모드는 prepared statement를 지원하지 않는다.** ORM에서 반드시 꺼야 한다.

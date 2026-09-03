@@ -51,7 +51,7 @@ create table exam_sessions (
   score         int,
 
   constraint exam_sessions_size      check (cardinality(question_ids) = 65),
-  constraint exam_sessions_cursor    check (cursor between 0 and cardinality(question_ids)),
+  constraint exam_sessions_cursor    check (cursor between 0 and cardinality(question_ids) - 1),
   constraint exam_sessions_score     check (score is null or score between 0 and 65),
   constraint exam_sessions_finished  check ((finished_at is null) = (score is null))
 );
@@ -66,6 +66,10 @@ create unique index exam_sessions_one_active_idx
 ```
 
 `question_ids`는 세션 생성 시점에 고정된다. 추첨 결과를 배열로 박아 두면 나중에 문제 데이터가 `v2`로 바뀌어도 그 세션이 무엇을 물었는지 그대로 남는다. `content_version`도 함께 고정한다 — `finish` 시 카탈로그의 현재 버전과 다르면 409를 주어, 버전 교체를 가로지른 세션이 새 정답으로 채점되는 것을 막는다.
+
+`cursor`는 **사용자가 지금 보고 있는 문항의 0-based 인덱스**다 (`0`~`64`). 진도 카운터가 아니라 위치다 — 모의고사는 문항 간 자유롭게 이동하므로 되돌아가면 `cursor`도 함께 뒤로 간다. `PATCH /exams/:id`가 이동할 때 저장하고, `POST /attempts`는 건드리지 않는다. 답을 고르는 것과 화면을 옮기는 것이 별개 동작이기 때문이다 (`02-features.md` 「진행」).
+
+`cardinality(question_ids) - 1`이 상한인 이유는 **65번째 위치가 없기** 때문이다. 마지막(65) 문항에서 「다음」은 「종료」로 바뀌므로 화면이 `cursor = 65`를 만들 수 없다 (`02-features.md` 「진행」).
 
 **부분 유니크 인덱스**가 "진행 중 세션은 하나"를 DB 레벨에서 보장한다. 애플리케이션 로직에 의존하지 않는다.
 
