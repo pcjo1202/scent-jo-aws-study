@@ -18,7 +18,7 @@ _최종 갱신: 2026-09-03_
 | Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-03 사람이 콘솔에서 확인. 이전에 본 `rest/v1/`의 503(PGRST002)은 테이블이 0개라서 나온 것이라 판정 근거가 아니었고, 콘솔 확인으로 대체했다. **SJO-13이 테이블을 만든 뒤 한 번 더 본다** — 테이블이 생기면 503의 의미가 달라지므로 그때는 실측으로도 판정할 수 있다 (`docs/07` §1) |
 | Supabase Email 프로바이더 | **열려 있음** (`email: true` · `disable_signup: false`). Google만 쓰므로 끈다 — 콘솔 작업 |
 | Google OAuth 클라이언트 | **등록됨** · `authorize` 302 → `accounts.google.com` · `redirect_uri`는 Supabase 콜백 |
-| S3 오리진 버킷 | `scent-jo-image-s3-bucket-463508018502-ap-northeast-2-an` · ap-northeast-2. **`static-cdn.scent-jo.dev`는 버킷이 아니라 CloudFront 별칭이다** — 버킷 이름으로 쓰면 `NoSuchBucket` (2026-09-04 실측, SJO-8) |
+| S3 오리진 버킷 | `scent-jo-image-s3-bucket-<account-id>-ap-northeast-2-an` · ap-northeast-2 · OAC 전용(공개 읽기 없음). **실명은 `scripts/.env`의 `S3_BUCKET`에만 둔다** — 이름에 AWS 계정 ID가 들어 있고 이 레포는 public이다. **`static-cdn.scent-jo.dev`는 버킷이 아니라 CloudFront 별칭이다** — 버킷 이름으로 쓰면 `NoSuchBucket` (2026-09-04 실측, SJO-8) |
 | CloudFront 배포 | `E2PL85DAAAZTSA` · 별칭 `static-cdn.scent-jo.dev` · OAC `E2L0VPS4ANJ89L` · **Free 요금제** — 커스텀 Response Headers Policy를 거부한다 |
 | S3 버저닝 | **Enabled** (2026-09-04 확인 — 이미 켜져 있었다) |
 | CloudFront CORS | **`viewer-response` 함수 `aws-saa-cors`** (LIVE) 가 `aws-saa/*` behavior에서 `Access-Control-Allow-Origin: *`를 조건 없이 붙인다. Response Headers Policy는 **쓰지 않는다** — Free 요금제라 커스텀은 거부되고 관리형(`Managed-SimpleCORS`)은 요청에 모르는 헤더가 하나만 붙어도 헤더를 빠뜨린다 (2026-09-04 실측, SJO-8). 크롬은 항상 그런 헤더를 붙이므로 **curl로만 검증하면 통과로 보인다** |

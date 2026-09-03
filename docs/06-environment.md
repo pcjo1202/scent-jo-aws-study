@@ -27,7 +27,7 @@
 | `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 인덱스를 받을 경로 |
 | `CORS_ALLOWED_ORIGINS` | api | 공개 | 쉼표 구분 |
 | `SOURCE_PDF_DIR` | scripts | 로컬 | `data:extract`가 읽을 원본 PDF 디렉터리. **기기마다 다르다.** 미설정이면 즉시 실패 |
-| `DATA_CDN_BASE` | scripts | 로컬 | `manifest.json`의 `base`. **랜덤 프리픽스 포함 — 커밋 금지.** 미설정이면 빈 문자열이고 `data:publish`(SJO-8)가 채운다 |
+| `DATA_CDN_BASE` | scripts | 로컬 | `manifest.json`의 `base`. **랜덤 프리픽스 포함 — 커밋 금지.** 채우는 것은 `data:extract`다. 미설정이면 `base`가 빈 문자열이 되고, 그 manifest는 `data:publish`가 거부한다 |
 | `DATA_VERSION` | scripts | 로컬 | 산출물 버전. 미설정이면 `v1`. 데이터를 고치면 `v2`로 올린다 (`04` 「버전 경로를 쓰는 이유」) |
 | `AWS_ACCESS_KEY_ID` | scripts | **로컬** | S3 업로드 전용 |
 | `AWS_SECRET_ACCESS_KEY` | scripts | **로컬** | 〃 |

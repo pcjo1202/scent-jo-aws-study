@@ -66,7 +66,7 @@
 
 기존 자산 `static-cdn.scent-jo.dev` (S3 `ap-northeast-2` + CloudFront)를 재사용한다.
 
-**`static-cdn.scent-jo.dev`는 CloudFront 배포 `E2PL85DAAAZTSA`의 별칭이지 버킷 이름이 아니다** (2026-09-04 실측, SJO-8). 오리진 버킷은 이름이 따로 있고 OAC로만 읽힌다 — 버킷 이름은 `MEMORY.md`가 가진다. `aws s3 ls s3://static-cdn.scent-jo.dev`는 `NoSuchBucket`으로 죽는다.
+**`static-cdn.scent-jo.dev`는 CloudFront 배포 `E2PL85DAAAZTSA`의 별칭이지 버킷 이름이 아니다** (2026-09-04 실측, SJO-8). 오리진 버킷은 이름이 따로 있고 OAC로만 읽힌다(공개 읽기 없음). 이름의 형태는 `MEMORY.md`에 있고 **실명은 `scripts/.env`의 `S3_BUCKET`에만 둔다** — 가리는 이유는 버킷명에 AWS 계정 ID가 들어 있어서지, 이름 자체가 방어선이라서가 아니다. `aws s3 ls s3://static-cdn.scent-jo.dev`는 `NoSuchBucket`으로 죽는다.
 
 ### S3
 

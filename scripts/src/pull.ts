@@ -3,6 +3,7 @@ import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Manifest } from '@aws-study/shared'
 import { digest, splitBase, toLocalPath } from './artifacts/build-manifest.ts'
+import { MANIFEST_KEY } from './artifacts/upload-plan.ts'
 
 /**
  * CDN에서 `data/`와 `tests/fixtures/`를 복원한다 (`04-data-model.md` 「data:pull」).
@@ -13,10 +14,9 @@ import { digest, splitBase, toLocalPath } from './artifacts/build-manifest.ts'
  */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
-const MANIFEST_KEY = 'manifest.json'
 
 async function main() {
-  const base = requireEnv('DATA_CDN_BASE').replace(/\/$/, '')
+  const base = requireEnv('DATA_CDN_BASE').replace(/\/+$/, '')
   const { root, version } = splitBase(base)
 
   const manifest = (await fetchJson(`${root}/${MANIFEST_KEY}`)) as Manifest
@@ -31,6 +31,10 @@ async function main() {
 
   const files = Object.entries(manifest.files).sort(([a], [b]) => a.localeCompare(b))
   const corrupted: string[] = []
+  // 전부 받아 검증한 뒤에 쓴다. 받는 족족 쓰면 중간에 하나가 어긋났을 때
+  // 「CDN이 유일한 원본」인 트리를 반쯤 갈아엎은 채 끝난다 — 복구 스크립트가
+  // 만들면 안 되는 상태다. 26개 · 약 1.5MB라 전부 메모리에 들어간다.
+  const verified: Array<[string, Buffer]> = []
 
   for (const [downloaded, [key, expected]] of files.entries()) {
     const body = Buffer.from(await fetchBytes(`${manifest.base}/${key}`))
@@ -39,7 +43,7 @@ async function main() {
       corrupted.push(key)
       continue
     }
-    write(toLocalPath(key), body)
+    verified.push([toLocalPath(key), body])
     console.log(`[${downloaded + 1}/${files.length}] ${key} · sha256 일치`)
   }
 
@@ -48,6 +52,7 @@ async function main() {
     return
   }
 
+  for (const [localPath, body] of verified) write(localPath, body)
   write(`data/${MANIFEST_KEY}`, Buffer.from(JSON.stringify(manifest)))
   console.log(
     `복원 ${files.length}개 + manifest · sha256 ${files.length}/${files.length} 일치 (${manifest.version})`,

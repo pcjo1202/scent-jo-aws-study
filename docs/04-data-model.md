@@ -317,15 +317,15 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 ### data:publish
 
 1. `data/manifest.json`의 `files` 키를 읽는다 — 올릴 파일 목록이자 로컬 경로의 대응표다
-2. `data:verify`가 sha256을 디스크와 대조해 통과했는지 확인한다 (manifest는 `data:extract`가 만든다)
-3. `s3://<bucket>/aws-saa/<version>/` 에 업로드한다
+2. **`data:verify`를 직접 돌려 통과를 요구한다** (manifest는 `data:extract`가 만든다). sha256만 다시 재면 파서가 구조적으로 깨진 산출물이 그대로 올라간다 — manifest는 그 깨진 파일과 완벽히 일치하기 때문이다
+3. `s3://<bucket>/aws-saa/<prefix>/<version>/` 에 업로드한다 — **`<prefix>`를 빼면 추측 가능한 공개 경로가 된다** (`03-architecture.md` 「경로 레이아웃」). 실제로 2026-08-28에 그렇게 올라간 적이 있다 (`07-infrastructure.md` §3)
    - `v*/**` → `Cache-Control: public, max-age=31536000, immutable`
    - `manifest.json` → `Cache-Control: public, max-age=300`
    - `v*/fixtures/` → 파서 골든 픽스처. `data:pull`이 데이터와 함께 복원한다
 4. manifest는 **마지막에** 올린다. 데이터가 다 올라간 뒤에 가리켜야 한다
 5. 기존 버전은 삭제하지 않는다
 
-버전을 올릴 때는 `--version v2` 를 준다. 같은 버전에 다시 올리는 것은 기본적으로 거부하고 `--force`를 요구한다.
+버전을 올릴 때는 `scripts/.env`의 `DATA_VERSION`·`DATA_CDN_BASE`를 바꾸고 `data:extract`를 다시 돌린다 — **publish에 버전 플래그는 없다.** 버전은 manifest가 갖고, publish는 `DATA_CDN_BASE`가 그것과 어긋나면 거부한다. 같은 버전에 다시 올리는 것도 기본적으로 거부하고 `--force`를 요구한다.
 
 ## 해부서 자산화 진행 방식
 

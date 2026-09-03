@@ -8,9 +8,10 @@ pnpm build        # 전체 빌드
 pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
 pnpm test         # 치명 영역 테스트 (파서 픽스처·채점·가드)
 pnpm data:extract # 원본 PDF → data/  (SOURCE_PDF_DIR 필요, docs/06)
+pnpm data:verify  # data/ 전수 검증 — 실패하면 exit 1 (배포 차단)
+pnpm data:publish # data/ + tests/fixtures/ → S3  (같은 버전 재배포는 --force)
+pnpm data:pull    # CDN → data/ + tests/fixtures/  (새 기기 복구)
 ```
-
-<!-- data:verify 는 SJO-7, data:publish / data:pull 은 SJO-8에서 여기 추가 -->
 
 ## 문서
 

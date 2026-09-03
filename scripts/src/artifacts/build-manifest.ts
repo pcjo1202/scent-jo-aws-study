@@ -12,7 +12,9 @@ import { CHUNK_SIZE } from './build-chunks.ts'
 
 /** `04-data-model.md` 「버전 경로를 쓰는 이유」. 데이터를 고치면 v2를 새로 올린다. */
 export const DEFAULT_VERSION = 'v1'
-const CHUNK_KEY_PREFIX = 'questions/chunk-'
+const CHUNK_CDN_DIR = 'questions/'
+const CHUNK_LOCAL_DIR = 'chunks/'
+const CHUNK_KEY_PREFIX = `${CHUNK_CDN_DIR}chunk-`
 
 export type FileDigest = { bytes: number; sha256: string }
 
@@ -26,7 +28,9 @@ export const FIXTURE_KEY_PREFIX = 'fixtures/questions/'
 
 /** `data/` 기준 상대 경로를 CDN 키로 옮긴다. 픽스처는 `FIXTURE_KEY_PREFIX`가 맡는다. */
 export function toCdnKey(localPath: string) {
-  if (localPath.startsWith('chunks/')) return `questions/${localPath.slice('chunks/'.length)}`
+  if (localPath.startsWith(CHUNK_LOCAL_DIR)) {
+    return `${CHUNK_CDN_DIR}${localPath.slice(CHUNK_LOCAL_DIR.length)}`
+  }
   if (localPath === 'index.json') return 'questions/index.json'
   if (localPath === 'oneliners.json' || localPath === 'comparisons.json') {
     return `notes/${localPath}`
@@ -35,13 +39,16 @@ export function toCdnKey(localPath: string) {
 }
 
 /**
- * manifest 키를 레포 루트 기준 로컬 경로로 되돌린다. `toCdnKey`의 역이고,
- * `data/` 밖에 사는 픽스처까지 덮는다 — publish·pull이 둘 다 이 표를 쓴다.
+ * manifest 키를 레포 루트 기준 로컬 경로로 되돌린다. `toCdnKey`를 되돌리되
+ * **레포 루트 기준이라 `data/`만큼 어긋난다** — 엄밀한 역함수가 아니다.
+ * `data/` 밖에 사는 픽스처까지 덮는다: publish·pull이 둘 다 이 표를 쓴다.
  */
 export function toLocalPath(cdnKey: string) {
+  // 원격 manifest도 이 함수를 거친다 (`pull.ts`) — `..`를 통과시키면 레포 밖에 쓴다.
+  if (cdnKey.split('/').includes('..')) throw new Error(`레포 밖을 가리킨다: ${cdnKey}`)
   if (cdnKey.startsWith(FIXTURE_KEY_PREFIX)) return `tests/${cdnKey}`
   if (cdnKey.startsWith(CHUNK_KEY_PREFIX)) {
-    return `data/chunks/${cdnKey.slice('questions/'.length)}`
+    return `data/${CHUNK_LOCAL_DIR}${cdnKey.slice(CHUNK_CDN_DIR.length)}`
   }
   if (cdnKey === 'questions/index.json') return 'data/index.json'
   if (cdnKey === 'notes/oneliners.json' || cdnKey === 'notes/comparisons.json') {
@@ -57,10 +64,11 @@ export function toLocalPath(cdnKey: string) {
  * 롤백이 그 한 파일을 바꾸는 일이라 버전 안에 두면 자기를 가리키지 못한다.
  */
 export function splitBase(base: string) {
-  const trimmed = base.replace(/\/$/, '')
+  const trimmed = base.replace(/\/+$/, '')
   const cut = trimmed.lastIndexOf('/')
-  if (cut < 0) throw new Error(`base에 버전 경로가 없다: ${base}`)
-  return { root: trimmed.slice(0, cut), version: trimmed.slice(cut + 1) }
+  const version = trimmed.slice(cut + 1)
+  if (cut < 0 || !version) throw new Error(`base에 버전 경로가 없다: ${base}`)
+  return { root: trimmed.slice(0, cut), version }
 }
 
 export function buildManifest(
