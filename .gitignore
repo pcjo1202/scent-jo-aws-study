@@ -26,6 +26,13 @@ dist/
 
 # 서드파티 스킬 (라이선스 미명시 — 커밋 금지, 재설치: git clone vercel-labs/agent-skills)
 .claude/skills/react-best-practices/
+
+# supabase/agent-skills도 라이선스 미명시라 같은 처리다. `.claude/skills/supabase*`는 심링크이고
+# 본체는 `.agents/`에 있다. 재설치는 `npx skills add supabase/agent-skills` —
+# 소스와 해시는 커밋된 `skills-lock.json`이 고정한다.
+.agents/
+.claude/skills/supabase
+.claude/skills/supabase-postgres-best-practices
 # gstack 도구 부산물 (browse 로그)
 .gstack/
 
