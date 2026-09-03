@@ -3,10 +3,11 @@ import { ConfigModule } from '@nestjs/config'
 
 import { AppController } from './app.controller'
 import { AuthModule } from './auth/auth.module'
+import { DbModule } from './db/db.module'
 import { validateEnv } from './env'
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }), AuthModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }), DbModule, AuthModule],
   controllers: [AppController],
 })
 export class AppModule {}

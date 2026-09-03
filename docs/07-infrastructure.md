@@ -47,7 +47,9 @@
 
 **RLS는 켜지 않는다.** 근거는 `05-database.md` 설계 원칙 4. 테이블 생성 시 Supabase가 RLS를 기본 활성화하면, 켜둔 채로 정책 없이 두지 말고 명시적으로 끈다. 켜져 있는데 정책이 없으면 service role이 아닌 모든 접근이 조용히 빈 결과를 반환해 디버깅이 어렵다.
 
-- [ ] **Data API(PostgREST) 비활성화** — Settings → API에서 Data API를 끄거나 exposed schema에서 `public`을 제거한다. RLS가 없으므로 이걸 안 끄면 공개된 anon 키만으로 REST 경로가 열린다 (`05-database.md` 설계 원칙 4)
+- [x] **Data API(PostgREST) 비활성화** — Settings → API에서 Data API를 끄거나 exposed schema에서 `public`을 제거한다. RLS가 없으므로 이걸 안 끄면 공개된 anon 키만으로 REST 경로가 열린다 (`05-database.md` 설계 원칙 4)
+
+  **꺼져 있음 — 2026-09-04 실측 확정** (SJO-13). 테이블 0개일 때의 503(PGRST002)은 "노출할 스키마가 없어서"와 구별되지 않아 판정 근거가 아니었다. 세 테이블을 만든 뒤 다시 쟀다: `exam_sessions`·`attempts`·`study_progress` × publishable 키·legacy anon 키 = **읽기 6건 전부 503**, `study_progress` **쓰기 1건도 503**. 테이블이 있는데도 REST가 서빙하지 않으므로 이제는 실측으로 갈린다.
 
 ## 2. Google OAuth
 

@@ -345,10 +345,13 @@ apps/api/src/
 ├─ progress/
 ├─ stats/
 └─ db/
-   ├─ schema.ts             Drizzle 스키마
-   ├─ migrations/           순수 SQL
-   └─ db.provider.ts        postgres-js { prepare: false }
+   ├─ schema.ts             컬럼 정의. 제약은 여기 없다
+   ├─ migrations/           순수 SQL — 제약·인덱스의 정본
+   ├─ db.provider.ts        postgres-js { prepare: false }
+   └─ db.module.ts          @Global. 커넥션이 하나라 도메인 모듈이 각자 import하지 않는다
 ```
+
+**제약을 `schema.ts`에 다시 적지 않는다.** Drizzle의 `check()`·`index()`는 drizzle-kit이 마이그레이션을 생성할 때만 쓰이는데 이 레포는 SQL을 손으로 쓴다(`docs/03` 「데이터베이스 연결」 — 빌드 스텝을 늘리지 않는 것이 Drizzle을 고른 이유다). 소비자가 없는 두 번째 사본은 갈라지기만 한다. `schema.ts`가 하는 일은 쿼리에 타입을 주는 것뿐이다.
 
 도메인 모듈(`attempts` · `exams` · `progress` · `stats`)은 각각 `*.module.ts` · `*.controller.ts` · `*.service.ts` · `*.repository.ts` · `dto/`를 갖는다. **Drizzle 쿼리는 repository 안에만 둔다** — 위 도출 쿼리도 쓰는 모듈의 repository가 소유한다 (`apps/api/CLAUDE.md`).
 
