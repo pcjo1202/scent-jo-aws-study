@@ -18,13 +18,15 @@ _최종 갱신: 2026-09-03_
 | Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-03 사람이 콘솔에서 확인. 이전에 본 `rest/v1/`의 503(PGRST002)은 테이블이 0개라서 나온 것이라 판정 근거가 아니었고, 콘솔 확인으로 대체했다. **SJO-13이 테이블을 만든 뒤 한 번 더 본다** — 테이블이 생기면 503의 의미가 달라지므로 그때는 실측으로도 판정할 수 있다 (`docs/07` §1) |
 | Supabase Email 프로바이더 | **열려 있음** (`email: true` · `disable_signup: false`). Google만 쓰므로 끈다 — 콘솔 작업 |
 | Google OAuth 클라이언트 | **등록됨** · `authorize` 302 → `accounts.google.com` · `redirect_uri`는 Supabase 콜백 |
-| S3 버킷 (`static-cdn.scent-jo.dev`) | **기존 보유** · ap-northeast-2 + CloudFront |
-| S3 버저닝 | **미확인** |
-| CloudFront CORS Response Headers Policy | **미설정** (확인 완료) |
+| S3 오리진 버킷 | `scent-jo-image-s3-bucket-463508018502-ap-northeast-2-an` · ap-northeast-2. **`static-cdn.scent-jo.dev`는 버킷이 아니라 CloudFront 별칭이다** — 버킷 이름으로 쓰면 `NoSuchBucket` (2026-09-04 실측, SJO-8) |
+| CloudFront 배포 | `E2PL85DAAAZTSA` · 별칭 `static-cdn.scent-jo.dev` · OAC `E2L0VPS4ANJ89L` · **Free 요금제** — 커스텀 Response Headers Policy를 거부한다 |
+| S3 버저닝 | **Enabled** (2026-09-04 확인 — 이미 켜져 있었다) |
+| CloudFront CORS | **`viewer-response` 함수 `aws-saa-cors`** (LIVE) 가 `aws-saa/*` behavior에서 `Access-Control-Allow-Origin: *`를 조건 없이 붙인다. Response Headers Policy는 **쓰지 않는다** — Free 요금제라 커스텀은 거부되고 관리형(`Managed-SimpleCORS`)은 요청에 모르는 헤더가 하나만 붙어도 헤더를 빠뜨린다 (2026-09-04 실측, SJO-8). 크롬은 항상 그런 헤더를 붙이므로 **curl로만 검증하면 통과로 보인다** |
 | Vercel 스코프 | `smelljo`. 프리뷰 URL이 `aws-study-<해시>-smelljo.vercel.app` — 프로젝트명이 아니다 |
 | 프로덕션 도메인 (web) | `saa.scent-jo.dev`. DNS는 **Cloudflare**(`*.scent-jo.dev` 와일드카드 프록시) — Vercel 네임서버 아님 |
 | 프로덕션 도메인 (api) | 없음. `aws-study-api.vercel.app` 그대로 — Bearer JWT라 커스텀 도메인이 필요 없다 |
 | api `CORS_ALLOWED_ORIGINS` | production `https://saa.scent-jo.dev,https://aws-study-web.vercel.app` · preview `https://aws-study-*-smelljo.vercel.app` |
+| 업로드 IAM 사용자 | `aws-saa-data-publisher` · 인라인 정책 `aws-saa-publish` — `aws-saa/*`의 Get/Put + `s3:prefix` 조건부 ListBucket. **`s3:DeleteObject` 없음.** 키는 `scripts/.env`에만 있다 (`docs/07` §3) |
 | Linear ↔ GitHub 연동 | **켜짐** (확인 완료 — PR #1이 SJO-31에 자동 첨부) |
 | GitHub 레포 | `pcjo1202/scent-jo-aws-study` · **public**. PR 생성은 `pcjo1202` 계정 토큰이 필요하다 (gh 기본 활성 계정은 collaborator가 아니라 `must be a collaborator`로 거부된다) |
 
@@ -32,7 +34,7 @@ _최종 갱신: 2026-09-03_
 
 | 항목 | 상태 |
 |---|---|
-| CDN 배포 버전 | 없음 |
+| CDN 배포 버전 | **v1** (2026-09-04, SJO-8) · 27객체 = 데이터 26 + `manifest.json`. 경로는 `aws-saa/<프리픽스>/` — 실제 값은 `scripts/.env`의 `DATA_CDN_BASE`에만 있다 |
 | 로컬 `data/` | `chunks/chunk-001..011.json` 1019문항(태그 포함, 56~272KB/파일) · `index.json` 1019행 141KB · `oneliners.json` 203개 · `comparisons.json` 48쌍 · `manifest.json` 26파일. `data:extract` 산출물. **통합본 `questions.json`은 없앴다** (2026-08-31, SJO-7) |
 | 로컬 `tests/fixtures/` | 골든 픽스처 6문항 (`1`·`2`·`44`·`242`·`451`·`494`). 이 기기에서 원문을 읽고 다시 작성했다 (2026-08-28, SJO-6) — 다른 PC의 사본과 별개다. gitignored이므로 새 기기는 `data:pull`(SJO-8)로만 복구된다 |
 | 원본 PDF 위치 | `~/Downloads/AWS-SAA` (로컬만). `scripts/.env`의 `SOURCE_PDF_DIR`이 가리킨다. 파일명은 **번호 접두사**가 있어야 한다 (`4. aws-saa-c03-q001-500.pdf`) — `findSourcePdf`가 그 번호로 고른다 |
