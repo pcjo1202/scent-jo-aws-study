@@ -16,6 +16,7 @@ tools: Read, Grep, Glob, Bash
    - **타이포 역할 오용** — 정의된 타입스케일 밖의 임의 font-size/line-height
    - **상태 레이어 불투명도** — hover 0.08 / focus 0.12 / pressed 0.12 외 값
    - **모션** — short2(100ms)/short4(200ms)/easing-standard 외 값
+   - **모션 배치** — 문항 전환·채점 결과에 transition/animation (「Motion」이 즉시 표시로 못 박았다)
    - **용어표 위반** — Content design 절의 금지 표현 사용
 3. 발견 형식: `[P1|P2] (confidence N/10) file:line — 위반 + DESIGN.md 근거 절 + 수정 제안`
 4. 위반 줄과 DESIGN.md 근거를 둘 다 인용할 수 없으면 보고하지 않는다. 없으면 `NO FINDINGS`만 출력한다.

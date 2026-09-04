@@ -6,6 +6,8 @@
   "scripts": {
     "extract": "node --env-file-if-exists=.env src/extract.ts",
     "verify": "node src/verify.ts",
+    "publish": "node --env-file-if-exists=.env src/publish.ts",
+    "pull": "node --env-file-if-exists=.env src/pull.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },

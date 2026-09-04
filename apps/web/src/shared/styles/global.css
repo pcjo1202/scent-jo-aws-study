@@ -208,7 +208,7 @@
   }
 }
 
-/* 모션은 원래 셋뿐이지만, 그것도 원하지 않는 사용자가 있다 (DESIGN.md 「Motion」). */
+/* 모션 토큰은 셋뿐이지만, 그것도 원하지 않는 사용자가 있다 (DESIGN.md 「Motion」). */
 @layer components {
   /*
    * 상태 레이어 — `on-` 색을 낮은 불투명도로 덮는다 (DESIGN.md 「Interaction states」).
