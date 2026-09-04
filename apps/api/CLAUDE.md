@@ -14,7 +14,7 @@ src/
 ├─ auth/          jwks.service · supabase-jwt.guard · current-user.decorator
 ├─ catalog/       manifest·index 캐시, 채점, 추첨
 ├─ attempts/  exams/  progress/  stats/
-└─ db/            schema.ts · migrations/ · db.provider.ts
+└─ db/            schema.ts · migrations/ · db.provider.ts · db.module.ts
 ```
 
 도메인 모듈은 **컨트롤러·서비스·DTO를 자기 폴더 안에** 둔다. 공용 타입은 `@aws-study/shared`에서 가져온다.

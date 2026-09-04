@@ -42,6 +42,10 @@
   postgresql://postgres.<ref>:<pw>@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres
   ```
 
+- [x] **마이그레이션 적용** — 러너 스크립트를 두지 않는다. `apps/api/src/db/migrations/<n>_<이름>.sql`의 **내용을 그대로** Supabase MCP `apply_migration`에 넘긴다(이름은 확장자를 뗀 파일명). 마이그레이션이 드물고 순수 SQL이라 drizzle-kit을 넣지 않았다 (`docs/03` 「데이터베이스 연결」).
+
+  적용 후 `list_migrations`의 버전과 레포 파일명을 `MEMORY.md`에 함께 적는다 — 그 대응이 유일한 기록이다. 첫 적용: `0000_init.sql` → `20260903171754_0000_init` (2026-09-04, SJO-13).
+
 - [ ] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력)
 - [ ] Auth → Redirect URLs에 로컬·프리뷰·프로덕션 등록
 

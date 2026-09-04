@@ -1,5 +1,5 @@
 /**
- * 컬럼 정의만 둔다 — check 제약·인덱스는 `migrations/`의 SQL이 정본이고 DB가 강제한다
+ * 컬럼 정의만 둔다 — check 제약·인덱스·외래키는 `migrations/`의 SQL이 정본이고 DB가 강제한다
  * (`docs/05-database.md` 「스키마」). 여기에 다시 적으면 두 벌이 되어 갈라진다.
  * 이 파일이 하는 일은 Drizzle 쿼리에 타입을 주는 것뿐이다.
  */
@@ -21,7 +21,7 @@ export const attempts = pgTable('attempts', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   userId: uuid('user_id').notNull(),
   questionId: integer('question_id').notNull(),
-  sessionId: uuid('session_id').references(() => examSessions.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id'),
   source: text('source').notNull(),
   selected: text('selected').array().notNull(),
   isCorrect: boolean('is_correct').notNull(),
