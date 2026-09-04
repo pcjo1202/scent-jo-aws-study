@@ -8,8 +8,12 @@ function makeQueryClient() {
     defaultOptions: {
       queries: { staleTime: DEFAULT_STALE_TIME_MS },
       dehydrate: {
-        // 아직 pending인 쿼리까지 실어 보낸다. 서버 컴포넌트가 prefetch를 await하지 않고
-        // 스트리밍으로 넘길 수 있다 — 없으면 화면 전체가 첫 요청이 끝날 때까지 막힌다.
+        // 아직 pending인 쿼리까지 실어 보낸다. 동적 라우트의 서버 컴포넌트가 prefetch를
+        // await하지 않고 스트리밍으로 넘길 수 있다.
+        //
+        // **정적 프리렌더에서는 이 옵션에 기대지 않는다.** pending으로 실린 promise는
+        // 실패 시 반드시 reject되어(`dehydratePromise`) 빌드를 죽인다 — `await`로 받는다
+        // (`.claude/rules/web-state.md` 「서버 컴포넌트는 prefetch로 넘긴다」, SJO-49).
         shouldDehydrateQuery: (query) =>
           defaultShouldDehydrateQuery(query) || query.state.status === 'pending',
       },

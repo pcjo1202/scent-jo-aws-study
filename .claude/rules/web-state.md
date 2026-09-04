@@ -83,7 +83,7 @@ if (isLoading) return <Spinner />
 
 ```tsx
 const queryClient = getQueryClient()
-void queryClient.prefetchQuery(healthQuery(apiUrl))   // await하지 않는다
+await queryClient.prefetchQuery(healthQuery(apiUrl))   // 정적 라우트에서는 await한다
 
 return (
   <HydrationBoundary state={dehydrate(queryClient)}>
@@ -92,7 +92,8 @@ return (
 )
 ```
 
-- **`prefetchQuery`를 `await`하지 않는다.** pending 상태로 dehydrate돼 스트리밍으로 넘어간다. `await`하면 페이지 첫 바이트가 그 요청을 기다린다
+- **정적으로 프리렌더되는 라우트에서는 `prefetchQuery`를 `await`한다.** `void`로 두면 pending 상태로 dehydrate되는데, react-query의 `dehydratePromise`는 그 promise를 **실패 시 반드시 reject**시킨다 — api가 5xx면 `Error occurred prerendering page`로 **빌드가 죽고**, `docs/02-features.md` 「API 오류의 화면 표현」이 정한 5xx 화면에 도달조차 못 한다. 2026-09-04 실측으로 web 배포가 이 결합에 통째로 막혀 있었다 (SJO-49). `await`하면 실패한 쿼리는 dehydrate에서 빠지고 브라우저가 다시 받아 오류 배너로 간다
+- **`void`로 넘기는 것은 동적 렌더(요청마다 새로 그리는 라우트)에서만 의미가 있다.** 정적 라우트에는 기다릴 「첫 바이트」가 없어 얻는 것이 없고, 위 결합만 남는다. 동적 라우트에서 쓸 때도 **그 라우트가 api 장애에 무엇이 되는지**를 먼저 정한다
 - **`QueryClient`를 `useState`나 `new QueryClient()`로 직접 만들지 않는다.** 항상 `@/shared/api/query-client`의 `getQueryClient()`를 부른다. 브라우저에서 매번 새로 만들면 suspend마다 캐시가 통째로 버려진다
 - prefetch 없이 `useSuspenseQuery`만 쓰면 **서버·브라우저가 같은 요청을 두 번 돈다**
 
