@@ -25,6 +25,10 @@ _최종 갱신: 2026-09-04_
 | 프로덕션 도메인 (web) | `saa.scent-jo.dev`. DNS는 **Cloudflare**(`*.scent-jo.dev` 와일드카드 프록시) — Vercel 네임서버 아님 |
 | 프로덕션 도메인 (api) | 없음. `aws-study-api.vercel.app` 그대로 — Bearer JWT라 커스텀 도메인이 필요 없다 |
 | api `CORS_ALLOWED_ORIGINS` | production `https://saa.scent-jo.dev,https://aws-study-web.vercel.app` · preview `https://aws-study-*-smelljo.vercel.app` |
+| api `DATABASE_URL` | **production·preview·development 세 환경 등록됨** (Sensitive). 2026-09-04, SJO-13 |
+| api 인증 환경변수 | **`SUPABASE_JWKS_URL`·`SUPABASE_JWT_ISSUER`·`ALLOWED_EMAIL`이 세 환경 어디에도 없다** — `env.ts`가 필수로 요구하므로 부팅이 안 된다. SJO-50 |
+| 프로덕션 api 상태 | **500 (`FUNCTION_INVOCATION_FAILED`)** — `@nestjs/config@12`가 ESM 전용인데 CommonJS로 컴파일한다(`ERR_REQUIRE_ESM`). SJO-12 배포 시점부터 죽어 있었다. SJO-49 |
+| Supabase↔Vercel 통합 | **api 프로젝트에 연결됨** (2026-09-03경, 사람이). production·preview에 변수 17개를 밀어 넣었다 — `SUPABASE_SERVICE_ROLE_KEY`·`SUPABASE_SECRET_KEY`·`SUPABASE_JWT_SECRET`·`POSTGRES_*` 7개·`NEXT_PUBLIC_SUPABASE_*` 3개. **`docs/06` 「전체 목록」에 없는 변수들이고 `docs/06`은 「애초에 service role key를 쓰지 않는다」다.** 코드가 읽지 않아 동작은 멀쩡하다 |
 | Linear ↔ GitHub 연동 | **켜짐** (확인 완료 — PR #1이 SJO-31에 자동 첨부) |
 | GitHub 레포 | `pcjo1202/scent-jo-aws-study` · **public**. PR 생성은 `pcjo1202` 계정 토큰이 필요하다 (gh 기본 활성 계정은 collaborator가 아니라 `must be a collaborator`로 거부된다) |
 
