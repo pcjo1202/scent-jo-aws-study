@@ -82,8 +82,12 @@ if (isLoading) return <Spinner />
 ## 서버 컴포넌트는 prefetch로 넘긴다
 
 ```tsx
+// app/page.tsx — api를 읽는 화면이므로 정적 프리렌더에 두지 않는다
+export const dynamic = 'force-dynamic'
+
+// _pages/**/ui/*-page.tsx
 const queryClient = getQueryClient()
-await queryClient.prefetchQuery(healthQuery(apiUrl))   // 정적 라우트에서는 await한다
+await queryClient.prefetchQuery(healthQuery(apiUrl))
 
 return (
   <HydrationBoundary state={dehydrate(queryClient)}>
@@ -92,8 +96,11 @@ return (
 )
 ```
 
-- **정적으로 프리렌더되는 라우트에서는 `prefetchQuery`를 `await`한다.** `void`로 두면 pending 상태로 dehydrate되는데, react-query의 `dehydratePromise`는 그 promise를 **실패 시 반드시 reject**시킨다 — api가 5xx면 `Error occurred prerendering page`로 **빌드가 죽고**, `docs/02-features.md` 「API 오류의 화면 표현」이 정한 5xx 화면에 도달조차 못 한다. 2026-09-04 실측으로 web 배포가 이 결합에 통째로 막혀 있었다 (SJO-49). `await`하면 실패한 쿼리는 dehydrate에서 빠지고 브라우저가 다시 받아 오류 배너로 간다
-- **`void`로 넘기는 것은 동적 렌더(요청마다 새로 그리는 라우트)에서만 의미가 있다.** 정적 라우트에는 기다릴 「첫 바이트」가 없어 얻는 것이 없고, 위 결합만 남는다. 동적 라우트에서 쓸 때도 **그 라우트가 api 장애에 무엇이 되는지**를 먼저 정한다
+- **api를 읽는 화면은 정적 프리렌더에 두지 않는다.** `export const dynamic = 'force-dynamic'`을 붙인다. 정적 프리렌더에서는 `useSuspenseQuery`가 **빌드 중에** api를 부르고, 그 거절이 `Error occurred prerendering page`로 **빌드를 죽인다** — api 장애 하나가 web 배포까지 막는다 (2026-09-04, SJO-49).
+  - **`prefetchQuery`를 `await`하는 것으로는 막지 못한다.** 원인은 prefetch가 아니라 `useSuspenseQuery`가 프리렌더에서 도는 것이다. 서버 prefetch를 통째로 지워도 똑같이 죽는다 (세 조건 × 세 후보로 실측)
+  - **원격 api로 한 번 통과한 것은 근거가 아니다.** 느린 원격 5xx는 Next가 정적 셸을 확정한 **뒤에** 거절이 도착해 우연히 통과한다. 같은 5xx를 로컬 스텁으로 빠르게 주면 죽는다 — 이 함정에 한 번 걸렸다. **검증은 빠른 로컬 스텁으로 한다**
+  - `useQuery`로 바꾸면 빌드는 통과하지만 **오류 배너가 죽는다** — `useQuery`는 throw하지 않아 `ErrorBoundary`에 닿지 않고, `docs/02-features.md` 「API 오류의 화면 표현」의 5xx 경로가 사라진다. 위 「`useQuery`를 쓸 자리는 둘뿐이다」의 예외도 아니다
+- **동적 라우트에서 `prefetchQuery`를 `void`로 넘길지 `await`할지는 TTFB 트레이드오프다.** `void`는 pending 상태로 dehydrate돼 스트리밍으로 넘어가고, `await`는 첫 바이트가 그 요청을 기다리는 대신 데이터가 실려 나간다. `void`를 고르면 **그 promise는 실패 시 반드시 reject된다는 것**(`dehydratePromise`)을 전제로 그 화면이 api 장애에 무엇이 되는지 먼저 정한다
 - **`QueryClient`를 `useState`나 `new QueryClient()`로 직접 만들지 않는다.** 항상 `@/shared/api/query-client`의 `getQueryClient()`를 부른다. 브라우저에서 매번 새로 만들면 suspend마다 캐시가 통째로 버려진다
 - prefetch 없이 `useSuspenseQuery`만 쓰면 **서버·브라우저가 같은 요청을 두 번 돈다**
 

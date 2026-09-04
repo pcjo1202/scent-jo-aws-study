@@ -22,11 +22,10 @@ export async function HomePage() {
   })
 
   const queryClient = getQueryClient()
-  // await한다. `void`로 두면 pending 상태로 dehydrate되는데, react-query는 그 promise를
-  // **실패 시 반드시 reject**시키므로(`dehydratePromise`) api가 5xx면 빌드가
-  // `Error occurred prerendering page "/"`로 죽는다 (SJO-49). await하면 실패한 쿼리가
-  // dehydrate에서 빠지고 화면은 docs/02 「API 오류의 화면 표현」의 5xx 경로로 간다.
-  // 이 라우트는 정적이라 기다리는 대가는 요청마다의 TTFB가 아니라 빌드 1회다.
+  // await한다. `void`로 넘기면 pending 상태로 dehydrate되는데 그 promise는 실패 시 반드시
+  // reject되고(`dehydratePromise`), 이 화면이 api 장애에 무엇이 될지를 그 거절에 맡기게 된다.
+  // 이 라우트가 빌드에 묶이지 않는 것은 `app/page.tsx`의 `force-dynamic` 덕이지 이 await가
+  // 아니다 — await로는 프리렌더 결합을 못 끊는다 (SJO-49).
   await queryClient.prefetchQuery(healthQuery(apiUrl))
 
   return (

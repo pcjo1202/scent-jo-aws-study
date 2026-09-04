@@ -11,9 +11,9 @@ function makeQueryClient() {
         // 아직 pending인 쿼리까지 실어 보낸다. 동적 라우트의 서버 컴포넌트가 prefetch를
         // await하지 않고 스트리밍으로 넘길 수 있다.
         //
-        // **정적 프리렌더에서는 이 옵션에 기대지 않는다.** pending으로 실린 promise는
-        // 실패 시 반드시 reject되어(`dehydratePromise`) 빌드를 죽인다 — `await`로 받는다
-        // (`.claude/rules/web-state.md` 「서버 컴포넌트는 prefetch로 넘긴다」, SJO-49).
+        // pending으로 실린 promise는 **실패 시 반드시 reject된다**(`dehydratePromise`).
+        // 이 옵션에 기대는 화면은 api 장애에 무엇이 될지를 그 거절에 맡기는 것이므로,
+        // 쓰기 전에 그 답을 정한다 (`.claude/rules/web-state.md`, SJO-49).
         shouldDehydrateQuery: (query) =>
           defaultShouldDehydrateQuery(query) || query.state.status === 'pending',
       },
