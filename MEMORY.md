@@ -28,7 +28,10 @@ _최종 갱신: 2026-09-04_
 | api `DATABASE_URL` | **production·preview·development 세 환경 등록됨** (Sensitive). 2026-09-04, SJO-13 |
 | api 인증 환경변수 | **`SUPABASE_JWKS_URL`·`SUPABASE_JWT_ISSUER`·`ALLOWED_EMAIL`이 세 환경 어디에도 없다** — `env.ts`가 필수로 요구하므로 부팅이 안 된다. SJO-50 |
 | 프로덕션 api 상태 | **500 (`FUNCTION_INVOCATION_FAILED`)** — `@nestjs/config@12`가 ESM 전용인데 CommonJS로 컴파일한다(`ERR_REQUIRE_ESM`). SJO-12 배포 시점부터 죽어 있었다. SJO-49 |
-| Supabase↔Vercel 통합 | **api 프로젝트에 연결됨** (2026-09-03경, 사람이). production·preview에 변수 17개를 밀어 넣었다 — `SUPABASE_SERVICE_ROLE_KEY`·`SUPABASE_SECRET_KEY`·`SUPABASE_JWT_SECRET`·`POSTGRES_*` 7개·`NEXT_PUBLIC_SUPABASE_*` 3개. **`docs/06` 「전체 목록」에 없는 변수들이고 `docs/06`은 「애초에 service role key를 쓰지 않는다」다.** 코드가 읽지 않아 동작은 멀쩡하다 |
+| Supabase↔Vercel 통합 | **리소스는 남아 있다** — Marketplace store `supabase-scent-jo-aws-study` (`store_7q0XZjyOQqsMm1i6`), api 프로젝트에 연결. 우리 프로젝트 `xeaucvsadpmaeuxpfokq`를 가리킨다(Vercel이 새로 만든 것이 아니다). **리소스 제거는 안 했다** — CLI로는 그것이 Supabase 프로젝트까지 지우는지 확인할 방법이 없다. 대시보드 확인 다이얼로그로만 판단 가능 |
+| 통합이 넣었던 변수 16개 | **2026-09-04 전부 삭제** (SJO-13). `POSTGRES_*` 7 · `SUPABASE_URL`·`SUPABASE_ANON_KEY`·`SUPABASE_SERVICE_ROLE_KEY`·`SUPABASE_SECRET_KEY`·`SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_JWT_SECRET` 6 · `NEXT_PUBLIC_SUPABASE_*` 3. `docs/06` 「전체 목록」에 없고 코드가 **16개 중 0개**를 참조했다(위생 검사 5/5 검출). **통합이 연결된 채라 재동기화로 되살아날 수 있다** |
+| api 환경변수 현재값 | production `CORS_ALLOWED_ORIGINS`·`DATABASE_URL` · preview 같음 · development `DATABASE_URL`만 |
+| web 환경변수 현재값 | **`NEXT_PUBLIC_API_URL` 하나뿐** (production·preview). `docs/06`이 web에 요구하는 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`·`NEXT_PUBLIC_DATA_BASE_URL`이 없다 — 읽는 코드가 아직 없어 지금은 안 깨진다 (SJO-19·SJO-8에서 필요) |
 | Linear ↔ GitHub 연동 | **켜짐** (확인 완료 — PR #1이 SJO-31에 자동 첨부) |
 | GitHub 레포 | `pcjo1202/scent-jo-aws-study` · **public**. PR 생성은 `pcjo1202` 계정 토큰이 필요하다 (gh 기본 활성 계정은 collaborator가 아니라 `must be a collaborator`로 거부된다) |
 
