@@ -9,8 +9,8 @@ import type { Provider } from '@nestjs/common'
 export const DB = Symbol('DB')
 
 export function createDb(connectionString: string) {
-  // prepare: false가 빠지면 런타임에 터진다 — Supavisor 트랜잭션 풀러(:6543)는 요청마다
-  // 다른 백엔드를 주므로 prepared statement가 재사용되지 않는다 (docs/03 「데이터베이스 연결」)
+  // Drizzle 현행 문서가 Supabase 트랜잭션 풀러(:6543)에 지시하는 값이다.
+  // 「없으면 터진다」는 실측에서 재현되지 않았다 — 왜 그래도 두는지는 docs/03 「데이터베이스 연결」
   return drizzle(postgres(connectionString, { prepare: false }), { schema })
 }
 

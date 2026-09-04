@@ -357,4 +357,4 @@ apps/api/src/
 
 `SupabaseJwtGuard`를 전역 가드로 등록하고 `/health`만 `@Public()`으로 뺀다. 가드를 붙이는 걸 잊어서 뚫리는 사고를 막는다.
 
-`prepare: false`는 트랜잭션 풀러에서 **필수**다. 빠뜨리면 런타임 오류가 난다 (`03-architecture.md` 리스크 표).
+`prepare: false`는 Drizzle 현행 문서가 트랜잭션 풀러에 지시하는 값이라 넣는다. **「빠뜨리면 런타임 오류」는 2026-09-04 실측에서 재현되지 않았다** — 근거의 크기는 `03-architecture.md` 「데이터베이스 연결」이 정본이다.
