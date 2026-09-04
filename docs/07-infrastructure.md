@@ -13,11 +13,11 @@
 1. Supabase 프로젝트          ← 나머지가 여기 참조
 2. Google OAuth 클라이언트    ← Supabase 리디렉션 URL이 필요
 3. S3 + CloudFront (CORS)     ← 데이터 배포 전제
-4. Vercel 프로젝트 2개        ← 도메인이 정해져야 CORS를 좁힐 수 있음
+4. Vercel 프로젝트 2개        ← api의 CORS_ALLOWED_ORIGINS에 도메인이 필요
 5. Related Projects 연결
 ```
 
-3번과 4번은 서로를 참조한다. CORS를 먼저 넓게 열고 Vercel 도메인이 정해진 뒤 좁힌다.
+**CDN CORS는 3번에서 끝난다** — 허용 Origin이 `*`라 Vercel 도메인을 기다릴 것이 없다 (아래 「CloudFront — CORS」). 도메인이 필요한 것은 api의 `CORS_ALLOWED_ORIGINS`뿐이고, 그건 4번 안에서 닫힌다.
 
 ---
 
@@ -64,57 +64,91 @@
 
 ## 3. S3 + CloudFront
 
-기존 자산 `static-cdn.scent-jo.dev` (S3 `ap-northeast-2` + CloudFront)를 재사용한다. 확인된 상태: 정상 서빙 중, **CORS 미설정**.
+기존 자산 `static-cdn.scent-jo.dev` (S3 `ap-northeast-2` + CloudFront)를 재사용한다.
+
+**`static-cdn.scent-jo.dev`는 CloudFront 배포 `E2PL85DAAAZTSA`의 별칭이지 버킷 이름이 아니다** (2026-09-04 실측, SJO-8). 오리진 버킷은 이름이 따로 있고 OAC로만 읽힌다(공개 읽기 없음). 이름의 형태는 `MEMORY.md`에 있고 **실명은 `scripts/.env`의 `S3_BUCKET`에만 둔다** — 가리는 이유는 버킷명에 AWS 계정 ID가 들어 있어서지, 이름 자체가 방어선이라서가 아니다. `aws s3 ls s3://static-cdn.scent-jo.dev`는 `NoSuchBucket`으로 죽는다.
 
 ### S3
 
-- [ ] **버킷 버저닝 활성화**
+- [x] **버킷 버저닝** — 2026-09-04 확인 시점에 이미 `Enabled`였다. 활성화가 아니라 확인이 작업이었다
 
-  추출 데이터가 git에 없으므로 S3가 유일한 원본이다. 버전 경로(`v1`/`v2`)로 덮어쓰기를 구조적으로 막지만, 버저닝은 그 위의 안전망이다. 둘 다 한다.
+  추출 데이터가 git에 없으므로 S3가 유일한 원본이다. 버전 경로(`v1`/`v2`)로 덮어쓰기를 구조적으로 막지만, 버저닝은 그 위의 안전망이다. 둘 다 한다. **첫 `data:publish` 전에 확인한다** — `--force` 덮어쓰기 사고의 최후 안전망이다.
 
-- [ ] `aws-saa/` 프리픽스 확인 (기존 콘텐츠와 충돌하지 않는지)
-- [ ] 업로드용 IAM 사용자 생성. 권한을 좁힌다
+- [x] `aws-saa/` 프리픽스 확인
+
+  비어 있지 않았다. 2026-08-28에 손으로 올린 4객체가 **랜덤 프리픽스 없이** `aws-saa/v1/`에 직접 들어 있었고(경로 오타 `qusetions/` 포함, 내용은 SJO-7이 폐기한 통합본), 추측 가능한 공개 URL로 저작권 자료가 노출된 상태였다. 삭제했다 (버저닝이 켜져 있어 delete marker만 붙는다).
+
+- [x] 업로드용 IAM 사용자 `aws-saa-data-publisher` 생성. 인라인 정책 `aws-saa-publish`
 
   ```json
   {
-    "Effect": "Allow",
-    "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"],
-    "Resource": [
-      "arn:aws:s3:::<bucket>",
-      "arn:aws:s3:::<bucket>/aws-saa/*"
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "ListOnlyAwsSaaPrefix",
+        "Effect": "Allow",
+        "Action": "s3:ListBucket",
+        "Resource": "arn:aws:s3:::<bucket>",
+        "Condition": { "StringLike": { "s3:prefix": "aws-saa/*" } }
+      },
+      {
+        "Sid": "ReadWriteAwsSaaObjectsNoDelete",
+        "Effect": "Allow",
+        "Action": ["s3:GetObject", "s3:PutObject"],
+        "Resource": "arn:aws:s3:::<bucket>/aws-saa/*"
+      }
     ]
   }
   ```
 
   `s3:DeleteObject`를 주지 않는다. 기존 버전을 지울 일이 없다.
 
-- [ ] **버킷 버저닝 활성화 — 첫 `data:publish` 전 필수.** `--force` 덮어쓰기 사고의 최후 안전망이다
+  **`ListBucket`에 `s3:prefix` 조건을 걸었다** — 조건이 없으면 버킷 전체(`blog/` 포함) 목록이 열린다. 대신 **`head-object`가 없는 키에 404가 아니라 403을 준다**: HEAD 요청에는 `s3:prefix` 컨텍스트가 없어 조건이 실패하고, S3는 `s3:ListBucket` 권한이 없는 것으로 판정한다 (2026-09-04 AWS 원문 대조 — HeadObject Permissions). 그래서 `data:publish`의 「같은 버전이 이미 있나」 판정은 `head-object`가 아니라 `list-objects-v2 --prefix`다.
+
+  실제로 좁혀졌는지는 그 자격으로 **우회 경로를 전수로 쳐서** 본다 — `aws-saa/` put·get·list는 통과, `blog/`·버킷 루트의 put·get·list와 `aws-saa/`의 delete는 거부. 9케이스 중 9건이 의도대로여야 한다 (2026-09-04 실측).
 
 ### CloudFront — CORS
 
-**Response Headers Policy로 주입한다.** 근거(캐시 파편화 방지)는 `03-architecture.md` CORS 절이 캐논이다.
+**`viewer-response` CloudFront Function이 주입한다.** S3 버킷 CORS가 아닌 이유(캐시 파편화)는 `03-architecture.md` CORS 절이 캐논이다. **Response Headers Policy가 아닌 이유는 이 배포에서 그게 동작하지 않기 때문이다** — 아래.
 
-- [ ] Response Headers Policy 생성
-  - `Access-Control-Allow-Origin`: 아래 목록
-  - `Access-Control-Allow-Methods`: `GET, HEAD`
-  - `Access-Control-Max-Age`: `86400`
-  - 자격증명 허용 안 함 (공개 데이터다)
-- [ ] `aws-saa/*` 경로 동작(behavior)에 정책 연결
+- [x] 함수 `aws-saa-cors` (`cloudfront-js-2.0`) 생성 → LIVE 게시
 
-허용 Origin:
+  ```js
+  function handler(event) {
+    var response = event.response;
+    response.headers['access-control-allow-origin'] = { value: '*' };
+    response.headers['access-control-allow-methods'] = { value: 'GET, HEAD' };
+    response.headers['access-control-max-age'] = { value: '86400' };
+    return response;
+  }
+  ```
 
-```
-http://localhost:3000
-https://saa.scent-jo.dev            ← 프로덕션 (web)
-https://aws-study-*-smelljo.vercel.app     ← 프리뷰 (`docs/06` 「환경별 차이」)
-```
+- [x] `aws-saa/*` 경로 동작(behavior)을 **신설**하고 함수를 `viewer-response`로 연결
 
-> CloudFront Response Headers Policy는 와일드카드 Origin 목록을 직접 지원하지 않는다. 프리뷰 도메인 대응이 안 되면 두 가지 선택지가 있다: (a) 프리뷰에서는 프로덕션 도메인의 데이터를 쓰도록 `NEXT_PUBLIC_DATA_BASE_URL`을 고정, (b) CloudFront Function으로 Origin을 검사해 반사. **(a)를 먼저 시도한다.** 데이터는 어차피 공개 읽기 전용이라 프리뷰가 프로덕션 데이터를 읽어도 문제가 없다.
+  이 배포에는 default behavior 하나뿐이었다(`CacheBehaviors: 0`). 「경로 동작에 정책 연결」은 붙일 자리를 먼저 만드는 일이다. 신설한 behavior는 default를 복제하고 함수만 얹으므로 `aws-saa/*` 밖(예: `blog/`·`robots.txt`)은 그대로다.
+
+**허용 Origin은 `*`다** (2026-09-04 결정, SJO-8). 목록으로 좁혀 봐야 보호가 0이기 때문이다 — `03-architecture.md`가 이미 「CORS는 브라우저의 교차출처만 막고 curl 직접 fetch는 못 막는다. 실질 방어선은 경로의 랜덤 프리픽스」라고 못박았고, 데이터는 공개 읽기 전용이다. 덤으로 프리뷰 도메인 문제가 사라진다.
+
+> **이전 판의 우회안 (a)는 CORS를 해결하지 못한다.** 「프리뷰에서 프로덕션 데이터를 쓰도록 `NEXT_PUBLIC_DATA_BASE_URL`을 고정」은 *어느 URL을 부르는가*를 고정할 뿐, 브라우저가 보내는 `Origin`은 여전히 프리뷰 도메인이다. `*`가 그 자리를 대신한다.
+
+#### Response Headers Policy를 쓰지 않는 이유
+
+이 배포는 **CloudFront Free 요금제**다. 두 단계로 막힌다.
+
+1. **커스텀 정책은 아예 거부된다** — `Distributions with the Free pricing plan can't have the following features: Custom response headers policy`
+2. **관리형 정책(`Managed-SimpleCORS`)은 붙지만 조건부로만 동작한다** — 요청에 **알려지지 않은 헤더가 하나라도 붙으면 `Access-Control-Allow-Origin`을 붙이지 않는다.** `Origin`만 보내면 붙고, `Origin` + `Priority: u=1, i`나 `Origin` + `X-Foo: bar`면 안 붙는다 (2026-09-04 실측, 냉장 객체 6쌍 전수 재현·순서 뒤집어도 동일)
+
+크롬은 모든 fetch에 `Priority`·`Sec-Ch-Ua`를 붙이므로 **브라우저에서는 100% 실패하고 curl로는 통과한다.** 이 비대칭이 진단을 어렵게 한다 — CORS를 curl로만 확인하면 통과로 보인다.
+
+**그래서 검증은 반드시 브라우저로 한다.** 확인 방법은 두 가지를 함께 쓴다.
+
+- 브라우저에서 `v1/` **전 파일**을 교차출처로 받아 개수를 센다 (26/26). `Access-Control-Allow-Origin`은 CORS-safelisted 응답 헤더가 **아니라서 JS로 읽으면 항상 `null`이다** — 헤더 값이 아니라 **fetch 성공 여부**로 판정한다. `Cache-Control`은 safelist에 있어 읽힌다
+- curl로는 **알려지지 않은 헤더를 일부러 붙여** 친다. 안 붙이면 위 결함을 못 잡는다
 
 ### CloudFront — 캐시
 
-- [ ] `aws-saa/v*/**` → `Cache-Control: public, max-age=31536000, immutable`
-- [ ] `aws-saa/manifest.json` → `Cache-Control: public, max-age=300`
+- [x] `aws-saa/<prefix>/v*/**` → `Cache-Control: public, max-age=31536000, immutable`
+- [x] `aws-saa/<prefix>/manifest.json` → `Cache-Control: public, max-age=300`
 
 헤더는 업로드 시 S3 객체 메타데이터로 설정한다 (`data:publish`가 넣는다). CloudFront는 오리진 헤더를 존중한다.
 
@@ -165,7 +199,7 @@ https://aws-study-*-smelljo.vercel.app     ← 프리뷰 (`docs/06` 「환경별
 
 전부 끝난 뒤 한 번에 확인한다.
 
-- [ ] 브라우저에서 CDN JSON을 fetch — CORS 통과
+- [x] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 `v1/` 전 파일의 개수를 센다** (26/26). curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
 - [ ] Google 로그인 → JWT 발급 → `sub` 클레임 확인
 - [ ] Nest가 JWKS로 그 JWT를 검증 → 200
 - [ ] Nest가 Postgres에 연결 (`prepare: false` 확인)

@@ -159,15 +159,15 @@ s3://<bucket>/aws-saa/<prefix>/      ← 랜덤 프리픽스. 실제 값은 커�
 
 - **CloudFront invalidation이 영영 필요 없다** — 파일 경로가 바뀌므로
 - **롤백이 manifest 한 줄이다** — `v1`은 지우지 않고 그대로 둔다
-- **덮어쓰기 사고를 이중으로 막는다** — publish가 같은 버전 재업로드를 기본 거부하고(`--force` 필요), S3 버저닝이 최후 안전망이다. **버저닝 활성화는 첫 publish 전 필수다**
-
-추가로 S3 버킷 버저닝을 활성화해 이중 안전망을 둔다.
+- **덮어쓰기 사고를 이중으로 막는다** — publish가 같은 버전 재업로드를 기본 거부하고(`--force` 필요), S3 버저닝이 최후 안전망이다. **버저닝 확인은 첫 publish 전 필수다** (이 버킷은 이미 켜져 있었다 — `07-infrastructure.md` §3)
 
 ### CORS
 
-**CloudFront Response Headers Policy**로 주입한다. S3 버킷 CORS로 처리하면 CloudFront가 `Origin` 헤더를 오리진까지 전달해야 하고, 그러면 Origin별로 캐시가 파편화된다. CloudFront에서 직접 주입하면 캐시가 하나로 유지된다.
+**CloudFront에서 주입한다.** S3 버킷 CORS로 처리하면 CloudFront가 `Origin` 헤더를 오리진까지 전달해야 하고, 그러면 Origin별로 캐시가 파편화된다. CloudFront에서 직접 주입하면 캐시가 하나로 유지된다.
 
-허용 Origin: 프로덕션 도메인 + `localhost`. 프리뷰 대응은 `07-infrastructure.md`의 (a)안을 따른다 (CloudFront는 와일드카드 Origin을 직접 지원하지 않는다).
+주입 수단은 **`viewer-response` CloudFront Function**이다. Response Headers Policy가 아닌 이유는 이 배포가 Free 요금제라 커스텀 정책을 거부하고 관리형 정책은 조건부로만 동작하기 때문이다 — 실측과 재현 절차는 `07-infrastructure.md` 「Response Headers Policy를 쓰지 않는 이유」.
+
+허용 Origin은 **`*`**다. 목록으로 좁혀도 보호가 0이라서다 — 아래 문단이 그 근거이고, 프리뷰 도메인 문제도 함께 사라진다.
 
 CORS는 브라우저의 교차출처만 막고 curl 직접 fetch는 못 막는다. 실질 방어선은 경로의 랜덤 프리픽스이며(`aws-saa/<prefix>/`), 실제 프리픽스 값은 레포·문서·이슈에 적지 않는다.
 
