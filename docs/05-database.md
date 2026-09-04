@@ -51,7 +51,7 @@ create table exam_sessions (
   score         int,
 
   constraint exam_sessions_size      check (cardinality(question_ids) = 65),
-  constraint exam_sessions_cursor    check (cursor between 0 and cardinality(question_ids)),
+  constraint exam_sessions_cursor    check (cursor between 0 and cardinality(question_ids) - 1),
   constraint exam_sessions_score     check (score is null or score between 0 and 65),
   constraint exam_sessions_finished  check ((finished_at is null) = (score is null))
 );
@@ -66,6 +66,10 @@ create unique index exam_sessions_one_active_idx
 ```
 
 `question_ids`는 세션 생성 시점에 고정된다. 추첨 결과를 배열로 박아 두면 나중에 문제 데이터가 `v2`로 바뀌어도 그 세션이 무엇을 물었는지 그대로 남는다. `content_version`도 함께 고정한다 — `finish` 시 카탈로그의 현재 버전과 다르면 409를 주어, 버전 교체를 가로지른 세션이 새 정답으로 채점되는 것을 막는다.
+
+`cursor`는 **사용자가 지금 보고 있는 문항의 0-based 인덱스**다 (`0`~`64`). 진도 카운터가 아니라 위치다 — 모의고사는 문항 간 자유롭게 이동하므로 되돌아가면 `cursor`도 함께 뒤로 간다. `PATCH /exams/:id`가 이동할 때 저장하고, `POST /attempts`는 건드리지 않는다. 답을 고르는 것과 화면을 옮기는 것이 별개 동작이기 때문이다 (`02-features.md` 「진행」).
+
+`cardinality(question_ids) - 1`이 상한인 이유는 **65번째 위치가 없기** 때문이다. 마지막(65) 문항에서 「다음」은 「종료」로 바뀌므로 화면이 `cursor = 65`를 만들 수 없다 (`02-features.md` 「진행」).
 
 **부분 유니크 인덱스**가 "진행 중 세션은 하나"를 DB 레벨에서 보장한다. 애플리케이션 로직에 의존하지 않는다.
 
@@ -341,13 +345,16 @@ apps/api/src/
 ├─ progress/
 ├─ stats/
 └─ db/
-   ├─ schema.ts             Drizzle 스키마
-   ├─ migrations/           순수 SQL
-   └─ db.provider.ts        postgres-js { prepare: false }
+   ├─ schema.ts             컬럼 정의. 제약은 여기 없다
+   ├─ migrations/           순수 SQL — 제약·인덱스의 정본
+   ├─ db.provider.ts        postgres-js { prepare: false }
+   └─ db.module.ts          @Global. 커넥션이 하나라 도메인 모듈이 각자 import하지 않는다
 ```
+
+**제약을 `schema.ts`에 다시 적지 않는다.** Drizzle의 `check()`·`index()`는 drizzle-kit이 마이그레이션을 생성할 때만 쓰이는데 이 레포는 SQL을 손으로 쓴다(`docs/03` 「데이터베이스 연결」 — 빌드 스텝을 늘리지 않는 것이 Drizzle을 고른 이유다). 소비자가 없는 두 번째 사본은 갈라지기만 한다. `schema.ts`가 하는 일은 쿼리에 타입을 주는 것뿐이다.
 
 도메인 모듈(`attempts` · `exams` · `progress` · `stats`)은 각각 `*.module.ts` · `*.controller.ts` · `*.service.ts` · `*.repository.ts` · `dto/`를 갖는다. **Drizzle 쿼리는 repository 안에만 둔다** — 위 도출 쿼리도 쓰는 모듈의 repository가 소유한다 (`apps/api/CLAUDE.md`).
 
 `SupabaseJwtGuard`를 전역 가드로 등록하고 `/health`만 `@Public()`으로 뺀다. 가드를 붙이는 걸 잊어서 뚫리는 사고를 막는다.
 
-`prepare: false`는 트랜잭션 풀러에서 **필수**다. 빠뜨리면 런타임 오류가 난다 (`03-architecture.md` 리스크 표).
+`prepare: false`는 Drizzle 현행 문서가 트랜잭션 풀러에 지시하는 값이라 넣는다. **「빠뜨리면 런타임 오류」는 2026-09-04 실측에서 재현되지 않았다** — 근거의 크기는 `03-architecture.md` 「데이터베이스 연결」이 정본이다.

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { validateEnv } from './env'
 
 const COMPLETE_ENV = {
+  DATABASE_URL: 'postgresql://user:pw@pooler.example.com:6543/postgres',
   SUPABASE_JWKS_URL: 'https://ref.supabase.co/auth/v1/.well-known/jwks.json',
   SUPABASE_JWT_ISSUER: 'https://ref.supabase.co/auth/v1',
   ALLOWED_EMAIL: 'owner@example.com',

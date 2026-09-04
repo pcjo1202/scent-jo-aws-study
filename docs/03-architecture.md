@@ -123,10 +123,14 @@ Supabase는 **비대칭 JWT 서명**(ES256 · ECC P-256)을 쓴다. Nest는 부�
 Vercel Functions는 서버리스이므로 **Supavisor 트랜잭션 모드(포트 6543)** 를 쓴다.
 
 ```
-postgres://postgres.<ref>:<pw>@aws-ap-northeast-2.pooler.supabase.com:6543/postgres
+postgresql://postgres.<ref>:<pw>@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres
 ```
 
-**트랜잭션 모드는 prepared statement를 지원하지 않는다.** ORM에서 반드시 꺼야 한다.
+**트랜잭션 모드에서는 prepared statement를 끈다.** Drizzle 현행 문서가 Supabase 트랜잭션 풀 모드에 그렇게 지시한다.
+
+다만 **「끄지 않으면 터진다」는 2026-09-04 실측에서 재현되지 않았다** (SJO-13). `prepare: true`로 300회를 태웠는데 한 건도 실패하지 않았다 — 커넥션 10개에 분산 60회, 클라이언트 커넥션 30개로 멀티플렉싱을 강제한 150회, 그 밖 90회. 백엔드가 보는 포트가 5432인 것으로 풀러를 지나는 것은 확인했다. Supavisor가 named prepared statement를 받는 것으로 보인다.
+
+그래도 끈 채로 둔다. 현행 문서가 지시하고, 비용이 0이고, 로컬 프로브가 서버리스의 인스턴스 교체까지 재현했다고 보장할 수 없다. **파괴 사례를 확인해서가 아니라 확인하지 못해서 두는 것이다.**
 
 ORM은 **Drizzle**을 쓴다. 마이그레이션이 순수 SQL 파일이라 빌드 스텝이 늘지 않고, `postgres-js` 드라이버에 `prepare: false`를 주면 끝난다.
 
@@ -188,7 +192,7 @@ git에 들어가는 것은 코드, 문서, 그리고 데이터를 재생성하�
 | 리스크 | 대응 |
 |---|---|
 | 모노레포 `apps/api`에서 NestJS 제로 설정 감지가 실제로 붙는지 문서만으로 확신 불가 | **기능 개발 전에 빈 Next + 빈 Nest로 배포부터 검증한다.** 실패 시 `vercel.json`에 빌드 커맨드 명시로 우회 |
-| 트랜잭션 모드에서 prepared statement 사용 시 런타임 오류 | Drizzle 초기화에 `prepare: false` 강제. 코드 리뷰 체크리스트 항목 |
+| 트랜잭션 모드에서 prepared statement 사용 시 런타임 오류 | Drizzle 초기화에 `prepare: false` 강제. 코드 리뷰 체크리스트 항목. **리스크의 크기는 미확인이다** — 2026-09-04 실측 300회에서 재현되지 않았다 (SJO-13, 위 「데이터베이스 연결」) |
 | 자동 태깅 오분류 | 카테고리와 함께 `services` 원본을 인덱스에 보존. 분포 검증으로 사전 오류 탐지 |
 | 해부서 판독 결과 유실 | 버전 경로 + S3 버저닝. 판독 결과는 재현 불가 |
 

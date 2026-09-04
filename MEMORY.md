@@ -4,7 +4,7 @@ git이 알 수 없는 외부 상태의 **현재값**만 적는다. 할 일은 `T
 
 바꿨으면 그 자리에서 덮어쓴다. 이력은 남기지 않는다 (데이터 변경 이력만 `docs/data-changelog.md`).
 
-_최종 갱신: 2026-09-03_
+_최종 갱신: 2026-09-04_
 
 ## 인프라
 
@@ -15,7 +15,7 @@ _최종 갱신: 2026-09-03_
 | Related Projects 연결 | **설정됨** — `apps/web/vercel.json`. 프리뷰끼리 짝이 맞는 것 확인 |
 | Supabase 프로젝트 | **생성됨** · ref `xeaucvsadpmaeuxpfokq` · `ap-northeast-2` |
 | Supabase JWT 비대칭 서명 전환 | **적용됨** · JWKS `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` 200 · `alg=ES256`(EC P-256) · `kid=c1836c43-1d7a-4131-8008-29a156bee9e1`. **`/auth/v1/jwks`는 JWKS 엔드포인트가 아니다** — apikey를 요구해 401 (SJO-41) |
-| Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-03 사람이 콘솔에서 확인. 이전에 본 `rest/v1/`의 503(PGRST002)은 테이블이 0개라서 나온 것이라 판정 근거가 아니었고, 콘솔 확인으로 대체했다. **SJO-13이 테이블을 만든 뒤 한 번 더 본다** — 테이블이 생기면 503의 의미가 달라지므로 그때는 실측으로도 판정할 수 있다 (`docs/07` §1) |
+| Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-04 **실측 확정**(SJO-13). 테이블 3개를 만든 뒤 `exam_sessions`·`attempts`·`study_progress` × publishable·legacy anon 키로 읽기 6건, 쓰기 1건을 쟀고 전부 503(PGRST002)이다. 테이블 0개일 때의 503은 판정 근거가 아니었으나 이제는 갈린다 (`docs/07` §1) |
 | Supabase Email 프로바이더 | **열려 있음** (`email: true` · `disable_signup: false`). Google만 쓰므로 끈다 — 콘솔 작업 |
 | Google OAuth 클라이언트 | **등록됨** · `authorize` 302 → `accounts.google.com` · `redirect_uri`는 Supabase 콜백 |
 | S3 오리진 버킷 | `scent-jo-image-s3-bucket-<account-id>-ap-northeast-2-an` · ap-northeast-2 · OAC 전용(공개 읽기 없음). **실명은 `scripts/.env`의 `S3_BUCKET`에만 둔다** — 이름에 AWS 계정 ID가 들어 있고 이 레포는 public이다. **`static-cdn.scent-jo.dev`는 버킷이 아니라 CloudFront 별칭이다** — 버킷 이름으로 쓰면 `NoSuchBucket` (2026-09-04 실측, SJO-8) |
@@ -27,6 +27,13 @@ _최종 갱신: 2026-09-03_
 | 프로덕션 도메인 (api) | 없음. `aws-study-api.vercel.app` 그대로 — Bearer JWT라 커스텀 도메인이 필요 없다 |
 | api `CORS_ALLOWED_ORIGINS` | production `https://saa.scent-jo.dev,https://aws-study-web.vercel.app` · preview `https://aws-study-*-smelljo.vercel.app` |
 | 업로드 IAM 사용자 | `aws-saa-data-publisher` · 인라인 정책 `aws-saa-publish` — `aws-saa/*`의 Get/Put + `s3:prefix` 조건부 ListBucket. **`s3:DeleteObject` 없음.** 키는 `scripts/.env`에만 있다 (`docs/07` §3) |
+| api `DATABASE_URL` | **production·preview·development 세 환경 등록됨** (Sensitive). 2026-09-04, SJO-13 |
+| api 인증 환경변수 | **`SUPABASE_JWKS_URL`·`SUPABASE_JWT_ISSUER`·`ALLOWED_EMAIL`이 세 환경 어디에도 없다** — `env.ts`가 필수로 요구하므로 부팅이 안 된다. SJO-50 |
+| 프로덕션 api 상태 | **500 (`FUNCTION_INVOCATION_FAILED`)** — `@nestjs/config@12`가 ESM 전용인데 CommonJS로 컴파일한다(`ERR_REQUIRE_ESM`). SJO-12 배포 시점부터 죽어 있었다. SJO-49 |
+| Supabase↔Vercel 통합 | **리소스는 남아 있다** — Marketplace store `supabase-scent-jo-aws-study` (`store_7q0XZjyOQqsMm1i6`), api 프로젝트에 연결. 우리 프로젝트 `xeaucvsadpmaeuxpfokq`를 가리킨다(Vercel이 새로 만든 것이 아니다). **리소스 제거는 안 했다** — CLI로는 그것이 Supabase 프로젝트까지 지우는지 확인할 방법이 없다. 대시보드 확인 다이얼로그로만 판단 가능 |
+| 통합이 넣었던 변수 16개 | **2026-09-04 전부 삭제** (SJO-13). `POSTGRES_*` 7 · `SUPABASE_URL`·`SUPABASE_ANON_KEY`·`SUPABASE_SERVICE_ROLE_KEY`·`SUPABASE_SECRET_KEY`·`SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_JWT_SECRET` 6 · `NEXT_PUBLIC_SUPABASE_*` 3. **`docs/06` 「전체 목록」이 api에 주는 변수가 아니고**, 코드가 **16개 중 0개**를 참조했다(위생 검사 5/5 검출). `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`는 목록에 있지만 **web의 변수다** — api 프로젝트에 있을 이유가 없어서 지웠고, web에는 SJO-19가 따로 넣는다(아래 줄). **통합이 연결된 채라 재동기화로 되살아날 수 있다** |
+| api 환경변수 현재값 | production `CORS_ALLOWED_ORIGINS`·`DATABASE_URL` · preview 같음 · development `DATABASE_URL`만 |
+| web 환경변수 현재값 | **`NEXT_PUBLIC_API_URL` 하나뿐** (production·preview). `docs/06`이 web에 요구하는 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`·`NEXT_PUBLIC_DATA_BASE_URL` **셋이 없다.** 읽는 코드가 아직 없어 지금은 안 깨진다 — SJO-19가 인증·데이터 클라이언트를 넣을 때 셋 다 필요하다. **`NEXT_PUBLIC_DATA_BASE_URL`의 값은 이미 있다** (SJO-8이 v1을 올렸다 — `scripts/.env`의 `DATA_CDN_BASE`) |
 | Linear ↔ GitHub 연동 | **켜짐** (확인 완료 — PR #1이 SJO-31에 자동 첨부) |
 | GitHub 레포 | `pcjo1202/scent-jo-aws-study` · **public**. PR 생성은 `pcjo1202` 계정 토큰이 필요하다 (gh 기본 활성 계정은 collaborator가 아니라 `must be a collaborator`로 거부된다) |
 
@@ -45,7 +52,10 @@ _최종 갱신: 2026-09-03_
 
 | 항목 | 상태 |
 |---|---|
-| 적용된 마이그레이션 | 없음 |
+| 적용된 마이그레이션 | `20260903171754_0000_init` (2026-09-04 적용) — `exam_sessions`·`attempts`·`study_progress`. 원본은 `apps/api/src/db/migrations/0000_init.sql` |
+| 테이블 상태 | 3개 · check 제약 9 · FK 1 · 명명 인덱스 4 · **행 0**. RLS 셋 다 꺼짐, 정책 0개 (설계 원칙 4) |
+| 제약 우회 프로브 | 2026-09-04 — 위반 11/11 거부(23514 · 23505 · 23503), 정상 5/5 통과 (SJO-13 증거 코멘트) |
+| 풀러 호스트 | `aws-0-ap-northeast-2.pooler.supabase.com:6543`. **`aws-0-` 샤드 접두사가 있다** — docs/03·07의 예시에 빠져 있었다 (2026-09-04 정정) |
 
 ## 확인된 사실
 
