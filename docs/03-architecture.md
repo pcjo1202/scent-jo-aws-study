@@ -193,6 +193,8 @@ git에 들어가는 것은 코드, 문서, 그리고 데이터를 재생성하�
 |---|---|
 | 모노레포 `apps/api`에서 NestJS 제로 설정 감지가 실제로 붙는지 문서만으로 확신 불가 | **기능 개발 전에 빈 Next + 빈 Nest로 배포부터 검증한다.** 실패 시 `vercel.json`에 빌드 커맨드 명시로 우회 |
 | 트랜잭션 모드에서 prepared statement 사용 시 런타임 오류 | Drizzle 초기화에 `prepare: false` 강제. 코드 리뷰 체크리스트 항목. **리스크의 크기는 미확인이다** — 2026-09-04 실측 300회에서 재현되지 않았다 (SJO-13, 위 「데이터베이스 연결」) |
+| **Vercel Fluid 런타임이 `require(esm)`를 지원하지 않는다** — CommonJS로 컴파일한 `apps/api`가 ESM 전용 패키지를 값으로 import하면 `ERR_REQUIRE_ESM`으로 **부팅에서 죽는다.** 로컬 Node 24는 이것을 허용하므로 **평범한 `node dist/main.js`로는 재현되지 않는다** (2026-09-04 실측: 같은 24.x인데 로컬은 `/health` 200, 프로덕션은 500) | `pnpm --filter @aws-study/api build`가 `--no-experimental-require-module`로 산출물을 띄워 본다 (`docs/06` 「빌드 산출물을 실제로 띄워 본다」). 런타임 의존성을 추가·승급할 때 이 게이트를 통과시킨다 |
+| **web의 프리렌더가 api 장애에 끌려 죽는다** — 서버 컴포넌트가 `prefetchQuery`를 `await` 없이 넘기면 pending 상태로 dehydrate되는데, 그 promise는 실패 시 반드시 reject되어 정적 프리렌더를 깬다. api 500 하나가 **두 프로젝트의 배포를 동시에** 막았다 (SJO-49) | 정적 라우트에서는 `prefetchQuery`를 `await`한다 — 실패한 쿼리는 dehydrate에서 빠지고 화면이 `docs/02` 「API 오류의 화면 표현」의 5xx 경로를 표현한다 (`.claude/rules/web-state.md`) |
 | 자동 태깅 오분류 | 카테고리와 함께 `services` 원본을 인덱스에 보존. 분포 검증으로 사전 오류 탐지 |
 | 해부서 판독 결과 유실 | 버전 경로 + S3 버저닝. 판독 결과는 재현 불가 |
 
