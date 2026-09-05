@@ -16,9 +16,12 @@ const GRADING_CASES: Array<{ selected: ChoiceKey[]; answer: ChoiceKey[]; expecte
 
 const ALL_QUESTION_IDS = Array.from({ length: 1019 }, (_, index) => index + 1)
 
-it.each(GRADING_CASES)('grade([$selected]) vs [$answer] → $expected', ({ selected, answer, expected }) => {
-  expect(grade(selected, answer)).toBe(expected)
-})
+it.each(GRADING_CASES)(
+  'grade([$selected]) vs [$answer] → $expected',
+  ({ selected, answer, expected }) => {
+    expect(grade(selected, answer)).toBe(expected)
+  },
+)
 
 it('pickExamQuestions는 정확히 65개를 준다', () => {
   expect(pickExamQuestions(ALL_QUESTION_IDS)).toHaveLength(EXAM_QUESTION_COUNT)

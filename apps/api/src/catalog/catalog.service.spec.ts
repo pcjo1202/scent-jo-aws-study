@@ -19,7 +19,9 @@ let liveVersion: 'v1' | 'v2'
 let isFailing: boolean
 
 function toIndex(answer: string) {
-  return { entries: [{ id: 1, chunk: 1, categories: [], services: [], answer: [answer], choiceCount: 4 }] }
+  return {
+    entries: [{ id: 1, chunk: 1, categories: [], services: [], answer: [answer], choiceCount: 4 }],
+  }
 }
 
 beforeAll(async () => {
@@ -34,7 +36,13 @@ beforeAll(async () => {
 
     const body =
       path === '/manifest.json'
-        ? { version: liveVersion, generatedAt: '', base: `${rootUrl}/${liveVersion}`, questions: {}, files: {} }
+        ? {
+            version: liveVersion,
+            generatedAt: '',
+            base: `${rootUrl}/${liveVersion}`,
+            questions: {},
+            files: {},
+          }
         : toIndex(path === '/v1/questions/index.json' ? 'A' : 'B')
 
     response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(body))

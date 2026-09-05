@@ -8,7 +8,12 @@ import { DbModule } from './db/db.module'
 import { validateEnv } from './env'
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }), DbModule, AuthModule, CatalogModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    DbModule,
+    AuthModule,
+    CatalogModule,
+  ],
   controllers: [AppController],
 })
 export class AppModule {}

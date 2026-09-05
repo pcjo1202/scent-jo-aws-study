@@ -7,6 +7,7 @@ const COMPLETE_ENV = {
   SUPABASE_JWKS_URL: 'https://ref.supabase.co/auth/v1/.well-known/jwks.json',
   SUPABASE_JWT_ISSUER: 'https://ref.supabase.co/auth/v1',
   ALLOWED_EMAIL: 'owner@example.com',
+  DATA_BASE_URL: 'https://cdn.example.com/aws-saa',
 }
 
 describe('validateEnv', () => {

@@ -59,7 +59,9 @@ export class CatalogService {
       // 바뀐다 (`05-database.md` 「CDN 장애」)
       if (!this.cache) throw new ServiceUnavailableException('카탈로그 인덱스를 받지 못했다')
 
-      this.logger.warn(`카탈로그 재확인 실패, 기존 캐시(${this.cache.version}) 유지: ${describe(error)}`)
+      this.logger.warn(
+        `카탈로그 재확인 실패, 기존 캐시(${this.cache.version}) 유지: ${describe(error)}`,
+      )
     }
 
     // reload가 던지지 않았거나 위에서 기존 캐시를 확인했으므로 null이 아니다
