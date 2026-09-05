@@ -21,7 +21,7 @@
 | `VERCEL_RELATED_PROJECTS` | web | 공개 | **Vercel이 자동 주입.** 직접 설정하지 않는다 |
 | `VERCEL_GIT_COMMIT_SHA` | api | 공개 | **Vercel이 자동 주입.** `GET /health`의 `version`이 앞 7자리를 쓴다. 로컬에는 없으므로 `dev` |
 | `SUPABASE_JWKS_URL` | api | 공개 | `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` — **`/auth/v1/jwks`가 아니다.** 그 경로는 apikey를 요구해 401이 온다 (2026-08-31 실측, SJO-41) |
-| `SUPABASE_JWT_ISSUER` | api | 공개 | `iss` 클레임 검증용 |
+| `SUPABASE_JWT_ISSUER` | api | 공개 | `https://<ref>.supabase.co/auth/v1` — **후행 슬래시 없음.** jose의 `issuer` 옵션은 토큰 `iss`와 문자열 완전 일치를 요구해 슬래시 하나만 붙어도 401이다 (2026-09-06 실측, SJO-50). 같은 값이 `/auth/v1/.well-known/openid-configuration`의 `issuer`로도 나온다 |
 | `ALLOWED_EMAIL` | api | 공개 | 소유자 이메일. JWT `email` 불일치 시 403 |
 | `DATABASE_URL` | api | **서버** | Supavisor 트랜잭션 풀러 `:6543` |
 | `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 인덱스를 받을 경로 |
@@ -117,6 +117,18 @@ S3_BUCKET=
 `api`는 부팅 시 필수 변수가 없으면 **즉시 죽는다.** 서버리스에서 환경변수 누락은 첫 요청에서야 드러나므로, 부팅 시 검증이 없으면 원인을 찾는 데 오래 걸린다.
 
 NestJS `ConfigModule`에 스키마 검증을 붙인다.
+
+### 필수 키를 추가하는 이슈가 Vercel 등록까지 한다
+
+**`env.ts`의 `REQUIRED_ENV_KEYS`에 키를 추가하는 이슈는 같은 이슈 안에서 Vercel 등록과 개수 세기까지 끝낸다.** 코드만 넣고 환경을 비워 두면 그 순간부터 배포된 api가 부팅에서 죽는데, 죽는 것이 의도된 동작이라 로컬 게이트(`typecheck`·`test`)는 전부 초록이다. SJO-12가 셋을 필수로 만들고 등록하지 않아 SJO-50까지 남았다.
+
+절차는 셋이다.
+
+1. **세 환경 전부에 넣는다** — production·preview·development. `DATABASE_URL`이 production에만 있던 사고를 SJO-13에서 한 번 했다
+2. **`vercel env ls`로 「몇 칸 중 몇 칸」을 센다.** 키 목록은 손으로 적지 않고 `env.ts`에서 뽑아 대조한다 — 손으로 적으면 방금 추가한 키를 목록에도 빠뜨린다. 기준은 **필수 키 수 × 3환경**이다 (2026-09-06 실측 12칸 중 12칸, SJO-50)
+3. **값 대조는 가려지지 않은 항목으로만 된다.** `vercel env add`는 production·preview에서 **sensitive가 기본**이고(빼려면 `--no-sensitive` — Vercel 문서 `cli/env`), sensitive 항목은 `vercel env pull`이 `[SENSITIVE]`로 가린다. 2026-09-06 실측도 그랬다 — 세 키의 development 항목만 값이 나와 3/3 문자열 일치를 확인했고 production·preview는 가려졌다. 세 환경에 같은 값이 갔다는 것은 **같은 셸 변수를 쓰는 한 루프에서 넣어** 보장하고, 프로덕션 쪽은 배포 후 `GET /health` 200으로 확인한다
+
+**등록만으로는 기존 배포가 낫지 않는다.** 환경변수는 배포 시점에 묶이므로 **재배포해야 반영된다** — `vercel redeploy <배포 URL>`이면 같은 커밋 그대로 새 값을 태운다 (2026-09-06, SJO-50: 500 → 200).
 
 ### 빌드 산출물을 실제로 띄워 본다
 
