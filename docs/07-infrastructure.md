@@ -4,6 +4,8 @@
 
 > **이 문서는 실제로 설정하면서 채운다.** 지금은 뼈대와 결정 사항이고, 콘솔에서 확인한 실제 값(정책 JSON, 정책 ID, ARN)을 그 자리에서 덧붙인다.
 > 작업을 마칠 때마다 `MEMORY.md`의 인프라 표를 갱신한다.
+>
+> **미체크 `[ ]`를 「안 했다」로 읽지 마라.** 이미 끝났는데 채우지 않은 칸이 섞여 있다 — 현재 상태의 정본은 `MEMORY.md`다. 전수 대조는 **SJO-52**에서 한다 (2026-09-06 확인).
 
 ## 순서
 
@@ -46,7 +48,7 @@
 
   적용 후 `list_migrations`의 버전과 레포 파일명을 `MEMORY.md`에 함께 적는다 — 그 대응이 유일한 기록이다. 첫 적용: `0000_init.sql` → `20260903171754_0000_init` (2026-09-04, SJO-13).
 
-- [ ] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력)
+- [x] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력) — `/auth/v1/settings` 실측 `external.google: true`, 실제 로그인으로 토큰까지 받았다 (2026-09-06, SJO-50)
 - [ ] Auth → Redirect URLs에 로컬·프리뷰·프로덕션 등록
 
 **RLS는 켜지 않는다.** 근거는 `05-database.md` 설계 원칙 4. 테이블 생성 시 Supabase가 RLS를 기본 활성화하면, 켜둔 채로 정책 없이 두지 말고 명시적으로 끈다. 켜져 있는데 정책이 없으면 service role이 아닌 모든 접근이 조용히 빈 결과를 반환해 디버깅이 어렵다.
@@ -208,8 +210,8 @@
 전부 끝난 뒤 한 번에 확인한다.
 
 - [x] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 `v1/` 전 파일의 개수를 센다** (26/26). curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
-- [ ] Google 로그인 → JWT 발급 → `sub` 클레임 확인
-- [ ] Nest가 JWKS로 그 JWT를 검증 → 200
+- [x] Google 로그인 → JWT 발급 → `sub` 클레임 확인 — 2026-09-06 실측 (SJO-50). `alg=ES256` · `iss`·`aud`·`email`·`sub` 전부 확인. **Google이 유일한 로그인 수단이라 사람이 직접 로그인해야 토큰이 나온다** — 이메일·익명 프로바이더가 꺼져 있어 임시 계정 경로가 없다
+- [x] Nest가 JWKS로 그 JWT를 검증 → 200 — 2026-09-06, 실제 Supabase JWKS + 실토큰으로 `AuthModule`을 그대로 띄워 **5조건 중 5조건** 일치 (SJO-50): 정상 200 · `issuer` 끝에 슬래시 하나 401 · 옛 `/auth/v1/jwks` 503 · `ALLOWED_EMAIL` 불일치 403 · 토큰 없음 401. **프로덕션에서 같은 것을 재려면 가드가 걸린 라우트가 필요하다** — 지금 라우트는 `@Public()`인 `/health` 하나뿐이라 매칭 안 되는 경로는 가드 이전에 404다
 - [ ] Nest가 Postgres에 연결 (`prepare: false` 확인)
 - [ ] web 프리뷰가 api 프리뷰를 가리킴
 - [ ] `MEMORY.md` 인프라 표 갱신
