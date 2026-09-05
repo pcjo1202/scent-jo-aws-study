@@ -1,10 +1,11 @@
 import { getSupabaseClient } from '@/shared/api/supabase'
+import { DENIED_REASON_PARAM, OWNER_ONLY_DENIED_REASON } from '@/shared/config/auth'
 
 const UNAUTHORIZED = 401
 const FORBIDDEN = 403
 
 /** 403에서 보내는 곳. 쿼리 파라미터를 `/login`이 읽어 「소유자 전용」을 알린다. */
-const OWNER_ONLY_PATH = '/login?denied=owner-only'
+const OWNER_ONLY_PATH = `/login?${DENIED_REASON_PARAM}=${OWNER_ONLY_DENIED_REASON}`
 
 /** 화면이 `docs/02` 「API 오류의 화면 표현」의 행을 고를 수 있도록 상태 코드를 남긴다. */
 export class ApiError extends Error {

@@ -1,3 +1,4 @@
+import { OWNER_ONLY_DENIED_REASON } from '@/shared/config/auth'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { GoogleSignInButton } from './google-sign-in-button'
@@ -5,9 +6,6 @@ import { GoogleSignInButton } from './google-sign-in-button'
 export const metadata = {
   title: '로그인 · AWS SAA-C03 학습',
 }
-
-/** api가 403을 준 뒤 `api-client`가 붙여 보내는 값. */
-const OWNER_ONLY = 'owner-only'
 
 /**
  * **앱바를 두지 않는 유일한 화면이다** — 비로그인 상태에서 갈 수 있는 화면이 없어 뒤로가기가
@@ -22,7 +20,7 @@ export async function LoginPage({ searchParams }: { searchParams: Promise<{ deni
   return (
     <main className="mx-auto flex min-h-dvh max-w-reading flex-col items-center justify-center gap-6 px-screen">
       <h1 className="text-headline-small">AWS SAA-C03 학습</h1>
-      {denied === OWNER_ONLY && (
+      {denied === OWNER_ONLY_DENIED_REASON && (
         // 재시도를 유도하지 않는다 — 액션을 주지 않는 것이 그것이다 (`docs/02`).
         <StatusBanner kind="error">소유자 전용이다. 이 계정으로는 쓸 수 없다</StatusBanner>
       )}
