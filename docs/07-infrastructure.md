@@ -208,8 +208,8 @@
 전부 끝난 뒤 한 번에 확인한다.
 
 - [x] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 `v1/` 전 파일의 개수를 센다** (26/26). curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
-- [ ] Google 로그인 → JWT 발급 → `sub` 클레임 확인
-- [ ] Nest가 JWKS로 그 JWT를 검증 → 200
+- [x] Google 로그인 → JWT 발급 → `sub` 클레임 확인 — 2026-09-06 실측 (SJO-50). `alg=ES256` · `iss`·`aud`·`email`·`sub` 전부 확인. **Google이 유일한 로그인 수단이라 사람이 직접 로그인해야 토큰이 나온다** — 이메일·익명 프로바이더가 꺼져 있어 임시 계정 경로가 없다
+- [x] Nest가 JWKS로 그 JWT를 검증 → 200 — 2026-09-06, 실제 Supabase JWKS + 실토큰으로 `AuthModule`을 그대로 띄워 **5조건 중 5조건** 일치 (SJO-50): 정상 200 · `issuer` 끝에 슬래시 하나 401 · 옛 `/auth/v1/jwks` 503 · `ALLOWED_EMAIL` 불일치 403 · 토큰 없음 401. **프로덕션에서 같은 것을 재려면 가드가 걸린 라우트가 필요하다** — 지금 라우트는 `@Public()`인 `/health` 하나뿐이라 매칭 안 되는 경로는 가드 이전에 404다
 - [ ] Nest가 Postgres에 연결 (`prepare: false` 확인)
 - [ ] web 프리뷰가 api 프리뷰를 가리킴
 - [ ] `MEMORY.md` 인프라 표 갱신
