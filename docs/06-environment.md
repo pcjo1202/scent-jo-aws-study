@@ -24,7 +24,7 @@
 | `SUPABASE_JWT_ISSUER` | api | 공개 | `https://<ref>.supabase.co/auth/v1` — **후행 슬래시 없음.** jose의 `issuer` 옵션은 토큰 `iss`와 문자열 완전 일치를 요구해 슬래시 하나만 붙어도 401이다 (2026-09-06 실측, SJO-50). 같은 값이 `/auth/v1/.well-known/openid-configuration`의 `issuer`로도 나온다 |
 | `ALLOWED_EMAIL` | api | 공개 | 소유자 이메일. JWT `email` 불일치 시 403 |
 | `DATABASE_URL` | api | **서버** | Supavisor 트랜잭션 풀러 `:6543` |
-| `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 인덱스를 받을 경로 |
+| `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 **`manifest.json`을 받을 root**. 버전 경로(`/v1`) **밖**이다 — 인덱스 경로는 manifest의 `base`가 준다. `scripts/.env`의 `DATA_CDN_BASE`는 `<root>/v1`이라 **그 값이 아니다** (2026-09-06 실측, SJO-14). **랜덤 프리픽스 포함 — 실제 값은 커밋 금지** |
 | `CORS_ALLOWED_ORIGINS` | api | 공개 | 쉼표 구분 |
 | `SOURCE_PDF_DIR` | scripts | 로컬 | `data:extract`가 읽을 원본 PDF 디렉터리. **기기마다 다르다.** 미설정이면 즉시 실패 |
 | `DATA_CDN_BASE` | scripts | 로컬 | `manifest.json`의 `base`. **랜덤 프리픽스 포함 — 커밋 금지.** 채우는 것은 `data:extract`다. 미설정이면 `base`가 빈 문자열이 되고, 그 manifest는 `data:publish`가 거부한다 |
@@ -92,7 +92,8 @@ DATABASE_URL=
 SUPABASE_JWKS_URL=
 SUPABASE_JWT_ISSUER=
 ALLOWED_EMAIL=
-DATA_BASE_URL=                      # CDN 경로. 랜덤 프리픽스 포함, 커밋 금지
+DATA_BASE_URL=                      # manifest.json이 있는 root. 버전 경로(/v1) 밖이다
+                                    # 랜덤 프리픽스 포함, 커밋 금지
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 # scripts/.env.example
@@ -141,3 +142,7 @@ NestJS `ConfigModule`에 스키마 검증을 붙인다.
 우회 경로 프로브로 실측했다 — ESM 전용 패키지를 값으로 import하는 자리를 `app.module.ts`·`main.ts`·`cors-origins.ts`(모듈 그래프 밖)·`auth/jwks.service.ts`(그래프 말단)와 동적 `import()`까지 **5곳에 심어 5곳 전부 검출**, 정상 케이스 2건(타입 전용 import·무패치) 오탐 0.
 
 **환경변수는 `smoke.mjs`가 자체 주입한다.** `.env`나 Vercel 등록 상태에 게이트가 좌우되면 기기마다 판정이 갈린다. 값은 URL 형태여야 한다 — `JwksService`가 생성자에서 `new URL()`을, `postgres()`가 접속 문자열을 즉시 파싱한다.
+
+**주입만으로는 격리되지 않는다 — `cwd`도 함께 옮겨야 한다.** 부모 환경을 물려주지 않아도 `ConfigModule`은 **cwd의 `.env`를 읽는다.** `apps/api`에서 띄우던 동안은 로컬 `.env`에 든 키가 `SMOKE_ENV`의 누락을 메워, 필수 키를 빼도 게이트가 `smoke ok`를 줬다 (2026-09-06 음성 대조, SJO-14). `cwd`를 `.env`가 없는 곳(`tmpdir()`)으로 옮기고 `dist/main.js`를 절대경로로 넘겨 고쳤다. 고친 뒤 **필수 5키를 하나씩 빼는 음성 대조에서 5개 중 5개가 부팅에서 죽는다.**
+
+이것이 「음성 대조가 없는 통과는 통과가 아니다」의 실례다 (`CLAUDE.md`). 게이트를 추가할 때는 **수정 전 코드가 그 게이트에서 반드시 실패하는지**부터 본다.
