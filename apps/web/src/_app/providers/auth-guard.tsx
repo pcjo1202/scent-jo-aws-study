@@ -33,13 +33,18 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe()
   }, [router])
 
-  if (!hasSession) {
-    return (
-      <main className="mx-auto max-w-reading px-screen py-6">
-        <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-      </main>
-    )
-  }
-
-  return children
+  // 라이브 리전은 배너보다 먼저 있어야 한다 — `aria-live`가 붙은 요소는 변경 시점에 이미
+  // DOM에 있어야 낭독된다. 그래서 컨테이너를 항상 렌더하고 안쪽만 교체한다
+  // (`DESIGN.md` 「Components · 상태 배너」. `QueryBoundary`가 같은 형태다).
+  return (
+    <div aria-live="polite">
+      {hasSession ? (
+        <div aria-live="off">{children}</div>
+      ) : (
+        <main className="mx-auto max-w-reading px-screen py-6">
+          <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+        </main>
+      )}
+    </div>
+  )
 }
