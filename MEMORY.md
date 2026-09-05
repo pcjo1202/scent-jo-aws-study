@@ -4,7 +4,7 @@ git이 알 수 없는 외부 상태의 **현재값**만 적는다. 할 일은 `T
 
 바꿨으면 그 자리에서 덮어쓴다. 이력은 남기지 않는다 (데이터 변경 이력만 `docs/data-changelog.md`).
 
-_최종 갱신: 2026-09-04_
+_최종 갱신: 2026-09-06_
 
 ## 인프라
 
@@ -29,7 +29,8 @@ _최종 갱신: 2026-09-04_
 | 업로드 IAM 사용자 | `aws-saa-data-publisher` · 인라인 정책 `aws-saa-publish` — `aws-saa/*`의 Get/Put + `s3:prefix` 조건부 ListBucket. **`s3:DeleteObject` 없음.** 키는 `scripts/.env`에만 있다 (`docs/07` §3) |
 | api `DATABASE_URL` | **production·preview·development 세 환경 등록됨** (Sensitive). 2026-09-04, SJO-13 |
 | api 인증 환경변수 | **`SUPABASE_JWKS_URL`·`SUPABASE_JWT_ISSUER`·`ALLOWED_EMAIL`이 세 환경 어디에도 없다** — `env.ts`가 필수로 요구하므로 부팅이 안 된다. SJO-50 |
-| 프로덕션 api 상태 | **500 (`FUNCTION_INVOCATION_FAILED`)** — `@nestjs/config@12`가 ESM 전용인데 CommonJS로 컴파일한다(`ERR_REQUIRE_ESM`). SJO-12 배포 시점부터 죽어 있었다. SJO-49 |
+| 프로덕션 api 상태 | **500 (`FUNCTION_INVOCATION_FAILED`) — 남은 원인은 환경변수 하나뿐이다.** `ERR_REQUIRE_ESM`은 해소됐다 (SJO-49 / PR #29 머지, `@nestjs/config` 12.0.0→4.0.4). 부팅이 모듈 로딩을 통과해 `ConfigModule.forRoot`까지 들어간 뒤 **`validateEnv`가 `SUPABASE_JWKS_URL`·`SUPABASE_JWT_ISSUER`·`ALLOWED_EMAIL` 누락으로 던진다** — **SJO-50이 그 셋을 넣으면 200이 된다** |
+| 프로덕션 web 빌드 | **회복됨** (SJO-49 / PR #29). `bcb3164`부터 전부 ERROR였고 원인은 **api 장애가 아니라 `/`가 정적 프리렌더였던 것**이다 — 프리렌더에서 `useSuspenseQuery`가 빌드 중에 api를 부르고 그 거절이 export를 죽였다. `app/page.tsx`의 `force-dynamic`으로 끊었고, **api가 500인 채로 web이 200을 준다**(프리뷰 실측) |
 | Supabase↔Vercel 통합 | **리소스는 남아 있다** — Marketplace store `supabase-scent-jo-aws-study` (`store_7q0XZjyOQqsMm1i6`), api 프로젝트에 연결. 우리 프로젝트 `xeaucvsadpmaeuxpfokq`를 가리킨다(Vercel이 새로 만든 것이 아니다). **리소스 제거는 안 했다** — CLI로는 그것이 Supabase 프로젝트까지 지우는지 확인할 방법이 없다. 대시보드 확인 다이얼로그로만 판단 가능 |
 | 통합이 넣었던 변수 16개 | **2026-09-04 전부 삭제** (SJO-13). `POSTGRES_*` 7 · `SUPABASE_URL`·`SUPABASE_ANON_KEY`·`SUPABASE_SERVICE_ROLE_KEY`·`SUPABASE_SECRET_KEY`·`SUPABASE_PUBLISHABLE_KEY`·`SUPABASE_JWT_SECRET` 6 · `NEXT_PUBLIC_SUPABASE_*` 3. **`docs/06` 「전체 목록」이 api에 주는 변수가 아니고**, 코드가 **16개 중 0개**를 참조했다(위생 검사 5/5 검출). `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`는 목록에 있지만 **web의 변수다** — api 프로젝트에 있을 이유가 없어서 지웠고, web에는 SJO-19가 따로 넣는다(아래 줄). **통합이 연결된 채라 재동기화로 되살아날 수 있다** |
 | api 환경변수 현재값 | production `CORS_ALLOWED_ORIGINS`·`DATABASE_URL` · preview 같음 · development `DATABASE_URL`만 |

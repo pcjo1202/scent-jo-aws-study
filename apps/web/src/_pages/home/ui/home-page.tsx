@@ -13,7 +13,7 @@ import { HealthStatus } from './health-status'
 // 로컬 폴백. 배포에서는 VERCEL_RELATED_PROJECTS가 짝이 맞는 api를 가리킨다 (docs/03 §프로젝트 간 URL 연결).
 const DEFAULT_API_URL = 'http://localhost:3001'
 
-export function HomePage() {
+export async function HomePage() {
   // VERCEL_RELATED_PROJECTS는 NEXT_PUBLIC_이 아니라 클라이언트 번들에 들어가지 않는다.
   // 서버에서 풀어 prop으로 내린다 — 클라이언트에서 부르면 배포에서도 항상 폴백이 된다.
   const apiUrl = withRelatedProject({
@@ -22,9 +22,11 @@ export function HomePage() {
   })
 
   const queryClient = getQueryClient()
-  // await하지 않는다 — pending 상태로 dehydrate돼 스트리밍으로 넘어간다.
-  // await하면 이 페이지의 첫 바이트가 api 응답을 기다린다.
-  void queryClient.prefetchQuery(healthQuery(apiUrl))
+  // await한다. `void`로 넘기면 pending 상태로 dehydrate되는데 그 promise는 실패 시 반드시
+  // reject되고(`dehydratePromise`), 이 화면이 api 장애에 무엇이 될지를 그 거절에 맡기게 된다.
+  // 이 라우트가 빌드에 묶이지 않는 것은 `app/page.tsx`의 `force-dynamic` 덕이지 이 await가
+  // 아니다 — await로는 프리렌더 결합을 못 끊는다 (SJO-49).
+  await queryClient.prefetchQuery(healthQuery(apiUrl))
 
   return (
     // 읽기 칼럼 상한과 화면 여백은 토큰이 정한다 (DESIGN.md 「Layout」).

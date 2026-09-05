@@ -117,3 +117,15 @@ S3_BUCKET=
 `api`는 부팅 시 필수 변수가 없으면 **즉시 죽는다.** 서버리스에서 환경변수 누락은 첫 요청에서야 드러나므로, 부팅 시 검증이 없으면 원인을 찾는 데 오래 걸린다.
 
 NestJS `ConfigModule`에 스키마 검증을 붙인다.
+
+### 빌드 산출물을 실제로 띄워 본다
+
+`pnpm --filter @aws-study/api build`가 `nest build` 뒤에 `smoke.mjs`를 돌린다. `dist/main.js`를 자식 프로세스로 띄우고 `GET /health` 200을 받은 뒤 죽인다. 실패하면 빌드가 실패한다 — Vercel 빌드에서도 같다.
+
+**왜 필요한가.** `pnpm test`는 vitest + `unplugin-swc`로 **소스**를 직접 돌리고, `pnpm typecheck`는 `tsc --noEmit`이라 emit 결과를 실행하지 않는다. `nest build` 산출물을 Node로 실행하는 경로가 어디에도 없어서, `@nestjs/config@12`가 ESM 전용이 된 것이 **배포에서야** 드러났다 (SJO-49 — 프로덕션 api와 web 빌드가 동시에 막혀 있었다).
+
+**`--no-experimental-require-module`이 이 검사의 전부다.** Vercel Fluid 런타임의 모듈 로더는 Node 24의 `require(esm)`를 구현하지 않는데 로컬 Node 24는 구현한다. 이 플래그가 없으면 **프로덕션에서 죽는 코드가 로컬에서 200을 준다** (2026-09-04 실측). 플래그를 빼면 검사가 통과만 하고 아무것도 막지 못한다.
+
+우회 경로 프로브로 실측했다 — ESM 전용 패키지를 값으로 import하는 자리를 `app.module.ts`·`main.ts`·`cors-origins.ts`(모듈 그래프 밖)·`auth/jwks.service.ts`(그래프 말단)와 동적 `import()`까지 **5곳에 심어 5곳 전부 검출**, 정상 케이스 2건(타입 전용 import·무패치) 오탐 0.
+
+**환경변수는 `smoke.mjs`가 자체 주입한다.** `.env`나 Vercel 등록 상태에 게이트가 좌우되면 기기마다 판정이 갈린다. 값은 URL 형태여야 한다 — `JwksService`가 생성자에서 `new URL()`을, `postgres()`가 접속 문자열을 즉시 파싱한다.
