@@ -24,7 +24,7 @@
 | `SUPABASE_JWT_ISSUER` | api | 공개 | `https://<ref>.supabase.co/auth/v1` — **후행 슬래시 없음.** jose의 `issuer` 옵션은 토큰 `iss`와 문자열 완전 일치를 요구해 슬래시 하나만 붙어도 401이다 (2026-09-06 실측, SJO-50). 같은 값이 `/auth/v1/.well-known/openid-configuration`의 `issuer`로도 나온다 |
 | `ALLOWED_EMAIL` | api | 공개 | 소유자 이메일. JWT `email` 불일치 시 403 |
 | `DATABASE_URL` | api | **서버** | Supavisor 트랜잭션 풀러 `:6543` |
-| `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 인덱스를 받을 경로 |
+| `DATA_BASE_URL` | api | 공개 | `catalog` 모듈이 **`manifest.json`을 받을 root**. 버전 경로(`/v1`) **밖**이다 — 인덱스 경로는 manifest의 `base`가 준다. `scripts/.env`의 `DATA_CDN_BASE`는 `<root>/v1`이라 **그 값이 아니다** (2026-09-06 실측, SJO-14). **랜덤 프리픽스 포함 — 실제 값은 커밋 금지** |
 | `CORS_ALLOWED_ORIGINS` | api | 공개 | 쉼표 구분 |
 | `SOURCE_PDF_DIR` | scripts | 로컬 | `data:extract`가 읽을 원본 PDF 디렉터리. **기기마다 다르다.** 미설정이면 즉시 실패 |
 | `DATA_CDN_BASE` | scripts | 로컬 | `manifest.json`의 `base`. **랜덤 프리픽스 포함 — 커밋 금지.** 채우는 것은 `data:extract`다. 미설정이면 `base`가 빈 문자열이 되고, 그 manifest는 `data:publish`가 거부한다 |
@@ -92,7 +92,8 @@ DATABASE_URL=
 SUPABASE_JWKS_URL=
 SUPABASE_JWT_ISSUER=
 ALLOWED_EMAIL=
-DATA_BASE_URL=                      # CDN 경로. 랜덤 프리픽스 포함, 커밋 금지
+DATA_BASE_URL=                      # manifest.json이 있는 root. 버전 경로(/v1) 밖이다
+                                    # 랜덤 프리픽스 포함, 커밋 금지
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 # scripts/.env.example
