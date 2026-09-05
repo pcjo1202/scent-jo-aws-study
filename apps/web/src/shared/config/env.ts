@@ -22,3 +22,15 @@ function requireEnv(name: string, value: string | undefined): string {
 export function dataBaseUrl(): string {
   return requireEnv('NEXT_PUBLIC_DATA_BASE_URL', process.env.NEXT_PUBLIC_DATA_BASE_URL)
 }
+
+export function supabaseUrl(): string {
+  return requireEnv('NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL)
+}
+
+/**
+ * publishable key(`sb_publishable_…`)다. RLS 전제가 아니라 **Auth 용도로만** 쓴다 —
+ * `web`은 Postgres에 닿지 않는다 (`docs/06` 「주체별 접근 경계」).
+ */
+export function supabaseAnonKey(): string {
+  return requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+}
