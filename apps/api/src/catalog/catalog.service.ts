@@ -45,8 +45,10 @@ export class CatalogService {
   /**
    * 캐시가 있고 재확인 주기 안이면 네트워크를 타지 않는다.
    *
-   * ponytail: 동시 요청이 각자 받는다. 사용자가 1명이고 받는 것이 콜드 스타트당 13.5KB라
-   * 진행 중 Promise를 공유하는 장치를 두지 않았다 — 인스턴스가 늘면 그때 붙인다.
+   * ponytail: 동시 요청이 각자 받는다. 중복 fetch뿐 아니라 **쓰기 순서도 보장되지 않는다** —
+   * 버전 전환 5분 창에서 늦게 끝난 옛 인덱스가 새 캐시를 덮을 수 있다(다음 주기에 자가 치유).
+   * 사용자가 1명이고 받는 것이 콜드 스타트당 13.5KB라 진행 중 Promise를 공유하는 장치를 두지
+   * 않았다 — 인스턴스가 늘면 그때 붙인다.
    */
   private async ensureIndex(): Promise<Cache> {
     const isStale = Date.now() - this.checkedAt >= MANIFEST_CHECK_INTERVAL_MS
@@ -64,13 +66,21 @@ export class CatalogService {
       )
     }
 
-    // reload가 던지지 않았거나 위에서 기존 캐시를 확인했으므로 null이 아니다
-    return this.cache as Cache
+    // reload가 조용히 아무것도 안 채우고 끝나는 경로가 있다 — manifest가 200인데 `version`이
+    // 없으면 `undefined === undefined`로 버전이 같다고 보고 인덱스를 건너뛴다. 500이 아니라
+    // 503이어야 한다 (`05-database.md` 「오류 응답」)
+    if (!this.cache) throw new ServiceUnavailableException('카탈로그 인덱스를 받지 못했다')
+
+    return this.cache
   }
 
   private async reload() {
-    const manifest = await fetchJson<Manifest>(`${this.rootUrl}/manifest.json`, 'manifest.json')
+    // 성공 뒤가 아니라 시도 시점에 찍는다 — manifest가 죽어 있으면 요청마다 5초 타임아웃을
+    // 물고 다시 친다. 「다음 주기에 재시도」가 명세다 (`05-database.md` 「CDN 장애」).
+    // 캐시가 비었을 때의 「다음 요청이 재시도」는 ensureIndex의 `this.cache &&` 조건이 지킨다
     this.checkedAt = Date.now()
+
+    const manifest = await fetchJson<Manifest>(`${this.rootUrl}/manifest.json`, 'manifest.json')
     if (this.cache?.version === manifest.version) return
 
     const base = manifest.base.replace(/\/+$/, '')

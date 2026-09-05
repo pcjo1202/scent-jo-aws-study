@@ -357,7 +357,8 @@ apps/api/src/
 │  ├─ supabase-jwt.guard.ts 전역 가드
 │  └─ current-user.decorator.ts
 ├─ catalog/
-│  └─ catalog.service.ts    manifest·index 캐시, 채점, 추첨, 검증
+│  ├─ catalog.service.ts    manifest·index 캐시, 검증
+│  └─ grading.ts            채점·추첨 순수 함수 (DB도 HTTP도 안 탄다 — `08-testing.md`)
 ├─ attempts/
 ├─ exams/
 ├─ progress/

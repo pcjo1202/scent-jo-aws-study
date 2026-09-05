@@ -17,6 +17,7 @@ let rootUrl: string
 let counts: Record<string, number>
 let liveVersion: 'v1' | 'v2'
 let isFailing: boolean
+let isVersionless: boolean
 
 function toIndex(answer: string) {
   return {
@@ -37,7 +38,7 @@ beforeAll(async () => {
     const body =
       path === '/manifest.json'
         ? {
-            version: liveVersion,
+            ...(isVersionless ? {} : { version: liveVersion }),
             generatedAt: '',
             base: `${rootUrl}/${liveVersion}`,
             questions: {},
@@ -62,6 +63,7 @@ beforeEach(() => {
   counts = {}
   liveVersion = 'v1'
   isFailing = false
+  isVersionless = false
   // Date만 가짜로 둔다 — fetch와 AbortSignal.timeout이 진짜 타이머를 쓴다
   vi.useFakeTimers({ toFake: ['Date'] })
 })
@@ -137,4 +139,23 @@ it('⑦ 재확인이 실패하면 기존 캐시를 유지한다', async () => {
   vi.advanceTimersByTime(MANIFEST_CHECK_INTERVAL_MS)
 
   expect((await service.getEntry(1))?.answer).toEqual(['A'])
+})
+
+it('⑧ 재확인이 실패해도 다음 주기까지는 CDN을 다시 치지 않는다', async () => {
+  const service = createService()
+  await service.getEntry(1)
+
+  isFailing = true
+  vi.advanceTimersByTime(MANIFEST_CHECK_INTERVAL_MS)
+  await service.getEntry(1)
+  await service.getEntry(1)
+
+  // 실패해도 확인 시각은 찍힌다 — 안 찍으면 요청마다 5초 타임아웃을 문다
+  expect(counts['/manifest.json']).toBe(2)
+})
+
+it('⑨ manifest에 version이 없으면 500이 아니라 503이다', async () => {
+  isVersionless = true
+
+  await expect(createService().getEntry(1)).rejects.toBeInstanceOf(ServiceUnavailableException)
 })

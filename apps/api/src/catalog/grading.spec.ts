@@ -14,7 +14,9 @@ const GRADING_CASES: Array<{ selected: ChoiceKey[]; answer: ChoiceKey[]; expecte
   { selected: ['A', 'A'], answer: ['A'], expected: false },
 ]
 
-const ALL_QUESTION_IDS = Array.from({ length: 1019 }, (_, index) => index + 1)
+/** `MEMORY.md` 「확인된 사실」 — 원본 문항 수. */
+const TOTAL_QUESTION_COUNT = 1019
+const ALL_QUESTION_IDS = Array.from({ length: TOTAL_QUESTION_COUNT }, (_, index) => index + 1)
 
 it.each(GRADING_CASES)(
   'grade([$selected]) vs [$answer] → $expected',
@@ -36,5 +38,7 @@ it('pickExamQuestions에 중복이 없다', () => {
 it('pickExamQuestions는 1~1019 범위 안에서만 고른다', () => {
   const picked = pickExamQuestions(ALL_QUESTION_IDS)
 
-  expect(picked.every((id) => Number.isInteger(id) && id >= 1 && id <= 1019)).toBe(true)
+  expect(picked.every((id) => Number.isInteger(id) && id >= 1 && id <= TOTAL_QUESTION_COUNT)).toBe(
+    true,
+  )
 })
