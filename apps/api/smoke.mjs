@@ -8,7 +8,7 @@
  * 플래그 없이 띄우면 프로덕션이 죽는 코드가 여기서는 200을 준다 (2026-09-04 실측).
  *
  * 환경변수를 자체 주입한다. `.env`나 Vercel 등록 상태에 게이트가 좌우되면 안 된다
- * (인증 변수 3개는 SJO-50까지 Vercel에 없다). URL 형태여야 한다 — `JwksService`가
+ * (SJO-12부터 SJO-50까지 인증 변수 3개가 실제로 Vercel에 없었다). URL 형태여야 한다 — `JwksService`가
  * 생성자에서 `new URL()`을, `postgres()`가 접속 문자열을 즉시 파싱한다.
  */
 import { spawn } from 'node:child_process'

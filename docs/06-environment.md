@@ -126,7 +126,7 @@ NestJS `ConfigModule`에 스키마 검증을 붙인다.
 
 1. **세 환경 전부에 넣는다** — production·preview·development. `DATABASE_URL`이 production에만 있던 사고를 SJO-13에서 한 번 했다
 2. **`vercel env ls`로 「몇 칸 중 몇 칸」을 센다.** 키 목록은 손으로 적지 않고 `env.ts`에서 뽑아 대조한다 — 손으로 적으면 방금 추가한 키를 목록에도 빠뜨린다. 기준은 **필수 키 수 × 3환경**이다 (2026-09-06 실측 12칸 중 12칸, SJO-50)
-3. **값 자체는 development에서만 되받아 볼 수 있다.** `vercel env add`가 production·preview 항목을 Sensitive로 만들어 `vercel env pull`이 `[SENSITIVE]`로 가린다. 세 환경에 같은 값을 넣었다는 것은 **한 번의 실행에서 같은 변수로 넣어** 보장하고, 프로덕션 쪽은 배포 후 `GET /health` 200으로 확인한다
+3. **값 대조는 가려지지 않은 항목으로만 된다.** `vercel env add`는 production·preview에서 **sensitive가 기본**이고(빼려면 `--no-sensitive` — Vercel 문서 `cli/env`), sensitive 항목은 `vercel env pull`이 `[SENSITIVE]`로 가린다. 2026-09-06 실측도 그랬다 — 세 키의 development 항목만 값이 나와 3/3 문자열 일치를 확인했고 production·preview는 가려졌다. 세 환경에 같은 값이 갔다는 것은 **같은 셸 변수를 쓰는 한 루프에서 넣어** 보장하고, 프로덕션 쪽은 배포 후 `GET /health` 200으로 확인한다
 
 **등록만으로는 기존 배포가 낫지 않는다.** 환경변수는 배포 시점에 묶이므로 **재배포해야 반영된다** — `vercel redeploy <배포 URL>`이면 같은 커밋 그대로 새 값을 태운다 (2026-09-06, SJO-50: 500 → 200).
 
