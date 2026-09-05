@@ -65,7 +65,9 @@ export async function apiFetch<T>(apiUrl: string, path: string, init?: RequestIn
   if (response.status === UNAUTHORIZED) {
     // 갱신의 실패 여부를 여기서 읽지 않는다 — 바로 아래에서 세션 유무로 가르는 것이 판정이고,
     // 근거를 둘로 두면 둘이 어긋나는 경우를 또 정해야 한다 (`docs/02` 「인증」).
-    await getSupabaseClient().auth.refreshSession().catch(() => undefined)
+    await getSupabaseClient()
+      .auth.refreshSession()
+      .catch(() => undefined)
 
     const refreshedToken = await currentAccessToken()
     if (refreshedToken) {

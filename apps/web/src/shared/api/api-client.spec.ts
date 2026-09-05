@@ -17,7 +17,8 @@ function withSession(token: string | null) {
 
 /** 응답을 순서대로 돌려준다 — 401 뒤 재요청까지 한 케이스 안에서 보기 위해서다. */
 function stubFetch(...responses: { status: number; body?: unknown }[]) {
-  const fetchMock = vi.fn(async () => {
+  // 인자 타입을 준다 — `noUncheckedIndexedAccess`에서 빈 튜플이면 `calls[0][0]`이 막힌다.
+  const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => {
     const next = responses.shift()
     if (!next) throw new Error('예상보다 많이 호출됐다')
 
@@ -35,10 +36,10 @@ function stubLocation() {
   return replace
 }
 
-function authHeaderOf(fetchMock: ReturnType<typeof vi.fn>, call: number) {
-  const [, init] = fetchMock.mock.calls[call] as unknown as [string, RequestInit]
+function authHeaderOf(fetchMock: ReturnType<typeof stubFetch>, call: number) {
+  const headers = fetchMock.mock.calls[call]?.[1]?.headers
 
-  return (init.headers as Record<string, string>).Authorization
+  return (headers as Record<string, string> | undefined)?.Authorization
 }
 
 beforeEach(() => {
@@ -58,7 +59,7 @@ describe('apiFetch — docs/02 「API 오류의 화면 표현」 6조건', () =>
 
     await expect(apiFetch(API_URL, PATH)).resolves.toEqual({ ok: true })
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe(`${API_URL}${PATH}`)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`${API_URL}${PATH}`)
     expect(authHeaderOf(fetchMock, 0)).toBe('Bearer tok-1')
   })
 

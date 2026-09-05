@@ -100,6 +100,7 @@ return (
   - **`prefetchQuery`를 `await`하는 것으로는 막지 못한다.** 원인은 prefetch가 아니라 `useSuspenseQuery`가 프리렌더에서 도는 것이다. 서버 prefetch를 통째로 지워도 똑같이 죽는다 (세 조건 × 세 후보로 실측)
   - **원격 api로 한 번 통과한 것은 근거가 아니다.** 느린 원격 5xx는 Next가 정적 셸을 확정한 **뒤에** 거절이 도착해 우연히 통과한다. 같은 5xx를 로컬 스텁으로 빠르게 주면 죽는다 — 이 함정에 한 번 걸렸다. **검증은 빠른 로컬 스텁으로 한다**
   - `useQuery`로 바꾸면 빌드는 통과하지만 **오류 배너가 죽는다** — `useQuery`는 throw하지 않아 `ErrorBoundary`에 닿지 않고, `docs/02-features.md` 「API 오류의 화면 표현」의 5xx 경로가 사라진다. 위 「`useQuery`를 쓸 자리는 둘뿐이다」의 예외도 아니다
+  - **「빌드가 죽는다」에 기대어 판정하지 않는다.** 위쪽에 클라이언트 컴포넌트가 서서 초기 렌더에 `children`을 그리지 않으면(`(app)` 라우트 그룹의 `AuthGuard`가 그렇다) `useSuspenseQuery`가 프리렌더에서 아예 돌지 않아 **빌드가 통과한다.** 그때 남는 것은 더 나쁜 쪽이다 — 서버 `prefetchQuery`는 여전히 빌드 중에 돌고 그 응답이 정적 페이로드에 **구워진다.** CDN 쿼리는 `staleTime`이 무한이라 브라우저가 그것을 영영 다시 받지 않는다. 2026-09-06 실측(SJO-19, 스텁 정상 응답): `force-dynamic` 없으면 `/`가 `○ Static`이고 산출물에 빌드 시점 health 1파일·manifest 4파일이 박힌다. 붙이면 `ƒ`이고 **0파일·0파일**이다. **판정은 「산출물에 값이 박혔는가」로 한다**
 - **동적 라우트에서 `prefetchQuery`를 `void`로 넘길지 `await`할지는 TTFB 트레이드오프다.** `void`는 pending 상태로 dehydrate돼 스트리밍으로 넘어가고, `await`는 첫 바이트가 그 요청을 기다리는 대신 데이터가 실려 나간다. `void`를 고르면 **그 promise는 실패 시 반드시 reject된다는 것**(`dehydratePromise`)을 전제로 그 화면이 api 장애에 무엇이 되는지 먼저 정한다
 - **`QueryClient`를 `useState`나 `new QueryClient()`로 직접 만들지 않는다.** 항상 `@/shared/api/query-client`의 `getQueryClient()`를 부른다. 브라우저에서 매번 새로 만들면 suspend마다 캐시가 통째로 버려진다
 - prefetch 없이 `useSuspenseQuery`만 쓰면 **서버·브라우저가 같은 요청을 두 번 돈다**

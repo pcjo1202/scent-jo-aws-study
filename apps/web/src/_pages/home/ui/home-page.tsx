@@ -1,6 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { withRelatedProject } from '@vercel/related-projects'
 
+import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { getQueryClient } from '@/shared/api/query-client'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
@@ -8,31 +9,44 @@ import { ThemeToggle } from '@/shared/ui/theme-toggle'
 
 import { healthQuery } from '../api/health-query'
 
+import { DataSummary } from './data-summary'
 import { HealthStatus } from './health-status'
 
-// 로컬 폴백. 배포에서는 VERCEL_RELATED_PROJECTS가 짝이 맞는 api를 가리킨다 (docs/03 §프로젝트 간 URL 연결).
 const DEFAULT_API_URL = 'http://localhost:3001'
 
+/**
+ * SJO-27 대시보드가 오기 전까지 쓰는 **임시 검증 화면**이다. api 왕복과 CDN 3단(manifest →
+ * index → chunk)이 실제로 도는지를 눈으로 보는 것이 목적이다.
+ *
+ * manifest·index 경계에 `canRetry`만 주고 다른 화면으로 넘기지 않는다 — 이 앱의 유일한 단일
+ * 실패 지점이라 넘길 곳이 없다 (`docs/02` 「정적 데이터(CDN) 실패」). 이 경계를 앱 골격으로
+ * 끌어올리는 것은 공통 셸이 생기는 SJO-20의 몫이다.
+ */
 export async function HomePage() {
-  // VERCEL_RELATED_PROJECTS는 NEXT_PUBLIC_이 아니라 클라이언트 번들에 들어가지 않는다.
-  // 서버에서 풀어 prop으로 내린다 — 클라이언트에서 부르면 배포에서도 항상 폴백이 된다.
   const apiUrl = withRelatedProject({
     projectName: 'aws-study-api',
     defaultHost: process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL,
   })
 
   const queryClient = getQueryClient()
-  // await한다. `void`로 넘기면 pending 상태로 dehydrate되는데 그 promise는 실패 시 반드시
-  // reject되고(`dehydratePromise`), 이 화면이 api 장애에 무엇이 될지를 그 거절에 맡기게 된다.
-  // 이 라우트가 빌드에 묶이지 않는 것은 `app/page.tsx`의 `force-dynamic` 덕이지 이 await가
-  // 아니다 — await로는 프리렌더 결합을 못 끊는다 (SJO-49).
-  await queryClient.prefetchQuery(healthQuery(apiUrl))
+
+  // api와 manifest는 서로를 모르므로 함께 띄운다. index는 manifest의 `base`가 있어야 해서
+  // 뒤로 갈 수밖에 없다 — 데이터 의존이지 워터폴 실수가 아니다.
+  await Promise.all([
+    queryClient.prefetchQuery(healthQuery(apiUrl)),
+    queryClient.prefetchQuery(manifestQuery()),
+  ])
+
+  // `prefetchQuery`는 실패를 던지지 않는다. 못 받았으면 인덱스는 건너뛰고 브라우저의
+  // `useSuspenseQuery`가 다시 시도하며, 그 거절이 아래 경계에 잡힌다.
+  const manifest = queryClient.getQueryData(manifestQuery().queryKey)
+  if (manifest) {
+    await queryClient.prefetchQuery(questionIndexQuery(manifest))
+  }
 
   return (
-    // 읽기 칼럼 상한과 화면 여백은 토큰이 정한다 (DESIGN.md 「Layout」).
-    // px-screen이 compact 16px / medium·expanded 24px로 알아서 갈린다.
     <main className="mx-auto flex max-w-reading flex-col gap-6 px-screen py-6">
-      <h1>AWS SAA-C03 학습</h1>
+      <h1 className="text-headline-small">AWS SAA-C03 학습</h1>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <QueryBoundary
           pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
@@ -40,6 +54,13 @@ export async function HomePage() {
           canRetry
         >
           <HealthStatus apiUrl={apiUrl} />
+        </QueryBoundary>
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="문제 데이터를 불러오지 못했다"
+          canRetry
+        >
+          <DataSummary />
         </QueryBoundary>
       </HydrationBoundary>
       <ThemeToggle />
