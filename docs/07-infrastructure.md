@@ -49,7 +49,18 @@
   적용 후 `list_migrations`의 버전과 레포 파일명을 `MEMORY.md`에 함께 적는다 — 그 대응이 유일한 기록이다. 첫 적용: `0000_init.sql` → `20260903171754_0000_init` (2026-09-04, SJO-13).
 
 - [x] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력) — `/auth/v1/settings` 실측 `external.google: true`, 실제 로그인으로 토큰까지 받았다 (2026-09-06, SJO-50)
-- [ ] Auth → Redirect URLs에 로컬·프리뷰·프로덕션 등록
+- [ ] Auth → **URL Configuration** — Site URL과 Redirect URLs를 함께 본다
+
+  **Site URL이 web을 가리켜야 한다.** Supabase는 `redirect_to`가 Redirect URLs에 없으면 **조용히 Site URL로 떨어뜨리므로**, 이 둘이 어긋나면 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. 2026-09-06 실측(SJO-19): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다 — Site URL이 **api 프로젝트**를 가리키고 있었다. Vercel 통합이 api 프로젝트에 연결돼 있어 그 도메인이 심긴 것으로 보인다 (`MEMORY.md`).
+
+  | | 값 |
+  |---|---|
+  | Site URL | `https://saa.scent-jo.dev` (web 프로덕션 도메인) |
+  | Redirect URLs | `http://localhost:3000/**` · `https://saa.scent-jo.dev/**` · `https://aws-study-*-smelljo.vercel.app/**` |
+
+  프리뷰가 프로젝트명이 아니라 해시 형태인 근거는 `docs/06` 「환경별 차이」.
+
+  **`/auth/v1/authorize`의 응답으로는 판정할 수 없다.** 어떤 `redirect_to`를 줘도 302로 Google에 보낸다 — `evil.example`로 음성 대조했다. 검증은 콜백에서 일어나므로 **실제 로그인으로만 확인된다** (2026-09-06, SJO-19).
 
 **RLS는 켜지 않는다.** 근거는 `05-database.md` 설계 원칙 4. 테이블 생성 시 Supabase가 RLS를 기본 활성화하면, 켜둔 채로 정책 없이 두지 말고 명시적으로 끈다. 켜져 있는데 정책이 없으면 service role이 아닌 모든 접근이 조용히 빈 결과를 반환해 디버깅이 어렵다.
 

@@ -16,7 +16,7 @@
 |---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | web | 공개 | `https://<ref>.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | web | 공개 | 콘솔의 **publishable key**(`sb_publishable_…`). RLS 전제가 아니라 **Auth 용도로만** 쓴다 |
-| `NEXT_PUBLIC_DATA_BASE_URL` | web | 공개 | CDN 데이터 경로. **랜덤 프리픽스 포함 — 실제 값은 커밋 금지** |
+| `NEXT_PUBLIC_DATA_BASE_URL` | web | 공개 | CDN 데이터 경로. **랜덤 프리픽스 포함 — 실제 값은 커밋 금지.** **버전 세그먼트를 붙이지 않는다** — 클라이언트의 진입점이 `<이 값>/manifest.json`이고 manifest가 버전 붙은 `base`를 준다. `scripts/.env`의 `DATA_CDN_BASE`는 **`/v1`까지 포함한 다른 값**이라 그대로 옮기면 403이다 (2026-09-06 실측, SJO-19) |
 | `NEXT_PUBLIC_API_URL` | web | 공개 | 로컬 폴백용. 배포에서는 `VERCEL_RELATED_PROJECTS`가 우선 |
 | `VERCEL_RELATED_PROJECTS` | web | 공개 | **Vercel이 자동 주입.** 직접 설정하지 않는다 |
 | `VERCEL_GIT_COMMIT_SHA` | api | 공개 | **Vercel이 자동 주입.** `GET /health`의 `version`이 앞 7자리를 쓴다. 로컬에는 없으므로 `dev` |
@@ -85,6 +85,7 @@ git에 커밋한다. **시크릿과 CDN 랜덤 프리픽스는 값을 비우고 
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_DATA_BASE_URL=          # CDN 경로. 랜덤 프리픽스 포함, 커밋 금지
+                                    # 버전(v1) 세그먼트를 붙이지 않는다 — 진입점이 manifest.json이다
 NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # apps/api/.env.example
