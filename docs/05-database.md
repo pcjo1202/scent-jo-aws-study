@@ -185,8 +185,10 @@ order by question_id, created_at desc;
 Nest가 CDN 인덱스를 메모리에 캐시한다.
 
 ```
-부팅 → manifest.json 조회 → index.json 조회 → Map<questionId, IndexEntry> 구축
+첫 접근 → manifest.json 조회 → questions/index.json 조회 → Map<questionId, IndexEntry> 구축
 ```
+
+`manifest.json`은 **버전 경로 밖**에 있고 인덱스는 그 안에 있다 (`03-architecture.md` 「경로 레이아웃」). `DATA_BASE_URL`이 가리키는 것은 manifest가 있는 **root**이고, 인덱스 경로는 manifest의 `base`에서 나온다 — 버전이 올라가도 환경변수를 고치지 않는다 (`06-environment.md`).
 
 **용도**
 
@@ -202,7 +204,22 @@ Nest가 CDN 인덱스를 메모리에 캐시한다.
 
 데이터는 버전 안에서 불변이므로 인스턴스 수명 동안 캐시해도 안전하다. 다만 버전이 올라가면 낡은 인스턴스가 옛 정답으로 채점할 수 있다. 그래서 **manifest만 최대 5분에 한 번 확인**하고, `version`이 바뀌었을 때만 인덱스를 다시 받는다.
 
-Fluid compute가 인스턴스를 따뜻하게 유지하므로 콜드 스타트에서만 약 60KB를 받는다.
+Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받는 것은 콜드 스타트뿐이다. 141KB이고 전송은 gzip 13.5KB다 (2026-09-06 실측 — 원본 크기는 `04-data-model.md` 「index.json」).
+
+**CDN 장애**
+
+**부팅에서 CDN을 부르지 않는다.** 빈 캐시로 기동하고, 첫 catalog 의존 요청이 인덱스를 받는다.
+
+| 시점 | 동작 |
+|---|---|
+| 부팅 | 빈 캐시로 기동한다. `/health`는 catalog에 의존하지 않으므로 200 |
+| 첫 로드 실패 | 그 요청만 **503**. 다음 요청이 다시 시도한다 |
+| 5분 재확인 실패 | **기존 캐시를 유지**하고 다음 주기에 재시도 |
+| 새 버전을 봤는데 인덱스 조회 실패 | 〃 — 옛 버전 캐시로 계속 채점한다 |
+
+부팅에서 죽이지 않는 이유는 셋이다. ① 서버리스는 콜드 스타트마다 부팅이라 CDN 일시 장애가 `/health`까지 죽여 「api 전체 장애」로 보인다 ② 빌드 게이트가 CDN 접근을 요구하게 되어, `smoke.mjs`가 값 자체 주입으로 없앤 「게이트가 외부 상태에 좌우됨」이 되돌아온다 (`06-environment.md` 「빌드 산출물을 실제로 띄워 본다」) ③ `JwksService`가 이미 같은 형태다 — 생성자는 네트워크를 타지 않고 첫 검증에서 받는다.
+
+재확인 실패 쪽에는 **낡은 정답이 무응답보다 낫다**는 판단이 깔려 있다. 버전은 몇 달에 한 번 바뀌고 그사이 정답은 불변이다 (`04-data-model.md` 「manifest.json」). (2026-09-06 결정, SJO-14 · SJO-30 E3)
 
 ## API 계약
 
@@ -325,6 +342,7 @@ type ExamResult = {
 | `selected`에 그 문항의 `choiceCount` 범위를 벗어난 키 (예: 선택지 4개 문항에 `'E'`) | 400 |
 | exam 시도의 `questionId`가 세션 `question_ids`에 없음 | 400 |
 | JWT의 `email`이 `ALLOWED_EMAIL`과 불일치 | 403 |
+| 카탈로그 인덱스를 아직 못 받음 (CDN 장애·타임아웃) | 503 — 의존 서비스 장애다. JWKS 실패와 같은 계열이고, 빈 캐시로 기동하므로 부팅은 성공한다 (「catalog 모듈」 「CDN 장애」) |
 | JWKS 조회 자체가 실패 (네트워크·타임아웃·JWKS가 아닌 응답) | 503 — 토큰 문제가 아니라 의존 서비스 장애다. 401로 주면 프론트가 세션 만료로 읽고 재로그인 루프에 빠진다 |
 | `finish` 시 세션 `content_version`이 카탈로그 현재 버전과 불일치 | 409 |
 
@@ -339,7 +357,8 @@ apps/api/src/
 │  ├─ supabase-jwt.guard.ts 전역 가드
 │  └─ current-user.decorator.ts
 ├─ catalog/
-│  └─ catalog.service.ts    manifest·index 캐시, 채점, 추첨, 검증
+│  ├─ catalog.service.ts    manifest·index 캐시, 검증
+│  └─ grading.ts            채점·추첨 순수 함수 (DB도 HTTP도 안 탄다 — `08-testing.md`)
 ├─ attempts/
 ├─ exams/
 ├─ progress/

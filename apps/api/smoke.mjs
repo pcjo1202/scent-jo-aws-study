@@ -12,6 +12,8 @@
  * 생성자에서 `new URL()`을, `postgres()`가 접속 문자열을 즉시 파싱한다.
  */
 import { spawn } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 
 const PORT = 34917
@@ -23,6 +25,7 @@ const SMOKE_ENV = {
   SUPABASE_JWKS_URL: 'https://smoke.invalid/auth/v1/.well-known/jwks.json',
   SUPABASE_JWT_ISSUER: 'https://smoke.invalid/auth/v1',
   ALLOWED_EMAIL: 'smoke@invalid',
+  DATA_BASE_URL: 'https://smoke.invalid/aws-saa',
   CORS_ALLOWED_ORIGINS: 'http://localhost:3000',
   PORT: String(PORT),
 }
@@ -54,12 +57,19 @@ async function waitForHealth(child, output) {
 }
 
 const output = []
-const child = spawn('node', ['--no-experimental-require-module', 'dist/main.js'], {
-  cwd: import.meta.dirname,
-  // 부모 환경을 물려주지 않는다 — 개발자 셸이나 Vercel 빌드 컨테이너의 변수가 섞이면
-  // 게이트의 판정이 기기마다 달라진다. `VERCEL`이 새면 `cors-origins`가 부팅에서 던진다
-  env: { PATH: process.env.PATH, ...SMOKE_ENV },
-})
+const child = spawn(
+  'node',
+  ['--no-experimental-require-module', join(import.meta.dirname, 'dist/main.js')],
+  {
+    // apps/api에서 띄우면 `ConfigModule`이 그 폴더의 `.env`를 읽어 SMOKE_ENV 누락을 메운다 —
+    // 필수 키를 빼도 게이트가 통과했다 (2026-09-06 음성 대조, SJO-14). cwd에 `.env`가 없어야
+    // 이 스크립트가 주입한 값만 남는다
+    cwd: tmpdir(),
+    // 부모 환경을 물려주지 않는다 — 개발자 셸이나 Vercel 빌드 컨테이너의 변수가 섞이면
+    // 게이트의 판정이 기기마다 달라진다. `VERCEL`이 새면 `cors-origins`가 부팅에서 던진다
+    env: { PATH: process.env.PATH, ...SMOKE_ENV },
+  },
+)
 child.stdout.on('data', (chunk) => output.push(String(chunk)))
 child.stderr.on('data', (chunk) => output.push(String(chunk)))
 
