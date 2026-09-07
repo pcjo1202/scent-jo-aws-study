@@ -424,10 +424,13 @@ describe('POST /exams/:id/finish — 채점', () => {
   })
 
   /**
-   * 두 기기가 동시에 눌러 둘 다 사전 조회를 통과한 경우. `finished_at is null` 조건이
-   * 진 쪽을 0행으로 만들고, 서비스가 그걸 409로 옮긴다 — 앞선 점수가 덮이지 않는다.
+   * `finishSession`이 0행을 주면 409로 옮기는지만 본다. **두 기기 동시 종료의 실제 경로는
+   * 이게 아니다** — 잠금이 들어온 뒤로 진 쪽은 `lockSession`이 커밋된 행을 다시 읽어
+   * 위 테스트(`이미 종료된 세션`)에서 409를 받고, 여기까지 오지 않는다 (2026-09-08 실측,
+   * `docs/08` 「경합 가드」). 이 분기를 남기는 이유는 잠금 밖에서 `finishSession`을 부르는
+   * 호출자가 생겼을 때 마지막 방어선이기 때문이다.
    */
-  it('경합에서 진 쪽은 0행을 갱신하고 409를 받는다', async () => {
+  it('finishSession이 0행이면 409로 옮긴다', async () => {
     const { service } = harness({
       session: session(),
       finishSession: () => Promise.resolve(false),

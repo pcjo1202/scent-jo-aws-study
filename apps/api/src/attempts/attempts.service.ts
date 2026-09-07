@@ -111,6 +111,11 @@ export class AttemptsService {
    * 잠시 뒤 성공했을 항목이다 (`docs/05` 「batch」 — 재시도는 네트워크 오류만).
    *
    * 순차로 도는 이유는 같은 문항이 큐에 두 번 든 경우의 기록 순서를 보존하기 위해서다.
+   *
+   * exam 항목은 SJO-53 이후 항목당 왕복이 둘에서 넷으로 늘었다(`begin`·잠금·insert·`commit`).
+   * `CreateAttemptBatchDto`에 개수 상한이 없고 `vercel.json`에 `maxDuration`도 없으므로 큐가
+   * 길면 벽시계 시간이 그만큼 는다 — **재지 않았다.** 같은 리전(icn1↔ap-northeast-2)이라
+   * 작을 것으로 보지만 그건 측정이 아니다.
    */
   async createAttemptBatch(
     userId: string,
@@ -155,7 +160,6 @@ export class AttemptsService {
 
     return entry
   }
-
 }
 
 const CLIENT_ERROR_MIN = 400

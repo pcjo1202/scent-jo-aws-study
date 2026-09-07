@@ -77,8 +77,8 @@ export function ownedSession(sessionId: string, userId: string) {
 }
 
 /**
- * `:id`를 받는 다섯 쿼리(조회·잠금·커서·삭제·종료)를 `Db`를 받는 함수로 뺀 이유는 하나다 — **`.toSQL()`로 조건이 실제로
- * 붙었는지를 스펙이 세기 위해서다.** 리포지토리 메서드 안에 두면 `await`이 접속을 시도해
+ * `:id`를 받는 다섯 쿼리(조회·잠금·커서·삭제·종료)를 `Db`를 받는 함수로 뺀 이유는 하나다 —
+ * **`.toSQL()`로 조건이 실제로 붙었는지를 스펙이 세기 위해서다.** 메서드 안에 두면 `await`이 접속을 시도해
  * 스펙이 문자열을 볼 수 없고, 서비스를 치는 스펙은 리포지토리를 스텁으로 두므로
  * **조건이 통째로 빠져도 전부 통과한다** (2026-09-07 뮤테이션으로 실측).
  */
@@ -126,6 +126,16 @@ export function listSessionsQuery(db: Db, userId: string) {
     .orderBy(desc(examSessions.startedAt))
 }
 
+/**
+ * **셋 중 이것만 상태 가드가 없다.** 아래 둘은 `finished_at is null`을 달았는데 여기엔 없어서,
+ * `updateExam`의 선조회를 통과한 `PATCH`가 그 사이에 끝난 세션의 `cursor`를 바꾸고 200을
+ * 준다 — `docs/05` 「오류 응답」이 409로 정한 자리다. **SJO-53이 그 창을 넓혔다**: `finish`가
+ * 이제 왕복 세 번 동안 행을 쥐므로 대기했다가 적용된다.
+ *
+ * 이 이슈에서 닫지 않은 이유는 종료된 세션의 `cursor`를 읽는 화면이 없어 증상이 없기
+ * 때문이다(SJO-55로 뺐다). **세 쿼리가 대칭이라고 읽지 마라** — 빠진 것이지 필요 없어서
+ * 없는 것이 아니다.
+ */
 export function updateCursorQuery(db: Db, sessionId: string, userId: string, cursor: number) {
   return db.update(examSessions).set({ cursor }).where(ownedSession(sessionId, userId))
 }
@@ -142,7 +152,7 @@ export function deleteSessionQuery(db: Db, sessionId: string, userId: string) {
  * `finished_at is null`이 이미 끝난 세션에 점수를 덮어쓰지 못하게 한다.
  *
  * **세션 잠금(SJO-53)이 들어온 뒤 이 절은 이 경로에서 잉여다** — 2026-09-08 뮤테이션 실측:
- * 절을 지워도 경합 하네스 4조건이 전부 통과한다(두 기기 동시 종료 포함). 진 쪽의
+ * 절을 지워도 경합 하네스 5조건이 전부 통과한다(두 기기 동시 종료 포함). 진 쪽의
  * `lockSession`이 커밋된 행을 다시 읽어 먼저 409를 내기 때문이다.
  *
  * 그래도 지우지 않는다 — 잠금 **밖에서** 이 문장을 부르는 호출자가 생기면 그때는 이것뿐이고,
@@ -223,8 +233,9 @@ export class ExamsRepository {
   /**
    * `attempts.session_id`가 `on delete cascade`라 답안도 함께 사라진다 (`docs/05`).
    *
-   * **삭제 경로는 세션을 잠그지 않으므로 `finished_at is null`이 여기서는 진짜 방어선이다**
-   * (`finishSession`에서는 잠금이 들어와 잉여가 됐다 — `finishSessionQuery` 주석). 서비스의
+   * **삭제 경로는 세션을 잠그지 않으므로 `finished_at is null`이 여기서는 진짜 방어선이다** —
+   * 지우면 하네스 조건 ⑤가 3회 중 3회 실패한다(2026-09-08 실측). `finishSession`의 같은
+   * 절은 반대로 잉여다(`finishSessionQuery` 주석) — 같은 SQL 조각이지만 등급이 다르다. 서비스의
    * 선조회와 이 문장 사이가 열려 있어, A가 `finish`하는 동안 B가 `DELETE`를 보내면 B의
    * 선조회는 `finishedAt = null`을 보고 통과한다. 그러면 **점수까지 확정된 세션이 답안째
    * 사라진다.** 0행이면 서비스가 409로 옮긴다.

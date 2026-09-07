@@ -140,7 +140,7 @@ export class ExamsService {
       const results = toResults(session.questionIds, attempts, entries)
       const score = results.filter((result) => result.isCorrect).length
 
-      // 진 쪽이 0행을 건드린다 — 두 기기가 동시에 눌러도 점수가 덮이지 않는다.
+      // 잠금 안이라 여기서 0행이 되는 경로는 없다 — 남겨 두는 이유는 `finishSessionQuery` 주석.
       const finished = await this.repository.finishSession(sessionId, userId, score, tx)
       if (!finished) throw new ConflictException('이미 종료된 세션이다')
 
