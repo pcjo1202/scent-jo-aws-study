@@ -114,28 +114,38 @@ export class ExamsService {
   /**
    * 미응답은 오답이고 만점의 분모는 언제나 65다 (`02-features.md` 「종료 / 결과」).
    *
+   * **세션 행을 잠그고 답안 읽기와 확정을 한 트랜잭션에 넣는다** (`docs/05` 「세션 채점」).
+   * 잠금이 없으면 답안을 읽은 뒤 커밋된 답이 `score`에는 빠지고 나중 `GET`의 `results`에는
+   * 들어, 저장된 상태가 영구히 갈린다. `POST /attempts`가 같은 행을 같은 방식으로 잠근다.
+   *
+   * 카탈로그 스냅샷을 **트랜잭션 밖에서** 먼저 읽는다 — CDN 왕복일 수 있어서 잠금과 풀러
+   * 커넥션을 남의 네트워크가 끝날 때까지 붙잡게 된다.
+   *
    * `content_version` 대조가 채점보다 **앞에** 있다. 뒤에 두면 낡은 버전 세션을 새 정답으로
    * 이미 채점한 뒤에 409를 주게 되고, 그 사이에 `finishSession`이 성공하면 점수가 박힌다.
    */
   async finishExam(userId: string, sessionId: string): Promise<FinishExamResponse> {
-    const session = await this.requireSession(userId, sessionId)
-    if (session.finishedAt !== null) throw new ConflictException('이미 종료된 세션이다')
-
     // 버전 대조와 정답 조회가 한 스냅샷이다 — 갈리면 v1 정오에 v2 정답이 붙는다.
     const { version, entries } = await this.catalogService.loadGradingSnapshot()
-    if (version !== session.contentVersion) {
-      throw new ConflictException('세션을 시작한 뒤 문제 데이터가 바뀌었다')
-    }
 
-    const attempts = await this.repository.findSessionAttempts(sessionId)
-    const results = toResults(session.questionIds, attempts, entries)
-    const score = results.filter((result) => result.isCorrect).length
+    return this.repository.transaction(async (tx) => {
+      const session = await this.repository.lockSession(sessionId, userId, tx)
+      if (session === undefined) throw new NotFoundException('세션을 찾을 수 없다')
+      if (session.finishedAt !== null) throw new ConflictException('이미 종료된 세션이다')
+      if (version !== session.contentVersion) {
+        throw new ConflictException('세션을 시작한 뒤 문제 데이터가 바뀌었다')
+      }
 
-    // 진 쪽이 0행을 건드린다 — 두 기기가 동시에 눌러도 점수가 덮이지 않는다.
-    const finished = await this.repository.finishSession(sessionId, userId, score)
-    if (!finished) throw new ConflictException('이미 종료된 세션이다')
+      const attempts = await this.repository.findSessionAttempts(sessionId, tx)
+      const results = toResults(session.questionIds, attempts, entries)
+      const score = results.filter((result) => result.isCorrect).length
 
-    return { score, results }
+      // 잠금 안이라 여기서 0행이 되는 경로는 없다 — 남겨 두는 이유는 `finishSessionQuery` 주석.
+      const finished = await this.repository.finishSession(sessionId, userId, score, tx)
+      if (!finished) throw new ConflictException('이미 종료된 세션이다')
+
+      return { score, results }
+    })
   }
 
   /**

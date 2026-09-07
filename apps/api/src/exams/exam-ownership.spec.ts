@@ -1,11 +1,13 @@
 import { NotFoundException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 
+import { lockSessionQuery as lockAttemptSessionQuery } from '../attempts/attempts.repository'
 import { createDb } from '../db/db.provider'
 import {
   deleteSessionQuery,
   finishSessionQuery,
   findSessionQuery,
+  lockSessionQuery,
   updateCursorQuery,
 } from './exams.repository'
 import { ExamsService } from './exams.service'
@@ -53,6 +55,9 @@ function serviceWhereRepositoryScopesByOwner() {
 
   const repository = {
     findSession,
+    // `finish`는 잠금 조회를 쓴다 — 소유자 규칙이 같아야 404가 그대로 나온다.
+    lockSession: (sessionId: string, userId: string) => findSession(sessionId, userId),
+    transaction: (work: (tx: unknown) => Promise<unknown>) => work(undefined),
     updateCursor,
     deleteSession: deleteSessionMock,
     finishSession,
@@ -146,6 +151,11 @@ const OWNED_QUERIES: Array<[string, () => string]> = [
   ['updateCursorQuery', () => updateCursorQuery(db(), SESSION_ID, OWNER_ID, 3).toSQL().sql],
   ['deleteSessionQuery', () => deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql],
   ['finishSessionQuery', () => finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql],
+  ['lockSessionQuery', () => lockSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql],
+  [
+    'lockSessionQuery (attempts)',
+    () => lockAttemptSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql,
+  ],
 ]
 
 describe('소유권 — 쿼리에 user_id가 붙는다', () => {
@@ -158,9 +168,28 @@ describe('소유권 — 쿼리에 user_id가 붙는다', () => {
 })
 
 /**
- * 진행 중 세션만 바꾸는 두 쿼리. 이 조건이 **경합의 유일한 방어선**이라 서비스의 선조회로는
- * 대체되지 않는다 — 선조회는 잠금이 아니라 조회다.
+ * 경합 가드가 둘이다. **행 잠금**이 `POST /attempts`와 `finish`를 직렬화하고(SJO-53),
+ * `finished_at is null`이 그 뒤에서 「이미 끝난 세션」을 SQL로 막는다. 둘 다 스텁 스펙이
+ * 못 본다 — 스텁은 서비스가 `false`를 409로 옮기는지만 보고 실제로 0행이 되는지,
+ * 잠금이 걸리는지는 보지 않는다.
+ *
+ * `for update`가 **두 쿼리 모두에** 붙어야 한다 — 한쪽만 잠그면 상대가 그대로 지나가
+ * 아무것도 직렬화되지 않는다.
  */
+describe('경합 가드 — for update', () => {
+  const LOCKING_QUERIES: Array<[string, () => string]> = [
+    ['exams.lockSessionQuery', () => lockSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql],
+    [
+      'attempts.lockSessionQuery',
+      () => lockAttemptSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql,
+    ],
+  ]
+
+  it.each(LOCKING_QUERIES)('%s가 행을 잠근다', (_name, build) => {
+    expect(build()).toContain('for update')
+  })
+})
+
 describe('경합 가드 — finished_at is null', () => {
   it('finishSessionQuery가 진행 중 세션만 갱신한다', () => {
     expect(finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql).toContain(

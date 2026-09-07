@@ -9,6 +9,9 @@ import type { IndexEntry } from '@aws-study/shared'
 import type { CatalogService } from '../catalog/catalog.service'
 import type { AttemptRow, AttemptsRepository, SessionRow } from './attempts.repository'
 
+/** 스텁 트랜잭션이 콜백에 주는 표식. 문장이 이걸 받았으면 트랜잭션 안이다. */
+const TX = { transaction: true }
+
 const USER_ID = '00000000-0000-4000-8000-000000000001'
 const SESSION_ID = '00000000-0000-4000-8000-0000000000ff'
 
@@ -35,7 +38,9 @@ function harness(session?: SessionRow, entry: IndexEntry | null = ENTRY): Harnes
   const repository = {
     insertAttempt,
     advancePointer,
-    findSession: () => Promise.resolve(session),
+    // 표식을 넘겨 「insert가 잠금과 같은 트랜잭션에 들었는가」를 셀 수 있게 한다.
+    transaction: (work: (tx: unknown) => Promise<unknown>) => work(TX),
+    lockSession: () => Promise.resolve(session),
   } as unknown as AttemptsRepository
   const catalogService = {
     getEntry: () => Promise.resolve(entry ?? undefined),
@@ -153,6 +158,27 @@ describe('POST /attempts — exam 세션', () => {
 
     expect(insertedRow(insertAttempt).isCorrect).toBe(false)
     expect(insertedRow(insertAttempt).sessionId).toBe(SESSION_ID)
+  })
+
+  /**
+   * 잠금과 insert가 갈리면 그 사이가 열려 `finish`가 이 답을 빼고 채점한다 (SJO-53).
+   * 잠금이 **실제로** 걸리는지는 스텁 밖이라 여기서 셀 수 없다 — `exam-ownership.spec.ts`의
+   * `.toSQL()`과 `exam-race.spec.ts`가 그것을 센다.
+   */
+  it('insert가 세션을 잠근 트랜잭션 안에서 일어난다', async () => {
+    const { service, insertAttempt } = harness(activeSession)
+
+    await service.createAttempt(USER_ID, {
+      questionId: 7,
+      selected: ['A'],
+      source: 'exam',
+      sessionId: SESSION_ID,
+    })
+
+    expect(insertAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: SESSION_ID }),
+      TX,
+    )
   })
 
   it('남의 세션(또는 없는 세션)은 404다 — 403이 아니다', async () => {

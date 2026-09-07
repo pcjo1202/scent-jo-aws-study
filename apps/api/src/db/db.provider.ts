@@ -16,6 +16,14 @@ export function createDb(connectionString: string) {
 
 export type Db = ReturnType<typeof createDb>
 
+/**
+ * `db.transaction`이 콜백에 주는 핸들. 쿼리 함수가 `Db`와 `Tx`를 **둘 다** 받아야
+ * 같은 문장을 트랜잭션 안팎에서 쓸 수 있다 — 두 벌로 나누면 한쪽만 고쳐진다.
+ */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+
+export type DbOrTx = Db | Tx
+
 export const dbProvider: Provider = {
   provide: DB,
   useFactory: (config: ConfigService) => createDb(config.getOrThrow<string>('DATABASE_URL')),
