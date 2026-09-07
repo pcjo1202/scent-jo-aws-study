@@ -111,6 +111,64 @@ export type BatchAttemptResult = {
 
 export type CreateAttemptBatchResponse = { results: BatchAttemptResult[] }
 
+/**
+ * 모의고사 세션 (`05-database.md` 「주요 요청/응답」).
+ *
+ * 세션의 단일 원본은 서버다 — 문항 65개도 진행 위치도 답안도 DB에 있고, 기기가 바뀌어도
+ * 그대로다 (`02-features.md` 「진행」).
+ */
+export type CreateExamRequest = {
+  /** 기본 false. true면 안 푼 문항을 먼저 채우고 모자란 만큼만 푼 문항에서 뽑는다. */
+  preferUnsolved?: boolean
+}
+
+export type CreateExamResponse = { id: string; questionIds: number[]; cursor: 0 }
+
+/** 목록은 `questionIds`를 담지 않는다 — 화면이 이 네 필드로만 그린다 (`docs/05`). */
+export type ExamSessionSummary = {
+  id: string
+  startedAt: string
+  finishedAt: string | null
+  score: number | null
+}
+
+export type ListExamsResponse = { sessions: ExamSessionSummary[] }
+
+export type ExamSessionResponse = {
+  id: string
+  questionIds: number[]
+  cursor: number
+  startedAt: string
+  finishedAt: string | null
+  score: number | null
+  /** 문항별 최신 답안. 아직 안 고른 문항은 키가 없다. */
+  answers: Record<number, ChoiceKey[]>
+  /** 종료된 세션에만. 진행 중이면 null — 시험 중에 정오가 새면 안 된다. */
+  results: ExamResult[] | null
+}
+
+export type ExamResult = {
+  questionId: number
+  /** null = 미응답. 미응답은 오답으로 친다. */
+  selected: ChoiceKey[] | null
+  answer: ChoiceKey[]
+  /**
+   * 채점 당시 저장된 `attempts.is_correct`이고 카탈로그로 다시 채점한 값이 아니다.
+   * 재채점하면 `content_version`이 갈린 세션에서 `score`와 어긋난다 (`docs/05`).
+   */
+  isCorrect: boolean
+}
+
+/** 진행 위치만 저장한다. 답안은 `POST /attempts`가 따로 받는다. */
+export type UpdateExamRequest = { cursor: number }
+
+export type UpdateExamResponse = { cursor: number }
+
+export type DeleteExamResponse = { deleted: true }
+
+/** `score`는 0..65. 미응답은 오답이므로 만점의 분모는 언제나 65다. */
+export type FinishExamResponse = { score: number; results: ExamResult[] }
+
 export type ProgressResponse = {
   /** 순차 진도 포인터. 이어풀기·완주 판정용. */
   lastQuestionId: number

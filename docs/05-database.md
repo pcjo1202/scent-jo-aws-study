@@ -306,7 +306,24 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받�
 // solvedCount는 distinct 문항 수다. 중복 제거를 위한 멱등 키는 두지 않는다.
 
 // POST /exams  → 진행 중 세션이 있으면 409
+// 요청 — 본문 없이 보내도 된다
+{ preferUnsolved?: boolean }    // 기본 false. true면 안 푼 문항을 먼저 채운다
+// 응답
 { id: string, questionIds: number[], cursor: 0 }
+
+// preferUnsolved의 기본이 false인 이유는 02 「세션 생성」이 균등 무작위를 기준으로 쓰고
+// 「안 푼 문항 우선」을 그 위의 옵션으로 적었기 때문이다 — 화면이 명시적으로 켠다.
+// 안 푼 문항이 65개보다 적으면 모자란 만큼을 푼 문항에서 채운다. 65는 언제나 65다.
+
+// GET /exams — 세션 목록. startedAt 내림차순
+// questionIds를 담지 않는다 — `/exam` 목록도 대시보드 「최근 모의고사 3개」도
+// 이 네 필드로 그려진다 (02 「화면 구성 요소」). 65개 배열 × N세션은 아무도 안 읽는다
+{ sessions: Array<{
+  id: string
+  startedAt: string
+  finishedAt: string | null
+  score: number | null
+}> }
 
 // GET /exams/:id
 {
@@ -320,6 +337,16 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받�
   results: ExamResult[] | null    // 종료된 세션에만. 진행 중이면 null
 }
 
+// PATCH /exams/:id  → 진행 위치 저장. 종료된 세션이면 409
+// 요청 — cursor 하나뿐이다. 답안은 POST /attempts가 따로 받는다 (「exam_sessions」)
+{ cursor: number }              // 0..64
+// 응답
+{ cursor: number }
+
+// **범위 검증은 DTO가 한다.** exam_sessions_cursor check가 DB에서 같은 범위를 강제하지만,
+// 그것만 두면 65가 Postgres 23514로 죽어 500이 나간다 — 잘못된 요청은 400이어야 한다.
+// attempts DTO의 @ArrayMaxSize(3)이 attempts_selected_size를 되적은 것과 같은 자리다.
+
 // DELETE /exams/:id  → 진행 중 세션만 삭제 가능. 종료된 세션이면 409
 // on delete cascade로 해당 세션의 attempts도 함께 삭제된다
 { deleted: true }
@@ -328,11 +355,26 @@ type ExamResult = {
   questionId: number
   selected: Array<'A'|'B'|'C'|'D'|'E'|'F'> | null   // null = 미응답
   answer: Array<'A'|'B'|'C'|'D'|'E'|'F'>
-  isCorrect: boolean
+  isCorrect: boolean                                // attempts.is_correct 저장값
 }
 
-// POST /exams/:id/finish
+// **isCorrect는 채점 당시 저장된 값이고 카탈로그로 다시 채점하지 않는다.** answer만
+// 카탈로그에서 읽는다. 재채점하면 content_version이 갈린 세션에서 score(DB에 고정)와
+// results가 어긋나 같은 화면이 「62점」과 정답 63개를 동시에 보여준다.
+
+// POST /exams/:id/finish  → 이미 종료된 세션이면 409
 { score: number, results: ExamResult[] }        // score는 0..65
+
+// **알려진 경합 (SJO-53, 미해결).** 답안 읽기와 finished_at 확정 사이에 그 세션으로
+// 들어온 attempt가 커밋되면, score는 그 답을 빼고 계산됐는데 이후 GET의 results에는
+// 든다 — 저장된 상태가 갈린다. created_at으로 자르는 것으로는 안 닫힌다(now()가
+// 트랜잭션 시작 시각이다). 닫으려면 POST /attempts와 finish가 세션 행을 잠가야 한다.
+
+// 재호출이 409인 이유는 「종료된 세션에 답안 제출 409」·「종료된 세션 삭제 409」와 같은
+// 계열이기 때문이다. 두 기기에서 동시에 종료하면 진 쪽이 409를 받고 GET /exams/:id로
+// 결과를 읽는다 — 세션은 정상 종료돼 있다. 멱등 200을 기각한 이유는 content_version
+// 409와 우선순위가 갈리기 때문이다: 버전이 바뀐 뒤 재호출이 멱등 200인지 버전 409인지를
+// 정하는 규칙이 하나 더 필요해진다.
 
 // GET /stats — 문항은 자기 카테고리 전부에 산입된다. sum(total) > 1019 (「카테고리별 정답률」)
 {
@@ -358,7 +400,10 @@ type ExamResult = {
 | 남의 세션 접근 | 404 (403이 아니라 404. 존재 여부를 흘리지 않는다) |
 | 진행 중 세션이 있는데 새 세션 생성 | 409 |
 | 종료된 세션에 답안 제출 | 409 |
+| 종료된 세션에 진행 위치 저장(`PATCH`) | 409 |
 | 종료된 세션을 삭제 시도 | 409 |
+| 이미 종료된 세션에 `finish` 재호출 | 409 — 두 기기 동시 종료. 진 쪽은 `GET /exams/:id`로 결과를 읽는다 |
+| `PATCH /exams/:id`의 `cursor`가 `0`~`64` 밖 | 400 — DTO가 거른다. DB check(23514)에 닿으면 500이 된다 |
 | `questionId` 범위 밖 | 400 |
 | `selected`에 그 문항의 `choiceCount` 범위를 벗어난 키 (예: 선택지 4개 문항에 `'E'`) | 400 |
 | exam 시도의 `questionId`가 세션 `question_ids`에 없음 | 400 |
@@ -366,6 +411,8 @@ type ExamResult = {
 | 카탈로그 인덱스를 아직 못 받음 (CDN 장애·타임아웃) | 503 — 의존 서비스 장애다. JWKS 실패와 같은 계열이고, 빈 캐시로 기동하므로 부팅은 성공한다 (「catalog 모듈」 「CDN 장애」) |
 | JWKS 조회 자체가 실패 (네트워크·타임아웃·JWKS가 아닌 응답) | 503 — 토큰 문제가 아니라 의존 서비스 장애다. 401로 주면 프론트가 세션 만료로 읽고 재로그인 루프에 빠진다 |
 | `finish` 시 세션 `content_version`이 카탈로그 현재 버전과 불일치 | 409 |
+
+**exam 엔드포인트 6개가 위 표에 다 걸린다.** `POST /exams`(409) · `GET /exams/:id`(404) · `PATCH /exams/:id`(400·409·404) · `DELETE /exams/:id`(409·404) · `POST /exams/:id/finish`(409 셋·404). **`GET /exams`만 오류 행이 없다** — 목록은 소유자 조건이 걸린 조회라 남의 세션이 애초에 안 나오고, 0건은 오류가 아니라 빈 상태다 (`02-features.md` 「빈 상태」). 빠뜨린 것이 아니라 없는 것이다.
 
 ## Nest 모듈 구성
 

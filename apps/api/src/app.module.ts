@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module'
 import { CatalogModule } from './catalog/catalog.module'
 import { DbModule } from './db/db.module'
 import { validateEnv } from './env'
+import { ExamsModule } from './exams/exams.module'
 import { ProgressModule } from './progress/progress.module'
 import { StatsModule } from './stats/stats.module'
 
@@ -17,6 +18,7 @@ import { StatsModule } from './stats/stats.module'
     AuthModule,
     CatalogModule,
     AttemptsModule,
+    ExamsModule,
     ProgressModule,
     StatsModule,
   ],

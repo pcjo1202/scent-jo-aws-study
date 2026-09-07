@@ -2,8 +2,6 @@ import type { IndexEntry, Manifest, QuestionIndex } from '@aws-study/shared'
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
-import { pickExamQuestions } from './grading'
-
 /** manifest의 `Cache-Control: max-age=300`과 같은 값이다 (`04-data-model.md` 「manifest.json」). */
 const MANIFEST_CHECK_INTERVAL_MS = 5 * 60 * 1000
 /** 서버리스에서 매달린 요청은 플랫폼 타임아웃까지 산다. fetch에는 기본 타임아웃이 없다. */
@@ -43,10 +41,44 @@ export class CatalogService {
     return [...entries.values()]
   }
 
-  async pickExam() {
-    const { entries } = await this.ensureIndex()
+  /**
+   * 세션이 `content_version`으로 박아 두고 `finish`가 현재 값과 대조하는 그 버전이다
+   * (`05-database.md` 「exam_sessions」).
+   *
+   * `listEntries()`가 준 문항으로 세션을 만든 뒤 이걸 따로 부르면 그 사이 5분 재확인이
+   * 끼어들어 **문항과 버전이 갈릴 수 있다.** 세션을 만들 때는 `loadExamPool()`을 쓴다.
+   */
+  async getVersion() {
+    const { version } = await this.ensureIndex()
 
-    return pickExamQuestions([...entries.keys()])
+    return version
+  }
+
+  /**
+   * 채점에 필요한 것을 **같은 캐시 스냅샷에서** 준다 — 버전 대조와 정답 조회가 갈리면 안 된다.
+   *
+   * `getVersion()`으로 v1을 확인한 뒤 `listEntries()`를 따로 부르면 그 사이 5분 재확인이
+   * 캐시를 v2로 바꿀 수 있고, 그러면 **v1 기준으로 저장된 `is_correct`에 v2의 정답을 붙여**
+   * 「내 답 B / 정답 B / 오답」을 그린다. `loadExamPool()`이 세션 생성에서 막는 것과 같은
+   * split read다 (2026-09-07 리뷰).
+   */
+  async loadGradingSnapshot() {
+    const { version, entries } = await this.ensureIndex()
+
+    return { version, entries: [...entries.values()] }
+  }
+
+  /**
+   * 추첨 풀과 버전을 **같은 캐시 스냅샷에서** 준다.
+   *
+   * `content_version`은 「이 65문항이 어느 버전의 정답으로 채점되는가」를 뜻한다. 문항을
+   * 한 번, 버전을 또 한 번 물으면 그 사이에 캐시가 교체됐을 때 v1 문항에 v2 버전이 박힌다 —
+   * 그 세션은 `finish`에서 영원히 409이거나, 더 나쁘게는 조용히 다른 정답으로 채점된다.
+   */
+  async loadExamPool() {
+    const { version, entries } = await this.ensureIndex()
+
+    return { version, questionIds: [...entries.keys()] }
   }
 
   /**
