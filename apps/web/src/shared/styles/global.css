@@ -281,20 +281,46 @@
    * 스크롤해야 버튼에 닿는 것이 1019번 반복할 동작으로 부적절하기 때문이다. expanded에서는
    * 읽기 칼럼이 짧아 그럴 이유가 없으므로 문서 흐름 안으로 돌아온다.
    *
-   * 그림자를 쓰지 않는다 — 떠 있다는 신호는 상단 경계선이 담당한다 (「Styles · Elevation」).
-   * 높이 64px과 safe-area는 Tailwind 임의값이 되므로 여기 둔다.
+   * **배경도 상단 경계선도 없다.** 88px은 버튼 56 + 위 8 + 아래 24이고, 아래가 위보다 큰 것은
+   * 버튼이 화면 밑단에 붙어 보이지 않게 하기 위해서다. safe-area와 함께 Tailwind 임의값이
+   * 되므로 여기 둔다.
    */
   .action-bar {
     position: fixed;
     inset-inline: 0;
     bottom: 0;
-    min-height: 64px;
-    padding-bottom: env(safe-area-inset-bottom);
+    min-height: calc(88px + env(safe-area-inset-bottom));
+    padding-top: 8px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /*
+   * 주 버튼·보조 버튼 모두 56px이다 — base가 모든 button에 건 탭 타깃 하한 48px 위의 값이다.
+   * Button 컴포넌트가 아니라 여기 두는 이유는 DESIGN.md가 이 높이를 「하단 액션 바」와
+   * 대시보드 이어풀기에만 줬기 때문이다. 전역에 걸면 최소 높이 48px인 상태 배너의
+   * 「다시 시도」까지 밀린다.
+   */
+  .action-bar > button {
+    min-height: 56px;
+  }
+
+  /*
+   * 배경이 없어 마지막 블록(채점 후라면 ④ 등장 서비스)이 버튼 뒤에 영구히 깔린다. 스크롤
+   * 끝에서 마지막 줄이 버튼 위로 올라와야 한다 — `.action-bar`와 짝이다.
+   */
+  .action-bar-gutter {
+    padding-bottom: calc(88px + 24px + env(safe-area-inset-bottom));
   }
 
   @media (width >= theme(--breakpoint-expanded)) {
     .action-bar {
       position: static;
+      min-height: 0;
+      padding-bottom: 0;
+    }
+
+    /* 흐름 안으로 돌아오므로 아래에 비워 둘 것이 없다. */
+    .action-bar-gutter {
       padding-bottom: 0;
     }
   }
