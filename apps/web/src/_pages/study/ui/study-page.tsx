@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { withRelatedProject } from '@vercel/related-projects'
 
+import { resolveApiUrl } from '@/shared/config/api-url'
 import { getQueryClient } from '@/shared/api/query-client'
 import { progressQuery, questionStatesQuery } from '@/shared/api/me'
 import { AppBar } from '@/shared/ui/app-bar'
@@ -8,8 +8,6 @@ import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { StudyScreen } from './study-screen'
-
-const DEFAULT_API_URL = 'http://localhost:3001'
 
 export const metadata = { title: '순차 풀이' }
 
@@ -23,10 +21,7 @@ export const metadata = { title: '순차 풀이' }
  * 진도와 풀이 상태는 서로를 모르므로 함께 띄운다.
  */
 export async function StudyPage() {
-  const apiUrl = withRelatedProject({
-    projectName: 'aws-study-api',
-    defaultHost: process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL,
-  })
+  const apiUrl = resolveApiUrl()
 
   const queryClient = getQueryClient()
   await Promise.all([

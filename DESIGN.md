@@ -1234,7 +1234,7 @@ M3 칩 높이는 32dp인데 탭 타겟 최소는 48dp다. 충돌하는 게 아�
 |---|---|
 | 전체 진도 카드 | `surface-container-low` · **`outline` 1px** · `corner-medium` · 패딩 16px. 「전체 진도」 `body-small` → `247 / 1019` (`headline-small`, 분모는 `body-large`·`on-surface-variant`) → 8px 트랙 |
 | 이어풀기 | 주 버튼 규격 그대로 (`primary` · `corner-full` · 56px). 폭은 전체. `/study`로 간다 |
-| 진행 중 모의고사 이어풀기 | `surface-container` · `corner-medium` · 최소 48px · 문구 `body-medium` + 우측 텍스트 버튼. **상태 배너가 아니다** — 그쪽은 로딩·오류·저장 대기 셋 전용이다 |
+| 진행 중 모의고사 이어풀기 | `surface-container` · `corner-medium` · 최소 48px · 문구 `body-medium` + 우측 텍스트 버튼. **상태 배너가 아니다** — 그쪽은 로딩·오류·저장 대기 셋 전용이다. **`/exam` 목록이 같은 규격을 쓴다** — 거기서는 텍스트 버튼이 둘(「이어풀기」·「포기」)이다. 포기 경로가 대시보드에는 없다 (`docs/02` 「목록 화면」) |
 | 카테고리별 정답률 막대 | `title-small` 제목 + 막대 목록. 한 줄은 라벨(`body-small`·88px) · 8px 트랙(`surface-container-high`) · 값(`body-small`·우측 정렬). 줄 높이 36px — 누를 수 없으므로 탭 타겟이 아니다 |
 | 「아직 안 푼 영역 N개」 | 정답률 막대 목록 **아래**에 `body-small` · `on-surface-variant` · 좌측 정렬 한 줄. 0개면 그리지 않는다 |
 | 진입 행 ×4 | **오답 복습 · 모의고사 · 암기 노트 · 해부서**. 최소 48px · 위아래 `outline-variant` 1px · 우측 `chevron_right` · 문구 `body-large`. 오답 행만 수를 병기한다(「오답 **N**문제」) — 나머지 셋은 화면 이름만 |
