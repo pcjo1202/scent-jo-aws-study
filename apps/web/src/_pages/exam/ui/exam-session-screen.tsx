@@ -17,11 +17,13 @@ import { Button, buttonClassName } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
+import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { finishExam } from '@/features/manage-exam/api/finish-exam'
 import { saveCursor } from '@/features/navigate-exam/api/save-cursor'
+import { QuestionGrid } from '@/features/navigate-exam/ui/question-grid'
 import { submitExamAttempt } from '@/features/submit-answer/api/submit-exam-attempt'
 
 import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
@@ -63,6 +65,7 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
   const [isFinishOpen, setFinishOpen] = useState(false)
   const [isFinishing, setFinishing] = useState(false)
   const [isHelpOpen, setHelpOpen] = useState(false)
+  const [isGridOpen, setGridOpen] = useState(false)
 
   /**
    * 저장 요청을 **한 줄로 세운다.** 복수정답 문항에서 연달아 고르면 `[A]`와 `[A, B]`가 거의
@@ -176,26 +179,47 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         title={`${SCREEN_NAME} ${cursor + 1} / ${total}`}
         backHref="/exam"
         progress={{ current: cursor + 1, total }}
+        action={
+          <button
+            type="button"
+            aria-label="문제 이동"
+            onClick={() => setGridOpen(true)}
+            className="state-layer flex size-12 items-center justify-center rounded-corner-full expanded:hidden"
+          >
+            <MaterialSymbol name="grid_view" />
+          </button>
+        }
       />
 
-      <main className="app-bar-gutter-top action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-4 px-screen py-4">
-        {failure && <StatusBanner kind="error">{FAILURE_MESSAGE[failure]}</StatusBanner>}
+      <div className="app-bar-gutter-top flex min-h-dvh expanded:flex-row">
+        <QuestionGrid
+          questionIds={session.questionIds}
+          answers={answers}
+          cursor={cursor}
+          isOpen={isGridOpen}
+          onClose={() => setGridOpen(false)}
+          onJump={moveTo}
+        />
 
-        <QueryBoundary
-          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-          errorMessage="이 부분의 문제를 불러오지 못했다"
-          canRetry
-        >
-          <QuestionSlot
-            manifest={manifest}
-            entry={entry}
-            selected={selected}
-            onToggle={handleToggle}
-            graded={null}
-            notes={notes}
-          />
-        </QueryBoundary>
-      </main>
+        <main className="action-bar-gutter mx-auto flex w-full min-w-0 max-w-reading flex-1 flex-col gap-4 px-screen py-4">
+          {failure && <StatusBanner kind="error">{FAILURE_MESSAGE[failure]}</StatusBanner>}
+
+          <QueryBoundary
+            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+            errorMessage="이 부분의 문제를 불러오지 못했다"
+            canRetry
+          >
+            <QuestionSlot
+              manifest={manifest}
+              entry={entry}
+              selected={selected}
+              onToggle={handleToggle}
+              graded={null}
+              notes={notes}
+            />
+          </QueryBoundary>
+        </main>
+      </div>
 
       <ActionBar>
         {/* 마지막 문항에서는 주 버튼이 「종료」가 되므로 보조 「종료」를 뺀다 —

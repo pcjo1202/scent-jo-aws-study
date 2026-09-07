@@ -331,14 +331,15 @@
     background-color: color-mix(in srgb, var(--sys-color-on-surface) 32%, transparent);
   }
 
-  .filter-panel {
+  /* 필터와 문제 이동 그리드가 같은 그릇을 쓴다 (`DESIGN.md` 「화면 보조 패널」). */
+  .side-panel {
     max-width: none;
     max-height: none;
     border: none;
     padding: 0;
   }
 
-  .filter-panel[open] {
+  .side-panel[open] {
     position: fixed;
     inset: 0;
     z-index: 2;
@@ -346,7 +347,7 @@
     padding-top: env(safe-area-inset-top);
   }
 
-  .filter-panel::backdrop {
+  .side-panel::backdrop {
     background-color: transparent;
   }
 
@@ -355,8 +356,8 @@
    * 그래서 `open`이 없고, `dialog`의 기본 `display: none`을 여기서 되돌려야 한다.
    */
   @media (width >= theme(--breakpoint-expanded)) {
-    .filter-panel,
-    .filter-panel[open] {
+    .side-panel,
+    .side-panel[open] {
       display: block;
       position: sticky;
       inset: auto;
@@ -384,6 +385,12 @@
    * 버튼이 화면 밑단에 붙어 보이지 않게 하기 위해서다. safe-area와 함께 Tailwind 임의값이
    * 되므로 여기 둔다.
    */
+  .question-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 8px;
+  }
+
   .action-bar {
     position: fixed;
     inset-inline: 0;
