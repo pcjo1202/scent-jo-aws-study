@@ -17,9 +17,9 @@ import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { submitAttempt } from '@/features/submit-answer/api/submit-attempt'
 
-import { toStartIndex } from '../lib/study-cursor'
+import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
 
-import { QuestionSlot } from './question-slot'
+import { toStartIndex } from '../lib/study-cursor'
 
 const SCREEN_NAME = '순차 풀이'
 
