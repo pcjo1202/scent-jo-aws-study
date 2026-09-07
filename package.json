@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "data:anatomy": "pnpm --filter @aws-study/scripts run anatomy",
     "data:extract": "pnpm --filter @aws-study/scripts run extract",
     "data:verify": "pnpm --filter @aws-study/scripts run verify",
     "data:publish": "pnpm --filter @aws-study/scripts run publish",
