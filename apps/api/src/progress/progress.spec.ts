@@ -47,6 +47,17 @@ describe('풀이 상태 맵 쿼리', () => {
   it('user_id 조건 없이는 만들어지지 않는다', () => {
     expect(buildStatesSql()).toContain('"user_id" =')
   })
+
+  /**
+   * `created_at`이 같은 행이 실제로 생긴다 — 날짜만 있는 `answeredAt`은 자정으로 뭉친다.
+   * 동점이면 `distinct on`이 어느 행을 남길지 Postgres가 정하지 않아 옛 오답이 나중
+   * 정답을 이길 수 있다 (2026-09-07 리뷰).
+   */
+  it('created_at 동점을 id로 가른다', () => {
+    expect(buildStatesSql()).toContain(
+      'order by "attempts"."question_id", "attempts"."created_at" desc, "attempts"."id" desc',
+    )
+  })
 })
 
 describe('도출', () => {

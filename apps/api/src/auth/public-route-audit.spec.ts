@@ -35,6 +35,35 @@ type Constructor = new (...args: never[]) => unknown
 
 type Route = { controller: string; handler: string; isPublic: boolean }
 
+/**
+ * import 항목은 세 모양으로 온다. 클래스만 세면 나머지 둘의 컨트롤러가 **감사에서
+ * 통째로 빠지고 라우트 수도 안 늘어** 그 자리의 `@Public()`이 안 잡힌다 — 지금 앱에
+ * 동적 모듈은 컨트롤러 없는 `ConfigModule.forRoot()` 하나뿐이라 아직 구멍은 아니지만,
+ * 열거하지 않은 경로는 다음에 붙는 모듈에서 구멍이 된다.
+ */
+function toModule(imported: unknown): Constructor | undefined {
+  if (typeof imported === 'function') return imported as Constructor
+  if (typeof imported !== 'object' || imported === null) return undefined
+
+  // X.forRoot()·register()가 돌려주는 { module, controllers, ... }
+  if ('module' in imported) return toModule(imported.module)
+
+  // forwardRef(() => X)
+  if ('forwardRef' in imported) {
+    return toModule((imported as { forwardRef: () => unknown }).forwardRef())
+  }
+
+  return undefined
+}
+
+function controllersOf(imported: unknown): Constructor[] {
+  if (typeof imported !== 'object' || imported === null || !('controllers' in imported)) return []
+
+  return ((imported as { controllers?: Constructor[] }).controllers ?? []).filter(
+    (entry) => typeof entry === 'function',
+  )
+}
+
 function collectControllers(root: Constructor): Constructor[] {
   const seen = new Set<Constructor>()
   const controllers: Constructor[] = []
@@ -47,7 +76,11 @@ function collectControllers(root: Constructor): Constructor[] {
 
     const imports = (Reflect.getMetadata(MODULE_METADATA.IMPORTS, module) ?? []) as unknown[]
     for (const imported of imports) {
-      if (typeof imported === 'function') pending.push(imported as Constructor)
+      const resolved = toModule(imported)
+      if (resolved !== undefined) pending.push(resolved)
+
+      // 동적 모듈은 컨트롤러를 클래스 메타데이터가 아니라 **자기 객체**에 담아 온다.
+      controllers.push(...controllersOf(imported))
     }
 
     const own = (Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, module) ?? []) as Constructor[]

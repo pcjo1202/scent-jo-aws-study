@@ -134,4 +134,24 @@ describe('배치 DTO의 중첩 검증', () => {
   it('빈 배치를 잡는다', async () => {
     expect(await errorsOf({ items: [] })).not.toHaveLength(0)
   })
+
+  /**
+   * `duration_ms`가 int4라 이 값을 넘기면 Postgres가 22003으로 죽는데, 그건 HttpException이
+   * 아니라 `rejected`로 격리되지 않고 **응답 전체를 날린다** — 앞 항목은 저장됐는데
+   * 클라이언트는 `results`를 못 받는다. 상한이 없던 동안 통과했다 (2026-09-07 리뷰).
+   */
+  it('int4를 넘는 durationMs를 잡는다', async () => {
+    expect(
+      await errorsOf({ items: [{ ...item(), durationMs: 9_000_000_000_000 }] }),
+    ).not.toHaveLength(0)
+  })
+
+  it('int4 상한 자체는 통과한다', async () => {
+    expect(await errorsOf({ items: [{ ...item(), durationMs: 2_147_483_647 }] })).toHaveLength(0)
+  })
+
+  /** `strict`가 없으면 통과해 3월 3일로 조용히 밀린다 (2026-09-07 리뷰). */
+  it('존재하지 않는 날짜를 잡는다', async () => {
+    expect(await errorsOf({ items: [{ ...item(), answeredAt: '2026-02-31' }] })).not.toHaveLength(0)
+  })
 })

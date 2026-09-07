@@ -14,8 +14,12 @@ const DEFAULT_PORT = 3001
  *
  * `transform`이 없으면 DTO가 평범한 객체로 남아 `@Type()`이 안 돌고, 중첩 배열
  * (`/attempts/batch`의 `items`)이 검증을 통째로 건너뛴다.
+ *
+ * export하지 않는다 — 이 파일은 아래 `void bootstrap()`이 import 시점에 도는 진입점이라
+ * 테스트가 가져오면 앱이 뜬다. 스펙은 DTO를 `plainToInstance`+`validate`로 직접 친다
+ * (`attempts-batch.spec.ts`).
  */
-export function createValidationPipe() {
+function createValidationPipe() {
   return new ValidationPipe({ whitelist: true, transform: true })
 }
 

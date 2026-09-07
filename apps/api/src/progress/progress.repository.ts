@@ -17,6 +17,11 @@ export type QuestionState = { questionId: number; isCorrect: boolean }
  * 한 곳이 빠져도 화면은 멀쩡하고 시험 중 정오만 조용히 샌다.
  *
  * `Db`를 인자로 받는 것은 `.toSQL()`로 이 조건이 실제로 붙었는지를 스펙이 세기 위해서다.
+ *
+ * 정렬의 셋째 키가 `id`인 이유는 `created_at`이 같은 행이 실제로 생기기 때문이다 —
+ * 오프라인 큐가 날짜만 있는 `answeredAt`을 보내면 여러 행이 같은 자정으로 뭉친다.
+ * 동점이면 `distinct on`이 어느 행을 남길지 Postgres가 정하지 않아 **옛 오답이 나중
+ * 정답을 이길 수 있다.** `id`는 bigserial이라 append-only 순서의 정본이다.
  */
 export function questionStatesQuery(db: Db, userId: string) {
   const finishedSessionIds = db
@@ -36,7 +41,7 @@ export function questionStatesQuery(db: Db, userId: string) {
         or(isNull(attempts.sessionId), inArray(attempts.sessionId, finishedSessionIds)),
       ),
     )
-    .orderBy(attempts.questionId, desc(attempts.createdAt))
+    .orderBy(attempts.questionId, desc(attempts.createdAt), desc(attempts.id))
 }
 
 @Injectable()

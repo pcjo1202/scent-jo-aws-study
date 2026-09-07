@@ -115,9 +115,11 @@ export class AttemptsService {
   }
 
   /**
-   * exam이 아니면 `sessionId`를 무시하고 null을 준다 — `attempts_session_source` check가
-   * DB에서 같은 규칙을 강제하므로 여기서 400을 만들 이유가 없고, 오프라인 큐가 옛 항목을
-   * 재전송할 때 400 하나로 기록이 버려지는 쪽이 더 나쁘다.
+   * exam이 아니면 `sessionId`를 **무시하고** null을 준다. `attempts_session_source` check가
+   * DB에서 같은 규칙을 강제하므로 여기서 따로 400을 만들 이유가 없다.
+   *
+   * 무시하는 것이 「무엇이든 받는다」는 뜻은 아니다 — 값의 **모양**은 DTO의 `@IsUUID()`가
+   * 앞에서 거르므로 uuid가 아닌 `sessionId`는 여기 오기 전에 400이다.
    */
   private async resolveSessionId(userId: string, input: AttemptInput): Promise<string | null> {
     if (input.source !== 'exam') return null
