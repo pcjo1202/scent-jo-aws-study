@@ -321,6 +321,16 @@
    * `useQuestionShortcuts`의 `closest('dialog[open]')` 판정에 그냥 걸린다. UA 기본값
    * (가운데 정렬·max-width·테두리)을 걷어내고 전체 화면으로 편다.
    */
+  /* 폭은 `min()`이고 scrim은 가상 요소라 둘 다 유틸로 쓸 수 없다 (`DESIGN.md` 「다이얼로그」). */
+  .dialog {
+    width: min(320px, 100vw - var(--sys-layout-margin) * 2);
+    max-width: none;
+  }
+
+  .dialog::backdrop {
+    background-color: color-mix(in srgb, var(--sys-color-on-surface) 32%, transparent);
+  }
+
   .filter-panel {
     max-width: none;
     max-height: none;
