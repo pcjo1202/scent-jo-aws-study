@@ -1,13 +1,18 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import type { Chunk, IndexEntry, Manifest } from '@aws-study/shared'
+import type { AnatomyToc, Chunk, IndexEntry, Manifest } from '@aws-study/shared'
+import { anatomyLocalPaths, anatomyPageNumbers, hasAnatomy } from './artifacts/anatomy-assets.ts'
 import {
   FIXTURE_KEY_PREFIX,
   type FileDigest,
   digest,
   toCdnKey,
 } from './artifacts/build-manifest.ts'
-import { type Artifacts, findArtifactAnomalies } from './artifacts/verify-artifacts.ts'
+import {
+  type Anatomy,
+  type Artifacts,
+  findArtifactAnomalies,
+} from './artifacts/verify-artifacts.ts'
 import type { Comparison } from './notes/parse-comparison.ts'
 import type { OneLiner } from './notes/parse-oneliner.ts'
 
@@ -28,7 +33,7 @@ function main() {
   const questionCount = artifacts.chunks.reduce((sum, chunk) => sum + chunk.questions.length, 0)
 
   console.log(
-    `대상: 청크 ${artifacts.chunks.length}개 · 문항 ${questionCount}개 · 인덱스 ${artifacts.index.length}행 · 한줄노트 ${artifacts.oneLiners.length}개 · 비교쌍 ${artifacts.comparisons.length}쌍 · 픽스처 ${artifacts.fixtureIds.length}개 · manifest ${Object.keys(artifacts.manifest.files).length}파일 (실측 ${Object.keys(artifacts.actualFiles).length}파일)`,
+    `대상: 청크 ${artifacts.chunks.length}개 · 문항 ${questionCount}개 · 인덱스 ${artifacts.index.length}행 · 한줄노트 ${artifacts.oneLiners.length}개 · 비교쌍 ${artifacts.comparisons.length}쌍 · 픽스처 ${artifacts.fixtureIds.length}개 · 해부서 ${describeAnatomy(artifacts.anatomy)} · manifest ${Object.keys(artifacts.manifest.files).length}파일 (실측 ${Object.keys(artifacts.actualFiles).length}파일)`,
   )
   console.log(
     `manifest: ${artifacts.manifest.version} · base «${artifacts.manifest.base}» · ${artifacts.manifest.generatedAt}`,
@@ -69,8 +74,27 @@ function readArtifacts(): Artifacts {
     fixtureIds: fixtureFiles
       .filter((name) => name.endsWith('.json'))
       .map((name) => Number(name.replace('.json', ''))),
+    anatomy: readAnatomy(),
     manifest: read<Manifest>('manifest.json'),
     actualFiles: measureFiles(chunkFiles, fixtureFiles),
+  }
+}
+
+/**
+ * 해부서가 **없으면** `undefined`다 — optional 자산이라 미착수가 위반은 아니다.
+ *
+ * 반면 디렉터리가 있는데 `toc.json`이 없으면 빈 목차로 넘긴다. 여기서 `undefined`를
+ * 돌려주면 61쪽이 목차 없이 올라가는 절반짜리 배포가 초록으로 통과한다.
+ */
+function readAnatomy(): Anatomy | undefined {
+  if (!hasAnatomy(DATA_DIR)) return undefined
+
+  const paths = anatomyLocalPaths(DATA_DIR)
+  return {
+    pageNumbers: anatomyPageNumbers(paths),
+    toc: paths.includes('anatomy/toc.json')
+      ? read<AnatomyToc>('anatomy/toc.json')
+      : { entries: [] },
   }
 }
 
@@ -81,6 +105,7 @@ function measureFiles(chunkFiles: string[], fixtureFiles: string[]): Record<stri
     'index.json',
     'oneliners.json',
     'comparisons.json',
+    ...anatomyLocalPaths(DATA_DIR),
   ]
 
   return {
@@ -102,6 +127,12 @@ function measureFiles(chunkFiles: string[], fixtureFiles: string[]): Record<stri
  */
 function read<T>(name: string): T {
   return JSON.parse(readFileSync(`${DATA_DIR}${name}`, 'utf8')) as T
+}
+
+/** 「없음」을 「0건 위반」과 구별해 찍는다 — optional 자산이라 초록이 곧 포함은 아니다. */
+function describeAnatomy(anatomy: Anatomy | undefined) {
+  if (!anatomy) return '없음(optional)'
+  return `${anatomy.pageNumbers.length}쪽 · 목차 ${anatomy.toc.entries.length}항목`
 }
 
 function format(counts: Array<[string | number, number]>) {

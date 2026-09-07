@@ -1,4 +1,4 @@
-import type { Chunk, IndexEntry, Manifest } from '@aws-study/shared'
+import type { AnatomyToc, Chunk, IndexEntry, Manifest } from '@aws-study/shared'
 import type { Comparison } from '../notes/parse-comparison.ts'
 import type { OneLiner } from '../notes/parse-oneliner.ts'
 import { findTaggingAnomalies } from '../tagging/tagging-anomalies.ts'
@@ -21,12 +21,19 @@ export const EXPECTED_COMPARISON_COUNT = 48
 export const EXPECTED_COMPARISON_MEMBER_COUNT = 145
 /** `08-testing.md` 「골든 픽스처」. 6문항이 파서의 성질을 전부 덮는다. */
 export const EXPECTED_FIXTURE_IDS = [1, 2, 44, 242, 451, 494]
+/** `01-requirements.md` 「자료 구성」. 원본이 61쪽이다. */
+export const EXPECTED_ANATOMY_PAGE_COUNT = 61
+/** 2026-09-07 판독 실측 (SJO-9): 절 33개 + PART 표지 3개. `04-data-model.md` 「해부서」. */
+export const EXPECTED_ANATOMY_TOC_COUNT = 36
 /** `04-data-model.md` 「Question」. 원본 문제은행이 A~F를 쓴다. */
 const MIN_CHOICE_COUNT = 4
 const MAX_CHOICE_COUNT = 6
 const MAX_ANSWER_SIZE = 3
 /** `01-requirements.md` 「요약 노트」의 ★. 정답 개수 상한과 우연히 같을 뿐 다른 값이다. */
 const MAX_IMPORTANCE = 3
+
+/** `data/anatomy/`. `pageNumbers`는 `pages/NNN.webp`의 번호이고 목차의 `page`가 이것을 가리킨다. */
+export type Anatomy = { toc: AnatomyToc; pageNumbers: number[] }
 
 export type Artifacts = {
   chunks: Chunk[]
@@ -35,6 +42,8 @@ export type Artifacts = {
   comparisons: Comparison[]
   /** `tests/fixtures/questions/`에 있는 문항 번호. publish 대상이다. */
   fixtureIds: number[]
+  /** optional 자산이라 자산화 전에는 `undefined`다 (`04-data-model.md` 「추출 파이프라인」). */
+  anatomy: Anatomy | undefined
   manifest: Manifest
   /** CDN 키 → 디스크에서 다시 잰 값. manifest를 그 자신으로 검증하지 않는다. */
   actualFiles: Record<string, FileDigest>
@@ -62,6 +71,7 @@ export function findArtifactAnomalies(artifacts: Artifacts): ArtifactAnomalies {
     ...countIndexDefects(chunks, index),
     ...countNoteDefects(oneLiners, comparisons),
     '누락된 골든 픽스처': EXPECTED_FIXTURE_IDS.filter((id) => !fixtureIds.includes(id)).length,
+    ...countAnatomyDefects(artifacts.anatomy),
     ...countManifestDefects(artifacts, questions.length),
     ...tagging.anomalyCounts,
   }
@@ -226,6 +236,38 @@ function countNoteDefects(oneLiners: OneLiner[], comparisons: Comparison[]) {
       (comparison) => comparison.importance < 1 || comparison.importance > MAX_IMPORTANCE,
     ).length,
   }
+}
+
+/**
+ * 해부서는 **optional 자산이다** — 자산화 전에는 검사할 것이 없다 (`04` 「추출 파이프라인」).
+ *
+ * 없을 때도 라벨은 남긴다. 검사가 통째로 사라지면 출력에서 「대상 없음」과 「위반 없음」이
+ * 같은 모양이 되어, 해부서가 빠진 채 올라간 배포가 초록으로 보인다.
+ */
+function countAnatomyDefects(anatomy: Anatomy | undefined): Record<string, number> {
+  const pages = new Set(anatomy?.pageNumbers ?? [])
+  const entries = anatomy?.toc.entries ?? []
+  const counts = {
+    '해부서 쪽 수 불일치': pages.size === EXPECTED_ANATOMY_PAGE_COUNT ? 0 : 1,
+    '해부서 쪽 번호가 1..61이 아님': Array.from(
+      { length: EXPECTED_ANATOMY_PAGE_COUNT },
+      (_, index) => index + 1,
+    ).filter((page) => !pages.has(page)).length,
+    '해부서 목차 항목 수 불일치': entries.length === EXPECTED_ANATOMY_TOC_COUNT ? 0 : 1,
+    '빈 값이 있는 해부서 목차 항목': entries.filter(
+      (entry) => !entry.id.trim() || !entry.title.trim(),
+    ).length,
+    '해부서 목차 id 중복': entries.length - new Set(entries.map((entry) => entry.id)).size,
+    // 목차가 실재하지 않는 쪽을 가리키면 뷰어가 404를 받는다. 범위 검사보다 강하다.
+    '해부서 목차가 없는 쪽을 가리킴': entries.filter((entry) => !pages.has(entry.page)).length,
+    // 한 쪽에서 두 절이 시작하는 자리가 있어(실측 59·60쪽) 등호를 허용한다.
+    '해부서 목차의 쪽이 뒤로 감': entries.filter(
+      (entry, order) => order > 0 && entry.page < entries[order - 1]!.page,
+    ).length,
+  }
+
+  if (anatomy) return counts
+  return Object.fromEntries(Object.keys(counts).map((label) => [label, 0]))
 }
 
 /**

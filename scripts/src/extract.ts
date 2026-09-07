@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { anatomyLocalPaths, anatomyPageNumbers, hasAnatomy } from './artifacts/anatomy-assets.ts'
 import { buildIndex, chunkFileName, chunkQuestions } from './artifacts/build-chunks.ts'
 import {
   DEFAULT_VERSION,
@@ -75,7 +76,7 @@ function writeArtifacts(questions: TaggedQuestion[], notes: Notes) {
   files[toCdnKey('index.json')] = write('index.json', { entries: buildIndex(chunks) })
   files[toCdnKey('oneliners.json')] = write('oneliners.json', { items: notes.oneLiners })
   files[toCdnKey('comparisons.json')] = write('comparisons.json', { items: notes.comparisons })
-  Object.assign(files, digestFixtures())
+  Object.assign(files, digestFixtures(), digestAnatomy())
 
   const questionCount = chunks.reduce((sum, chunk) => sum + chunk.questions.length, 0)
   writeFileSync(
@@ -114,6 +115,26 @@ function digestFixtures() {
       `${FIXTURE_KEY_PREFIX}${name}`,
       digest(readFileSync(`${FIXTURES_DIR}${name}`)),
     ]),
+  )
+}
+
+/**
+ * 해부서는 **`data:extract`가 만들지 않는다** — `data:anatomy`가 렌더링하고 `toc.json`은
+ * 수동 판독물이다. 여기서는 이미 있는 것을 manifest에 담기만 한다.
+ *
+ * 없으면 건너뛴다 (optional 자산, `04-data-model.md` 「추출 파이프라인」). 반쯤 있는 것은
+ * `data:verify`가 쪽 수·목차 정합으로 잡아 배포를 막는다.
+ */
+function digestAnatomy() {
+  if (!hasAnatomy(DATA_DIR)) {
+    console.warn('해부서 자산이 없다 — manifest에서 빠진다 (pnpm data:anatomy)')
+    return {}
+  }
+
+  const paths = anatomyLocalPaths(DATA_DIR)
+  console.log(`해부서 ${paths.length}파일 (쪽 ${anatomyPageNumbers(paths).length})`)
+  return Object.fromEntries(
+    paths.map((path) => [toCdnKey(path), digest(readFileSync(`${DATA_DIR}${path}`))]),
   )
 }
 
