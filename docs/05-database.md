@@ -146,6 +146,10 @@ order by question_id, created_at desc;
 
 문항별 최신 시도. 결과에 없는 문항이 "안 푼 것"이다. 최대 1019행.
 
+**`solvedCount`는 이 맵의 행 수다** — 한 번이라도 푼 **서로 다른 문항의 개수**이고 `source`를 가리지 않는다. 필터 모드·오답 복습·완료된 모의고사로 푼 것도 전부 든다. 순차 진도 포인터(`study_progress.last_question_id`)를 쓰지 않는 이유는 둘이다. ① 포인터는 `sequential` + `advancesPointer = true`만 올리므로 나머지 경로로 푼 문항이 대시보드의 「전체 진도」에서 사라진다 (`02-features.md` 「`/` 대시보드」가 그것을 "푼 문항 수 / 1019"로 쓴다) ② `GET /me/progress`가 포인터를 `lastQuestionId`로 이미 같은 응답에 담고 있어, 같게 정의하면 한 필드가 다른 필드의 사본이 된다.
+
+**이어풀기와 완주 판정은 반대로 포인터가 맡는다** — 「다음 문항」은 위치의 문제이고 개수의 문제가 아니다. 두 값은 갈라진다: 1·3·5번만 풀었으면 `solvedCount = 3`, `lastQuestionId = 5`다. (2026-09-07 결정, SJO-15 · SJO-30 E3)
+
 ### 오답 목록
 
 위 쿼리를 감싸 `is_correct = false`만 남긴다.
@@ -179,6 +183,10 @@ order by question_id, created_at desc;
 카테고리는 CDN 인덱스에 있고 DB에 없으므로 **조인할 수 없다.** Nest가 메모리에 캐시한 인덱스와 위의 풀이 상태 맵을 애플리케이션에서 합친다.
 
 이것이 `catalog` 모듈이 존재하는 이유이자, 백엔드가 실질적인 일을 하는 지점이다.
+
+**문항은 자기 카테고리 전부에 중복으로 산입한다.** 문항당 `categories`는 0~3개이므로(`04-data-model.md` 「Question」), 카테고리 3개짜리 문항은 세 막대의 `total`·`solved`·`correct`에 각각 1씩 더한다. 따라서 **`sum(total)`은 1019보다 크고, 카테고리가 0개인 문항은 어느 막대에도 들지 않는다.** 둘 다 정상이다 — `/stats`는 합계를 돌려주지 않고 막대는 카테고리별 비율로만 읽힌다 (`02-features.md` 「`/` 대시보드」).
+
+대표 카테고리 하나를 배정하는 쪽을 기각한 이유는 둘이다. ① 대표를 고르는 규칙이 새로 필요한데 원본에 우선순위 정보가 없다 ② 「네트워크 + 보안」 문항을 네트워크에만 넣으면 그 문항의 정오가 보안 정답률에서 사라져, 막대의 목적인 **약한 영역 찾기**가 어긋난다. (2026-09-07 결정, SJO-15 · SJO-30 E3)
 
 ## catalog 모듈
 
@@ -246,8 +254,8 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받�
 ```ts
 // GET /me/progress
 {
-  lastQuestionId: number
-  solvedCount: number
+  lastQuestionId: number    // 순차 진도 포인터. 이어풀기·완주 판정용
+  solvedCount: number       // 한 번이라도 푼 서로 다른 문항 수. source 무관 (「풀이 상태 맵」)
   wrongCount: number
   activeSessionId: string | null
 }
@@ -313,7 +321,7 @@ type ExamResult = {
 // POST /exams/:id/finish
 { score: number, results: ExamResult[] }        // score는 0..65
 
-// GET /stats
+// GET /stats — 문항은 자기 카테고리 전부에 산입된다. sum(total) > 1019 (「카테고리별 정답률」)
 {
   byCategory: Array<{
     category: string
