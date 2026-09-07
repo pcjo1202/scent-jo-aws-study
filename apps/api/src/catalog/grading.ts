@@ -3,6 +3,24 @@ import type { ChoiceKey } from '@aws-study/shared'
 /** `02-features.md` 「모의고사」. 실제 시험과 같은 문항 수다. */
 export const EXAM_QUESTION_COUNT = 65
 
+/** 원본 문제은행이 A~F를 쓴다 (`01-requirements.md` 「문제은행」). 순서가 곧 선택지 위치다. */
+const CHOICE_KEYS = ['A', 'B', 'C', 'D', 'E', 'F'] as const
+
+/**
+ * 그 문항에 실재하는 선택지 키만 골랐는가 (`IndexEntry.choiceCount`는 4~6).
+ *
+ * `grade()`가 이걸 보지 않는 이유는 범위 밖 키가 **오답이 아니라 잘못된 요청**이기
+ * 때문이다 — 조용히 오답으로 기록하면 그 한 건이 통계에 영구히 남는다. 400으로 거른다
+ * (`05-database.md` 「오류 응답」, SJO-30 E1 결정).
+ */
+export function hasOnlyExistingChoices(selected: ChoiceKey[], choiceCount: number): boolean {
+  return selected.every((key) => {
+    const position = CHOICE_KEYS.indexOf(key)
+
+    return position >= 0 && position < choiceCount
+  })
+}
+
 /**
  * 순서를 보지 않고, 부분정답도 초과 선택도 오답이다 (`08-testing.md` 「2. 채점 로직」).
  *

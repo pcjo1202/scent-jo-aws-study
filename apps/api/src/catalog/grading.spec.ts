@@ -1,7 +1,7 @@
 import type { ChoiceKey } from '@aws-study/shared'
 import { expect, it } from 'vitest'
 
-import { EXAM_QUESTION_COUNT, grade, pickExamQuestions } from './grading'
+import { EXAM_QUESTION_COUNT, grade, hasOnlyExistingChoices, pickExamQuestions } from './grading'
 
 /** `08-testing.md` 「2. 채점 로직」의 7케이스. 순서 무관과 부분정답 불인정이 핵심이다. */
 const GRADING_CASES: Array<{ selected: ChoiceKey[]; answer: ChoiceKey[]; expected: boolean }> = [
@@ -42,3 +42,25 @@ it('pickExamQuestions는 1~1019 범위 안에서만 고른다', () => {
     true,
   )
 })
+
+/** `choiceCount`(4~6)가 문항별 상한이다. 범위 밖 키는 오답이 아니라 400이다. */
+const CHOICE_RANGE_CASES: Array<{
+  selected: ChoiceKey[]
+  choiceCount: number
+  expected: boolean
+}> = [
+  { selected: ['A'], choiceCount: 4, expected: true },
+  { selected: ['D'], choiceCount: 4, expected: true },
+  { selected: ['E'], choiceCount: 4, expected: false },
+  { selected: ['F'], choiceCount: 5, expected: false },
+  { selected: ['F'], choiceCount: 6, expected: true },
+  { selected: ['A', 'E'], choiceCount: 4, expected: false },
+  { selected: ['Z' as ChoiceKey], choiceCount: 6, expected: false },
+]
+
+it.each(CHOICE_RANGE_CASES)(
+  'hasOnlyExistingChoices([$selected], $choiceCount) → $expected',
+  ({ selected, choiceCount, expected }) => {
+    expect(hasOnlyExistingChoices(selected, choiceCount)).toBe(expected)
+  },
+)

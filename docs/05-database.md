@@ -133,6 +133,8 @@ create table study_progress (
 
 진행 중(미완료) 모의고사 세션의 시도는 모든 도출에서 제외한다 — 시험 중 정오가 오답 목록·통계로 새는 것을 막는다. 완료된 세션의 시도는 포함된다 (모의고사 오답도 복습 대상이다).
 
+**정렬의 마지막 키는 `id desc`다.** `created_at`이 같은 행이 실제로 생기기 때문이다 — 오프라인 큐가 날짜만 있는 `answeredAt`(`2026-09-01`)을 보내면 그날의 여러 시도가 같은 자정으로 뭉친다. 동점이면 `distinct on`이 어느 행을 남길지 Postgres가 정하지 않아 **옛 오답이 나중 정답을 이길 수 있고, 같은 요청이 매번 다른 답을 줄 수 있다.** `id`는 bigserial이라 append-only 순서의 정본이다. 아래 세 쿼리에 전부 걸린다. (2026-09-07, SJO-15 리뷰)
+
 ### 풀이 상태 맵
 
 ```sql
@@ -141,10 +143,14 @@ from attempts
 where user_id = $1
   and (session_id is null
        or session_id in (select id from exam_sessions where finished_at is not null))
-order by question_id, created_at desc;
+order by question_id, created_at desc, id desc;
 ```
 
 문항별 최신 시도. 결과에 없는 문항이 "안 푼 것"이다. 최대 1019행.
+
+**`solvedCount`는 이 맵의 행 수다** — 한 번이라도 푼 **서로 다른 문항의 개수**이고 `source`를 가리지 않는다. 필터 모드·오답 복습·완료된 모의고사로 푼 것도 전부 든다. 순차 진도 포인터(`study_progress.last_question_id`)를 쓰지 않는 이유는 둘이다. ① 포인터는 `sequential` + `advancesPointer = true`만 올리므로 나머지 경로로 푼 문항이 대시보드의 「전체 진도」에서 사라진다 (`02-features.md` 「`/` 대시보드」가 그것을 "푼 문항 수 / 1019"로 쓴다) ② `GET /me/progress`가 포인터를 `lastQuestionId`로 이미 같은 응답에 담고 있어, 같게 정의하면 한 필드가 다른 필드의 사본이 된다.
+
+**이어풀기와 완주 판정은 반대로 포인터가 맡는다** — 「다음 문항」은 위치의 문제이고 개수의 문제가 아니다. 두 값은 갈라진다: 1·3·5번만 풀었으면 `solvedCount = 3`, `lastQuestionId = 5`다. (2026-09-07 결정, SJO-15 · SJO-30 E3)
 
 ### 오답 목록
 
@@ -157,7 +163,7 @@ select question_id from (
   where user_id = $1
     and (session_id is null
          or session_id in (select id from exam_sessions where finished_at is not null))
-  order by question_id, created_at desc
+  order by question_id, created_at desc, id desc
 ) t
 where not is_correct
 order by question_id;
@@ -169,7 +175,7 @@ order by question_id;
 select distinct on (question_id) question_id, selected, is_correct
 from attempts
 where session_id = $1
-order by question_id, created_at desc;
+order by question_id, created_at desc, id desc;
 ```
 
 세션의 `question_ids` 65개 중 결과에 없는 문항은 **미응답 → 오답**으로 처리한다.
@@ -179,6 +185,12 @@ order by question_id, created_at desc;
 카테고리는 CDN 인덱스에 있고 DB에 없으므로 **조인할 수 없다.** Nest가 메모리에 캐시한 인덱스와 위의 풀이 상태 맵을 애플리케이션에서 합친다.
 
 이것이 `catalog` 모듈이 존재하는 이유이자, 백엔드가 실질적인 일을 하는 지점이다.
+
+**문항은 자기 카테고리 전부에 중복으로 산입한다.** 문항당 `categories`는 0~3개이므로(`04-data-model.md` 「Question」), 카테고리 3개짜리 문항은 세 막대의 `total`·`solved`·`correct`에 각각 1씩 더한다.
+
+v1 데이터의 실제 분포는 1개 514 · 2개 346 · 3개 153 · 0개 6이다 (`MEMORY.md` 「확인된 사실」). 따라서 **`sum(total)`은 1019가 아니라 1665이고, 6문항은 어느 막대에도 들지 않는다.** 둘 다 정상이다 — `/stats`는 합계를 돌려주지 않고 막대는 카테고리별 비율로만 읽힌다 (`02-features.md` 「`/` 대시보드」).
+
+대표 카테고리 하나를 배정하는 쪽을 기각한 이유는 둘이다. ① 대표를 고르는 규칙이 새로 필요한데 원본에 우선순위 정보가 없다 ② 「네트워크 + 보안」 문항을 네트워크에만 넣으면 그 문항의 정오가 보안 정답률에서 사라져, 막대의 목적인 **약한 영역 찾기**가 어긋난다. (2026-09-07 결정, SJO-15 · SJO-30 E3)
 
 ## catalog 모듈
 
@@ -246,14 +258,17 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받�
 ```ts
 // GET /me/progress
 {
-  lastQuestionId: number
-  solvedCount: number
+  lastQuestionId: number    // 순차 진도 포인터. 이어풀기·완주 판정용
+  solvedCount: number       // 한 번이라도 푼 서로 다른 문항 수. source 무관 (「풀이 상태 맵」)
   wrongCount: number
   activeSessionId: string | null
 }
 
 // GET /me/question-states
 { states: Record<number, 'correct' | 'wrong'> }   // 안 푼 문항은 키 없음
+
+// GET /me/wrong — 최신 시도가 오답인 문항만, 번호 오름차순
+{ questionIds: number[] }
 
 // POST /attempts
 // 요청
@@ -282,7 +297,13 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받�
   answeredAt: string        // ISO 8601
 }> }
 // 응답 — 항목별 결과. rejected 항목은 클라이언트가 큐에서 버린다 (재시도는 네트워크 오류만)
+// 항목 하나가 5xx면 (카탈로그 503·DB 장애) results를 주지 않고 요청 전체가 실패한다 —
+// rejected로 접으면 클라이언트가 「이 항목은 틀렸다」로 읽고 버리는데 실은 곧 성공할 항목이다
 { results: Array<{ index: number, status: 'saved' | 'rejected', isCorrect?: boolean }> }
+
+// 5xx로 실패한 배치를 그대로 재전송하면 앞서 저장된 항목이 행을 하나 더 만든다.
+// append-only라 정상이고 도출 결과도 안 바뀐다 — created_at이 answeredAt으로 고정이고
+// solvedCount는 distinct 문항 수다. 중복 제거를 위한 멱등 키는 두지 않는다.
 
 // POST /exams  → 진행 중 세션이 있으면 409
 { id: string, questionIds: number[], cursor: 0 }
@@ -313,7 +334,7 @@ type ExamResult = {
 // POST /exams/:id/finish
 { score: number, results: ExamResult[] }        // score는 0..65
 
-// GET /stats
+// GET /stats — 문항은 자기 카테고리 전부에 산입된다. sum(total) > 1019 (「카테고리별 정답률」)
 {
   byCategory: Array<{
     category: string
@@ -372,7 +393,9 @@ apps/api/src/
 
 **제약을 `schema.ts`에 다시 적지 않는다.** Drizzle의 `check()`·`index()`는 drizzle-kit이 마이그레이션을 생성할 때만 쓰이는데 이 레포는 SQL을 손으로 쓴다(`docs/03` 「데이터베이스 연결」 — 빌드 스텝을 늘리지 않는 것이 Drizzle을 고른 이유다). 소비자가 없는 두 번째 사본은 갈라지기만 한다. `schema.ts`가 하는 일은 쿼리에 타입을 주는 것뿐이다.
 
-도메인 모듈(`attempts` · `exams` · `progress` · `stats`)은 각각 `*.module.ts` · `*.controller.ts` · `*.service.ts` · `*.repository.ts` · `dto/`를 갖는다. **Drizzle 쿼리는 repository 안에만 둔다** — 위 도출 쿼리도 쓰는 모듈의 repository가 소유한다 (`apps/api/CLAUDE.md`).
+도메인 모듈(`attempts` · `exams` · `progress` · `stats`)은 `*.module.ts` · `*.controller.ts` · `*.service.ts` · `dto/`를 갖고, **자기 쿼리가 있으면** `*.repository.ts`도 갖는다. **Drizzle 쿼리는 repository 안에만 둔다** — 위 도출 쿼리도 쓰는 모듈의 repository가 소유한다 (`apps/api/CLAUDE.md`).
+
+**`stats`는 repository가 없다.** 카테고리별 정답률은 「풀이 상태 맵」을 접어서 만드는 것이고 그 맵은 `progress`가 소유한다 — `stats`가 같은 쿼리를 다시 쓰면 「미완료 exam 세션 제외」가 두 벌이 되고, 한 벌이 갈라져도 화면은 멀쩡하다. `StatsService`가 `ProgressRepository`를 생성자로 받는 것이 그 제약을 규율이 아니라 타입으로 만든다. 앞 문단의 "쓰는 모듈이 소유한다"는 **쿼리를 새로 만들 때** 적용된다 (2026-09-07, SJO-15).
 
 `SupabaseJwtGuard`를 전역 가드로 등록하고 `/health`만 `@Public()`으로 뺀다. 가드를 붙이는 걸 잊어서 뚫리는 사고를 막는다.
 

@@ -36,6 +36,13 @@ export class CatalogService {
     return entries.get(questionId)
   }
 
+  /** 카테고리별 통계는 전 문항의 태그가 필요하다 (`05-database.md` 「카테고리별 정답률」). */
+  async listEntries() {
+    const { entries } = await this.ensureIndex()
+
+    return [...entries.values()]
+  }
+
   async pickExam() {
     const { entries } = await this.ensureIndex()
 
