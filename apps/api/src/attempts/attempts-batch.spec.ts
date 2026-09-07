@@ -41,7 +41,8 @@ function harness(
   const repository = {
     insertAttempt,
     advancePointer: () => Promise.resolve(),
-    findSession: () => Promise.resolve(session),
+    transaction: (work: (tx: unknown) => Promise<unknown>) => work(undefined),
+    lockSession: () => Promise.resolve(session),
   } as unknown as AttemptsRepository
 
   return {

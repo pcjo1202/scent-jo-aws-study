@@ -16,6 +16,9 @@ import type {
   SessionAttemptRow,
 } from './exams.repository'
 
+/** 스텁 트랜잭션이 콜백에 주는 표식. 문장이 이걸 받았으면 트랜잭션 안이다. */
+const TX = { transaction: true }
+
 const USER_ID = '00000000-0000-4000-8000-000000000001'
 const SESSION_ID = '00000000-0000-4000-8000-0000000000ff'
 const VERSION = 'v2'
@@ -47,6 +50,8 @@ function harness(overrides: Overrides = {}) {
   const insertSession = vi.fn<(row: InsertedSession) => Promise<string>>(
     overrides.insertSession ?? (() => Promise.resolve(SESSION_ID)),
   )
+  const lockSession = vi.fn(() => Promise.resolve(overrides.session))
+  const findSessionAttempts = vi.fn(() => Promise.resolve(overrides.attempts ?? []))
 
   const repository = {
     insertSession,
@@ -55,7 +60,12 @@ function harness(overrides: Overrides = {}) {
     finishSession,
     listSessions: () => Promise.resolve(overrides.sessions ?? []),
     findSession: () => Promise.resolve(overrides.session),
-    findSessionAttempts: () => Promise.resolve(overrides.attempts ?? []),
+    // 스텁 트랜잭션은 콜백을 그대로 돌리되 **표식을 넘긴다** — 세 문장이 같은 핸들을 받았는지
+    // 세면 「트랜잭션 밖으로 샌 문장」이 잡힌다. 잠금이 실제로 걸리는지는 여기서 셀 수 없다
+    // (스텁 경계 밖이다) — `.toSQL()`과 `exam-race.spec.ts`가 그것을 센다.
+    transaction: (work: (tx: unknown) => Promise<unknown>) => work(TX),
+    lockSession,
+    findSessionAttempts,
   } as unknown as ExamsRepository
 
   const catalogService = {
@@ -77,6 +87,8 @@ function harness(overrides: Overrides = {}) {
     updateCursor,
     deleteSession,
     finishSession,
+    lockSession,
+    findSessionAttempts,
   }
 }
 
@@ -353,7 +365,24 @@ describe('POST /exams/:id/finish — 채점', () => {
       EXAM_QUESTION_COUNT - 2,
     )
     expect(results.every((result) => result.isCorrect === (result.questionId === 1))).toBe(true)
-    expect(finishSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, 1)
+    expect(finishSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, 1, TX)
+  })
+
+  /**
+   * 셋 중 하나라도 트랜잭션 밖으로 새면 잠금이 답안 읽기를 못 덮어 경합이 그대로 열린다
+   * (SJO-53). 잠금이 **실제로** 걸리는지는 스텁 밖이라 여기서 셀 수 없다 —
+   * `exam-ownership.spec.ts`의 `.toSQL()`과 `exam-race.spec.ts`가 그것을 센다.
+   */
+  it('잠금·답안 읽기·확정이 같은 트랜잭션에서 일어난다', async () => {
+    const { service, lockSession, findSessionAttempts, finishSession } = harness({
+      session: session(),
+    })
+
+    await service.finishExam(USER_ID, SESSION_ID)
+
+    expect(lockSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, TX)
+    expect(findSessionAttempts).toHaveBeenCalledWith(SESSION_ID, TX)
+    expect(finishSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, 0, TX)
   })
 
   /**
@@ -395,10 +424,13 @@ describe('POST /exams/:id/finish — 채점', () => {
   })
 
   /**
-   * 두 기기가 동시에 눌러 둘 다 사전 조회를 통과한 경우. `finished_at is null` 조건이
-   * 진 쪽을 0행으로 만들고, 서비스가 그걸 409로 옮긴다 — 앞선 점수가 덮이지 않는다.
+   * `finishSession`이 0행을 주면 409로 옮기는지만 본다. **두 기기 동시 종료의 실제 경로는
+   * 이게 아니다** — 잠금이 들어온 뒤로 진 쪽은 `lockSession`이 커밋된 행을 다시 읽어
+   * 위 테스트(`이미 종료된 세션`)에서 409를 받고, 여기까지 오지 않는다 (2026-09-08 실측,
+   * `docs/08` 「경합 가드」). 이 분기를 남기는 이유는 잠금 밖에서 `finishSession`을 부르는
+   * 호출자가 생겼을 때 마지막 방어선이기 때문이다.
    */
-  it('경합에서 진 쪽은 0행을 갱신하고 409를 받는다', async () => {
+  it('finishSession이 0행이면 409로 옮긴다', async () => {
     const { service } = harness({
       session: session(),
       finishSession: () => Promise.resolve(false),
