@@ -75,7 +75,9 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <>
       <AppBar title="모의고사" backHref="/exam" />
-      <main className="app-bar-gutter-top mx-auto max-w-reading px-screen py-6">{children}</main>
+      <div className="app-bar-gutter-top">
+        <main className="mx-auto max-w-reading px-screen py-6">{children}</main>
+      </div>
     </>
   )
 }

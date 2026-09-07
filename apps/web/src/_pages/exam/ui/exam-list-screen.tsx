@@ -154,32 +154,34 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
     <>
       <AppBar title="모의고사" backHref="/" />
 
-      <main className="app-bar-gutter-top action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-6 px-screen py-4">
-        {banner}
+      <div className="app-bar-gutter-top">
+        <main className="action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-6 px-screen py-4">
+          {banner}
 
-        {activeSession && (
-          <ActiveSessionCard
-            session={activeSession}
-            onAbandon={() => setAbandonOpen(true)}
-            isBusy={isSubmitting}
-          />
-        )}
+          {activeSession && (
+            <ActiveSessionCard
+              session={activeSession}
+              onAbandon={() => setAbandonOpen(true)}
+              isBusy={isSubmitting}
+            />
+          )}
 
-        {finishedSessions.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-title-small">지난 모의고사</h2>
-            <ul>
-              {finishedSessions.map((session) => (
-                <li key={session.id}>
-                  <FinishedSessionRow session={session} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+          {finishedSessions.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="text-title-small">지난 모의고사</h2>
+              <ul>
+                {finishedSessions.map((session) => (
+                  <li key={session.id}>
+                    <FinishedSessionRow session={session} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-        <div className="flex justify-end">{unsolvedChip}</div>
-      </main>
+          <div className="flex justify-end">{unsolvedChip}</div>
+        </main>
+      </div>
 
       <ActionBar>{startButton}</ActionBar>
       {abandonDialog}
@@ -205,7 +207,9 @@ function ActiveSessionCard({
 }) {
   return (
     <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-corner-medium bg-surface-container px-4 py-2 text-body-medium">
-      <span className="flex-1">진행 중인 모의고사 · {formatSessionDate(session.startedAt)} 시작</span>
+      <span className="flex-1">
+        진행 중인 모의고사 · {formatSessionDate(session.startedAt)} 시작
+      </span>
       <Link href={`/exam/${session.id}`} className={buttonClassName()}>
         이어풀기
       </Link>

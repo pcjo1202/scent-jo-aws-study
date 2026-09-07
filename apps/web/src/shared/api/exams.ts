@@ -2,7 +2,28 @@ import { queryOptions } from '@tanstack/react-query'
 
 import type { ExamSessionResponse, ListExamsResponse } from '@aws-study/shared'
 
-import { apiFetch } from '@/shared/api/api-client'
+import { ApiError, apiFetch } from '@/shared/api/api-client'
+
+const CLIENT_ERROR_FLOOR = 400
+const SERVER_ERROR_FLOOR = 500
+const MAX_RETRIES = 3
+
+/**
+ * **4xx는 다시 물어도 같은 답이다.** 기본 재시도(3회 + 백오프)를 그대로 두면 404가 화면에
+ * 닿기까지 「불러오는 중…」이 7초 넘게 걸린다 (2026-09-08 실측) — 없는 세션을 일곱 번 묻는
+ * 시간이다. 5xx·네트워크는 그대로 재시도한다.
+ */
+function retriesServerErrorsOnly(failureCount: number, error: Error) {
+  if (
+    error instanceof ApiError &&
+    error.status >= CLIENT_ERROR_FLOOR &&
+    error.status < SERVER_ERROR_FLOOR
+  ) {
+    return false
+  }
+
+  return failureCount < MAX_RETRIES
+}
 
 /**
  * **세션은 서버가 단일 원본이라 캐시에 기대지 않는다** (`docs/02` 「기기 간 동기화 정책」).
@@ -12,7 +33,11 @@ import { apiFetch } from '@/shared/api/api-client'
  * `gcTime`은 건드리지 않는다 — 0으로 두면 suspense가 매 렌더 캐시를 버려 재조회가 돈다.
  * 낡은 값을 안 쓰는 것과 캐시를 안 두는 것은 다른 이야기다.
  */
-const SERVER_OWNED = { staleTime: 0, refetchOnMount: 'always' } as const
+const SERVER_OWNED = {
+  staleTime: 0,
+  refetchOnMount: 'always',
+  retry: retriesServerErrorsOnly,
+} as const
 
 export const examKeys = {
   all: ['exams'] as const,

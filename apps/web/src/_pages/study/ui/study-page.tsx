@@ -35,9 +35,11 @@ export async function StudyPage() {
         pending={
           <>
             <AppBar title="순차 풀이" backHref="/" />
-            <main className="app-bar-gutter-top mx-auto max-w-reading px-screen py-6">
-              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-            </main>
+            <div className="app-bar-gutter-top">
+              <main className="mx-auto max-w-reading px-screen py-6">
+                <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+              </main>
+            </div>
           </>
         }
         errorMessage="진도를 불러오지 못했다"
