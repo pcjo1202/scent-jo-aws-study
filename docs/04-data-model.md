@@ -205,7 +205,7 @@ type ServiceGuide = {
 type Part2 = { guides: ServiceGuide[] }   // 21개
 ```
 
-`relatedCategories`를 수동으로 넣는 이유: 문항 자동 태깅과 달리 해부서 절은 21개뿐이라 손으로 지정하는 편이 정확하고 빠르다.
+`relatedCategories`를 수동으로 넣는 이유: 문항 자동 태깅과 달리 PART 2의 서비스 절은 21개뿐이라 손으로 지정하는 편이 정확하고 빠르다. (해부서 **전체**는 절 33개다 — 「해부서 자산화 진행 방식」)
 
 ### part3-method.json
 

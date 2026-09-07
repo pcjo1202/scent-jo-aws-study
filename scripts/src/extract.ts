@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { anatomyLocalPaths, anatomyPageNumbers, hasAnatomy } from './artifacts/anatomy-assets.ts'
+import { anatomyPageNumbers, hasAnatomy, readAnatomyDir } from './artifacts/anatomy-assets.ts'
 import { buildIndex, chunkFileName, chunkQuestions } from './artifacts/build-chunks.ts'
 import {
   DEFAULT_VERSION,
@@ -131,8 +131,10 @@ function digestAnatomy() {
     return {}
   }
 
-  const paths = anatomyLocalPaths(DATA_DIR)
+  const { paths, unknown } = readAnatomyDir(DATA_DIR)
   console.log(`해부서 ${paths.length}파일 (쪽 ${anatomyPageNumbers(paths).length})`)
+  // 여기서 막지 않는다 — 판정은 `data:verify`가 한다. 다만 안 보이게 두지는 않는다.
+  if (unknown.length > 0) console.warn(`해부서 디렉터리의 모르는 파일: ${unknown.join(' · ')}`)
   return Object.fromEntries(
     paths.map((path) => [toCdnKey(path), digest(readFileSync(`${DATA_DIR}${path}`))]),
   )

@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { AnatomyToc, Chunk, IndexEntry, Manifest } from '@aws-study/shared'
-import { anatomyLocalPaths, anatomyPageNumbers, hasAnatomy } from './artifacts/anatomy-assets.ts'
+import { anatomyPageNumbers, hasAnatomy, readAnatomyDir } from './artifacts/anatomy-assets.ts'
 import {
+  ANATOMY_TOC_KEY,
   FIXTURE_KEY_PREFIX,
   type FileDigest,
   digest,
@@ -89,12 +90,11 @@ function readArtifacts(): Artifacts {
 function readAnatomy(): Anatomy | undefined {
   if (!hasAnatomy(DATA_DIR)) return undefined
 
-  const paths = anatomyLocalPaths(DATA_DIR)
+  const { paths, unknown } = readAnatomyDir(DATA_DIR)
   return {
     pageNumbers: anatomyPageNumbers(paths),
-    toc: paths.includes('anatomy/toc.json')
-      ? read<AnatomyToc>('anatomy/toc.json')
-      : { entries: [] },
+    unknownFiles: unknown,
+    toc: paths.includes(ANATOMY_TOC_KEY) ? read<AnatomyToc>(ANATOMY_TOC_KEY) : { entries: [] },
   }
 }
 
@@ -105,7 +105,7 @@ function measureFiles(chunkFiles: string[], fixtureFiles: string[]): Record<stri
     'index.json',
     'oneliners.json',
     'comparisons.json',
-    ...anatomyLocalPaths(DATA_DIR),
+    ...readAnatomyDir(DATA_DIR).paths,
   ]
 
   return {

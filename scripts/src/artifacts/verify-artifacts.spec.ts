@@ -1,11 +1,13 @@
-import type { ChoiceKey, Question } from '@aws-study/shared'
+import type { AnatomyToc, ChoiceKey, Question } from '@aws-study/shared'
 import { describe, expect, it } from 'vitest'
 import type { Comparison } from '../notes/parse-comparison.ts'
 import type { OneLiner } from '../notes/parse-oneliner.ts'
 import { buildIndex, chunkFileName, chunkQuestions } from './build-chunks.ts'
 import {
+  ANATOMY_TOC_KEY,
   DEFAULT_VERSION,
   type FileDigest,
+  anatomyPageKey,
   buildManifest,
   digest,
   toCdnKey,
@@ -112,6 +114,7 @@ function comparisons(): Comparison[] {
 function anatomy(): Anatomy {
   return {
     pageNumbers: Array.from({ length: EXPECTED_ANATOMY_PAGE_COUNT }, (_, index) => index + 1),
+    unknownFiles: [],
     toc: {
       entries: Array.from({ length: EXPECTED_ANATOMY_TOC_COUNT }, (_, index) => ({
         id: `${index + 1}-1`,
@@ -134,9 +137,9 @@ function measure(chunks: ReturnType<typeof chunkQuestions>, all: Artifacts['oneL
   for (const id of EXPECTED_FIXTURE_IDS) {
     files[`fixtures/questions/${id}.json`] = digest(`픽스처 ${id}`)
   }
-  files[toCdnKey('anatomy/toc.json')] = digest('목차')
+  files[toCdnKey(ANATOMY_TOC_KEY)] = digest('목차')
   for (let page = 1; page <= EXPECTED_ANATOMY_PAGE_COUNT; page++) {
-    files[toCdnKey(`anatomy/pages/${String(page).padStart(3, '0')}.webp`)] = digest(`쪽 ${page}`)
+    files[toCdnKey(anatomyPageKey(page))] = digest(`쪽 ${page}`)
   }
   return files
 }
@@ -251,10 +254,31 @@ const BREAKAGES: Array<[label: string, breaks: (broken: Artifacts) => void]> = [
     '해부서 쪽 번호가 1..61이 아님',
     (broken) => void (broken.anatomy!.pageNumbers[0] = 999),
   ],
+  [
+    // 이름이 어긋난 쪽. 목록에서 빠져 배포되지 않으므로 개수 검사는 61을 그대로 본다.
+    '해부서 디렉터리의 모르는 파일',
+    (broken) => void broken.anatomy!.unknownFiles.push('anatomy/pages/1.webp'),
+  ],
+  [
+    // 이름은 멀쩡한데 내용만 빈 모양. 파일명만 보는 검사 6개는 전부 0을 준다.
+    '내용이 빈 해부서 파일',
+    (broken) => void (broken.actualFiles['anatomy/pages/030.webp'] = { bytes: 0, sha256: 'x' }),
+  ],
   ['해부서 목차 항목 수 불일치', (broken) => void broken.anatomy!.toc.entries.pop()],
   [
     '빈 값이 있는 해부서 목차 항목',
     (broken) => void (broken.anatomy!.toc.entries[0]!.title = '  '),
+  ],
+  [
+    // `toc.json`은 손으로 쓴다 — 키를 통째로 빠뜨리는 오타가 실제로 가능하다.
+    // `!value.trim()`으로 쓰면 여기서 검사가 잡는 게 아니라 **죽어서** 62항목 표가
+    // 한 줄도 안 찍힌다. 같은 라벨을 두 형태로 겨눈다.
+    '빈 값이 있는 해부서 목차 항목',
+    (broken) =>
+      void (broken.anatomy!.toc.entries[0] = {
+        title: '번호를 빠뜨렸다',
+        page: 2,
+      } as AnatomyToc['entries'][number]),
   ],
   [
     '해부서 목차 id 중복',
@@ -392,7 +416,7 @@ describe('findArtifactAnomalies', () => {
   it('해부서가 있는데 비면 위반이다 — 「없다」와 「비었다」는 다르다', () => {
     const anomalies = findArtifactAnomalies({
       ...artifacts(),
-      anatomy: { pageNumbers: [], toc: { entries: [] } },
+      anatomy: { pageNumbers: [], unknownFiles: [], toc: { entries: [] } },
     })
 
     expect(anomalies.counts['해부서 쪽 수 불일치']).toBe(1)

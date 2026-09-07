@@ -22,8 +22,15 @@ const CHUNK_KEY_PREFIX = `${CHUNK_CDN_DIR}chunk-`
  * 형태를 정규식으로 좁히는 이유: 이름이 어긋난 파일은 immutable 경로에 그대로 박혀
  * 되돌리는 값이 v2 재배포다. 접두사만 보면 `pages/1.webp`가 조용히 통과한다.
  */
-const ANATOMY_TOC_KEY = 'anatomy/toc.json'
-const ANATOMY_PAGE_KEY = /^anatomy\/pages\/\d{3}\.webp$/
+export const ANATOMY_TOC_KEY = 'anatomy/toc.json'
+/** 자릿수는 `anatomyPageKey`가 정한다 — 쓰는 쪽과 받는 쪽이 갈리면 조용히 어긋난다. */
+const ANATOMY_PAGE_DIGITS = 3
+const ANATOMY_PAGE_KEY = new RegExp(`^anatomy/pages/\\d{${ANATOMY_PAGE_DIGITS}}\\.webp$`)
+
+/** 쪽 번호 → 키. `data:anatomy`가 이 이름으로 쓰고 `toc.json`의 `page`가 이것을 가리킨다. */
+export function anatomyPageKey(page: number) {
+  return `anatomy/pages/${String(page).padStart(ANATOMY_PAGE_DIGITS, '0')}.webp`
+}
 
 export type FileDigest = { bytes: number; sha256: string }
 

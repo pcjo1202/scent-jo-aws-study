@@ -33,7 +33,12 @@ const MAX_ANSWER_SIZE = 3
 const MAX_IMPORTANCE = 3
 
 /** `data/anatomy/`. `pageNumbers`는 `pages/NNN.webp`의 번호이고 목차의 `page`가 이것을 가리킨다. */
-export type Anatomy = { toc: AnatomyToc; pageNumbers: number[] }
+export type Anatomy = {
+  toc: AnatomyToc
+  pageNumbers: number[]
+  /** 자산 이름 규칙에 안 맞아 배포에서 빠지는 파일. 조용히 빠지면 아무도 모른다. */
+  unknownFiles: string[]
+}
 
 export type Artifacts = {
   chunks: Chunk[]
@@ -71,7 +76,7 @@ export function findArtifactAnomalies(artifacts: Artifacts): ArtifactAnomalies {
     ...countIndexDefects(chunks, index),
     ...countNoteDefects(oneLiners, comparisons),
     '누락된 골든 픽스처': EXPECTED_FIXTURE_IDS.filter((id) => !fixtureIds.includes(id)).length,
-    ...countAnatomyDefects(artifacts.anatomy),
+    ...countAnatomyDefects(artifacts.anatomy, artifacts.actualFiles),
     ...countManifestDefects(artifacts, questions.length),
     ...tagging.anomalyCounts,
   }
@@ -244,7 +249,10 @@ function countNoteDefects(oneLiners: OneLiner[], comparisons: Comparison[]) {
  * 없을 때도 라벨은 남긴다. 검사가 통째로 사라지면 출력에서 「대상 없음」과 「위반 없음」이
  * 같은 모양이 되어, 해부서가 빠진 채 올라간 배포가 초록으로 보인다.
  */
-function countAnatomyDefects(anatomy: Anatomy | undefined): Record<string, number> {
+function countAnatomyDefects(
+  anatomy: Anatomy | undefined,
+  actualFiles: Record<string, FileDigest>,
+): Record<string, number> {
   const pages = new Set(anatomy?.pageNumbers ?? [])
   const entries = anatomy?.toc.entries ?? []
   const counts = {
@@ -253,9 +261,15 @@ function countAnatomyDefects(anatomy: Anatomy | undefined): Record<string, numbe
       { length: EXPECTED_ANATOMY_PAGE_COUNT },
       (_, index) => index + 1,
     ).filter((page) => !pages.has(page)).length,
+    // 이름이 어긋난 파일은 manifest에서 빠져 배포되지 않는다. 세지 않으면 그 사실이 안 보인다.
+    '해부서 디렉터리의 모르는 파일': anatomy?.unknownFiles.length ?? 0,
+    // 이름만 보는 검사는 내용이 통째로 빈 파일을 통과시킨다 — immutable 경로에 박히면 v2 재배포다.
+    '내용이 빈 해부서 파일': Object.entries(actualFiles).filter(
+      ([key, file]) => key.startsWith('anatomy/') && file.bytes === 0,
+    ).length,
     '해부서 목차 항목 수 불일치': entries.length === EXPECTED_ANATOMY_TOC_COUNT ? 0 : 1,
     '빈 값이 있는 해부서 목차 항목': entries.filter(
-      (entry) => !entry.id.trim() || !entry.title.trim(),
+      (entry) => isBlank(entry.id) || isBlank(entry.title),
     ).length,
     '해부서 목차 id 중복': entries.length - new Set(entries.map((entry) => entry.id)).size,
     // 목차가 실재하지 않는 쪽을 가리키면 뷰어가 404를 받는다. 범위 검사보다 강하다.
@@ -268,6 +282,15 @@ function countAnatomyDefects(anatomy: Anatomy | undefined): Record<string, numbe
 
   if (anatomy) return counts
   return Object.fromEntries(Object.keys(counts).map((label) => [label, 0]))
+}
+
+/**
+ * **`toc.json`은 손으로 쓰는 유일한 산출물이다** (`01-requirements.md` 「데이터 보존」) —
+ * 키를 통째로 빠뜨리거나 숫자를 넣는 오타가 실제로 가능하다. `!value.trim()`으로 쓰면
+ * 그 오타에서 **검사가 잡는 게 아니라 죽어서**, 62항목 표가 한 줄도 안 찍힌다.
+ */
+function isBlank(value: unknown) {
+  return typeof value !== 'string' || !value.trim()
 }
 
 /**
