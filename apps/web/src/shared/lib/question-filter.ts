@@ -28,6 +28,25 @@ export const NO_FILTER: QuestionFilter = {
 }
 
 /**
+ * 화면 문구는 `DESIGN.md` 「Content design」 용어표를 따른다. **타입에서 여기 두는 이유는
+ * 두 곳이 읽기 때문이다** — 필터 패널의 칩과 본문 상단의 적용된 필터 칩이 같은 값을 다른
+ * 자리에 그린다. 복제하면 한쪽만 고쳐도 화면이 멀쩡하다 (`.claude/rules/code-conventions.md`
+ * 「SSOT」).
+ *
+ * `Record`로 못 박아 두면 값이 늘 때 컴파일러가 빠진 라벨을 잡는다.
+ */
+export const ANSWER_COUNT_LABEL: Record<AnswerCountKind, string> = {
+  single: '단일정답',
+  multiple: '복수정답',
+}
+
+export const SOLVE_STATE_LABEL: Record<SolveState, string> = {
+  unsolved: '안 푼 것',
+  wrong: '오답',
+  correct: '정답',
+}
+
+/**
  * **빈 그룹은 통과다.** 고르지 않은 것과 「전부 고름」은 다르다 — 후자는 그냥 그 값들의
  * OR이라, 카테고리·서비스가 비어 있는 문항 6개는 11개를 전부 골라도 걸리지 않는다
  * (`docs/02-features.md` 「필터」).

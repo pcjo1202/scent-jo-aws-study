@@ -58,6 +58,7 @@ export function AppBar({
       {progress ? (
         <div
           role="progressbar"
+          aria-label="진행"
           aria-valuemin={0}
           aria-valuemax={progress.total}
           aria-valuenow={progress.current}

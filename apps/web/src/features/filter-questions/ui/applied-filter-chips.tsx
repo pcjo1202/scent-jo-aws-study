@@ -1,7 +1,8 @@
-import type { QuestionFilter } from '@/shared/lib/question-filter'
-
-const ANSWER_COUNT_LABEL = { single: '단일정답', multiple: '복수정답' }
-const SOLVE_STATE_LABEL = { unsolved: '안 푼 것', wrong: '오답', correct: '정답' }
+import {
+  ANSWER_COUNT_LABEL,
+  SOLVE_STATE_LABEL,
+  type QuestionFilter,
+} from '@/shared/lib/question-filter'
 
 /**
  * 지금 무엇이 걸려 있는지의 **표시**다. 필터 컨트롤이 아니다 — 눌러도 지워지지 않고, 해제는

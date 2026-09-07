@@ -316,7 +316,19 @@
    * 앱바와 진행 바 아래에서 시작한다 — 둘 다 화면 전폭이기 때문이다. 60px은 앱바 56 +
    * 진행 바 4다.
    */
+  /*
+   * 시트는 네이티브 `dialog`다 — `showModal()`이 포커스 트랩·Esc·배경 비활성화를 주고,
+   * `useQuestionShortcuts`의 `closest('dialog[open]')` 판정에 그냥 걸린다. UA 기본값
+   * (가운데 정렬·max-width·테두리)을 걷어내고 전체 화면으로 편다.
+   */
   .filter-panel {
+    max-width: none;
+    max-height: none;
+    border: none;
+    padding: 0;
+  }
+
+  .filter-panel[open] {
     position: fixed;
     inset: 0;
     z-index: 2;
@@ -324,13 +336,17 @@
     padding-top: env(safe-area-inset-top);
   }
 
-  .filter-panel-closed {
-    display: none;
+  .filter-panel::backdrop {
+    background-color: transparent;
   }
 
+  /*
+   * `expanded`는 시트가 아니라 흐름 안의 상시 패널이라 `showModal()`을 부르지 않는다.
+   * 그래서 `open`이 없고, `dialog`의 기본 `display: none`을 여기서 되돌려야 한다.
+   */
   @media (width >= theme(--breakpoint-expanded)) {
     .filter-panel,
-    .filter-panel-closed {
+    .filter-panel[open] {
       display: block;
       position: sticky;
       inset: auto;
@@ -339,13 +355,14 @@
       flex: 0 0 320px;
       align-self: flex-start;
       max-height: calc(100dvh - 60px - env(safe-area-inset-top));
+      overflow-y: auto;
       padding-top: 0;
       border-inline-end: 1px solid var(--sys-color-outline-variant);
     }
   }
 
-  /* 시트에만 있는 헤더·적용 버튼과 패널에만 있는 개수 줄은 **유틸로** 감춘다
-     (`expanded:hidden` · `max-expanded:hidden`). 여기 `display: none`을 쓰면 마크업의
+  /* 시트에만 있는 헤더·적용 버튼과 패널에만 있는 하단 줄은 **유틸로** 감춘다
+     (`expanded:hidden` · `hidden expanded:flex`). 여기 `display: none`을 쓰면 마크업의
      `flex`·`inline-flex` 유틸에 진다 — utilities 레이어가 components보다 뒤다. */
 
   /*
@@ -420,7 +437,9 @@
    * 직접 구현하지 않는다.
    *
    * **펼침 화살표를 두지 않는다.** 미채점 카드의 input 표식과 마찬가지로 그리지 않는다 —
-   * 기본 펼침인 둘은 내용이 이미 보이고, 접힌 것은 카드 전체가 클릭 영역이다.
+   * 기본 펼침인 카드는 내용이 이미 보이고, 접힌 카드는 카드 전체가 클릭 영역이다.
+   * 정답이 둘 이상인 문항에서는 펼칠 것이 없는 정답 카드가 생겨 details 자체가 아니다
+   * (DESIGN.md 「② 정답 해설」).
    *
    * 높이 전환은 ::details-content를 지원하는 브라우저에서만 걸리고, 아니면 즉시 열린다 —
    * 원칙 4와 어긋나지 않는 방향의 퇴화다.

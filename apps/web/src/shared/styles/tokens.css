@@ -196,7 +196,10 @@
   --sys-state-hover-opacity: 0.08;
   --sys-state-focus-opacity: 0.12;
   --sys-state-pressed-opacity: 0.12;
-  --sys-state-disabled-container-opacity: 0.12;
+  /* 컨테이너 쪽(M3의 0.12)은 두지 않는다. 이 앱의 disabled는 **내용만** 낮춘다 —
+     카드가 이미 낮은 면색이라 거기서 0.12를 더 빼면 경계가 사라진다
+     (DESIGN.md 「Interaction states · 이 앱에서」, 2026-09-07 SJO-20 실화면 판정).
+     정의만 남겨 두면 다음 사람이 「정의돼 있으니 써도 된다」로 읽는다. */
   --sys-state-disabled-content-opacity: 0.38;
 
   /* 모션 — 이 셋뿐이다. medium 이상과 emphasized 계열은 쓰지 않는다.

@@ -44,6 +44,7 @@ export function StudySet({
   filterAction,
   appliedChips,
   onClearFilter,
+  onSubmitted,
 }: {
   apiUrl: string
   manifest: Manifest
@@ -55,18 +56,26 @@ export function StudySet({
   filterAction: ReactNode
   appliedChips: ReactNode
   onClearFilter: () => void
+  /** 제출이 서버에 닿은 뒤. 호출부가 진도 캐시를 무효화해 재진입이 낡은 포인터를 안 쓴다. */
+  onSubmitted: () => void
 }) {
-  const questionIds = entries.map((entry) => entry.id)
   const [cursor, setCursor] = useState(
-    () => toStartIndex(questionIds, lastQuestionId) ?? entries.length,
+    () =>
+      toStartIndex(
+        entries.map((entry) => entry.id),
+        lastQuestionId,
+      ) ?? entries.length,
   )
   const [selected, setSelected] = useState<ChoiceKey[]>([])
   const [graded, setGraded] = useState<AttemptResponse | null>(null)
+  const [isSubmitting, setSubmitting] = useState(false)
   const [hasSubmitFailed, setSubmitFailed] = useState(false)
   const [isHelpOpen, setHelpOpen] = useState(false)
 
   const entry = entries[cursor]
   const answerCount = entry?.answer.length ?? 0
+  const isEmpty = entries.length === 0
+  const isFinished = !isEmpty && cursor >= entries.length
 
   function moveTo(nextCursor: number) {
     setCursor(nextCursor)
@@ -76,30 +85,47 @@ export function StudySet({
   }
 
   function handleToggle(key: ChoiceKey) {
-    if (graded) return
+    if (graded || isSubmitting) return
 
     setSelected((current) => toggleChoice(current, key, { answerCount }))
   }
 
-  async function handleSubmit() {
-    if (!entry || graded || !canSubmit(selected, { answerCount })) return
+  /**
+   * **제출이 도는 동안은 문항을 옮기지 않는다.** 응답을 기다리는 사이 「이전」이나 `←`로
+   * 옮겨 가면 도착한 채점 결과가 **다른 문항의 카드 위에** 그려진다 — 정답 표시도 결과
+   * 배너도 이전 문항 것이 된다. 「되돌아간 문항은 `[대기]`로 연다」가 그렇게 깨진다.
+   *
+   * 이동 경로를 전부 세어 막았다: 「이전」·「다음」 버튼은 `disabled`이거나 `graded`일 때만
+   * 뜨고, `←`·`→`·`Enter`는 여기를 지난다. 남는 것은 필터 전환인데 그건 이 컴포넌트를
+   * 언마운트하므로 늦게 온 `setGraded`가 아무 데도 닿지 않는다.
+   */
+  function canMove() {
+    return !isSubmitting
+  }
 
+  async function handleSubmit() {
+    if (!entry || graded || isSubmitting || !canSubmit(selected, { answerCount })) return
+
+    setSubmitting(true)
     setSubmitFailed(false)
     try {
-      setGraded(
-        await submitAttempt(apiUrl, {
-          questionId: entry.id,
-          selected,
-          source: 'sequential',
-          // 필터 모드는 전체 진도 포인터를 건드리지 않는다 (`docs/05-database.md`).
-          advancesPointer: !hasFilter,
-        }),
-      )
-    } catch (error) {
-      // 재전송 큐는 SJO-22다. 여기서는 삼키지 않고 화면에 남겨 다시 누를 수 있게 한다 —
-      // 즉시 채점 모드는 응답이 없으면 그릴 정답이 없어 낙관적으로 진행할 수 없다.
-      if (error instanceof Error) setSubmitFailed(true)
-      else throw error
+      const result = await submitAttempt(apiUrl, {
+        questionId: entry.id,
+        selected,
+        source: 'sequential',
+        // 필터 모드는 전체 진도 포인터를 건드리지 않는다 (`docs/05-database.md`).
+        advancesPointer: !hasFilter,
+      })
+      setGraded(result)
+      onSubmitted()
+    } catch {
+      // 재전송 큐는 SJO-22다. 여기서는 화면에 남겨 다시 누를 수 있게 한다 — 즉시 채점
+      // 모드는 응답이 없으면 그릴 정답이 없어 낙관적으로 진행할 수 없다. 상태 코드로
+      // 가르지 않는 이유는 이 자리에 5xx·네트워크만 남기 때문이다: 403·401은 `apiFetch`가
+      // 이미 처리하고 400은 정상 경로에서 나오지 않는다 (`docs/02` 「API 오류의 화면 표현」).
+      setSubmitFailed(true)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -110,13 +136,11 @@ export function StudySet({
       if (graded) moveTo(cursor + 1)
       else void handleSubmit()
     },
-    onPrevious: () => cursor > 0 && moveTo(cursor - 1),
-    onNext: () => graded && moveTo(cursor + 1),
+    // 완주 화면에는 하단 액션 바가 없다. 화면에 없는 조작이 키보드로만 돌지 않게 한다.
+    onPrevious: () => canMove() && !isFinished && cursor > 0 && moveTo(cursor - 1),
+    onNext: () => canMove() && graded && moveTo(cursor + 1),
     onShowHelp: () => setHelpOpen(true),
   })
-
-  const isEmpty = entries.length === 0
-  const isFinished = !isEmpty && cursor >= entries.length
 
   // 빈 상태·완주에서는 앱바 제목에서 숫자가 빠지고 진행 바와 하단 액션 바를 그리지 않는다
   // (`DESIGN.md` 「빈 상태·완주에서 골격은 어떻게 되나」). 우측 액션은 그대로 둔다 — 필터가
@@ -126,7 +150,9 @@ export function StudySet({
       <>
         <AppBar title={SCREEN_NAME} backHref="/" action={filterAction} />
         <div className="flex min-h-0 flex-1 flex-col">
-          {appliedChips && <div className="px-screen pt-4">{appliedChips}</div>}
+          {/* 필터 칩은 0건일 때도 상단에 남는다 — 무엇 때문에 0건인지가 보여야 해제할지
+              고칠지를 정한다. 필터가 없으면 `AppliedFilterChips`가 `null`이라 빈 줄이다. */}
+          {hasFilter && <div className="px-screen pt-4">{appliedChips}</div>}
           {isEmpty ? (
             <EmptyState
               message="조건에 맞는 문제 없음"
@@ -192,10 +218,18 @@ export function StudySet({
           <>
             {/* 첫 문제에서 「이전」은 비활성이고 숨기지 않는다 — 부재는 「그런 기능이 없다」를
                 말하는데 되돌아가기는 이 앱에 있는 기능이다 (`DESIGN.md` 「하단 액션의 버튼 배치」). */}
-            <Button variant="tonal" disabled={cursor === 0} onClick={() => moveTo(cursor - 1)}>
+            <Button
+              variant="tonal"
+              disabled={cursor === 0 || isSubmitting}
+              onClick={() => moveTo(cursor - 1)}
+            >
               이전
             </Button>
-            <Button variant="filled" disabled={!isSubmittable} onClick={() => void handleSubmit()}>
+            <Button
+              variant="filled"
+              disabled={!isSubmittable || isSubmitting}
+              onClick={() => void handleSubmit()}
+            >
               제출
             </Button>
           </>

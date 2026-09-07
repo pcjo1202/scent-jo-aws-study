@@ -40,6 +40,7 @@ export function buttonClassName(variant: ButtonVariant = 'text'): string {
 export function Button({
   variant = 'text',
   className,
+  children,
   ...props
 }: ComponentProps<'button'> & { variant?: ButtonVariant }) {
   return (
@@ -47,6 +48,14 @@ export function Button({
       type="button"
       className={`${SHAPE_CLASS} ${VARIANT_CLASS[variant]} ${className ?? ''}`}
       {...props}
-    />
+    >
+      {/*
+        `children`을 요소로 감싼다. 비활성은 **내용만** 0.38로 낮추는데(`global.css`의
+        `.state-layer:disabled > *`) 라벨이 텍스트 노드로 남으면 그 선택자가 아무것도 잡지
+        못해 비활성이 활성과 똑같이 보인다 — 「첫 문제에서 「이전」은 비활성이다. 숨기지
+        않는다」의 전제가 「비활성으로 보인다」이므로 그 규칙이 통째로 죽는다.
+      */}
+      <span>{children}</span>
+    </button>
   )
 }
