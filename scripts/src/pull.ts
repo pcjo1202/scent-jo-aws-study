@@ -33,7 +33,7 @@ async function main() {
   const corrupted: string[] = []
   // 전부 받아 검증한 뒤에 쓴다. 받는 족족 쓰면 중간에 하나가 어긋났을 때
   // 「CDN이 유일한 원본」인 트리를 반쯤 갈아엎은 채 끝난다 — 복구 스크립트가
-  // 만들면 안 되는 상태다. 26개 · 약 1.5MB라 전부 메모리에 들어간다.
+  // 만들면 안 되는 상태다. 88개 · 약 6MB(해부서 61쪽 포함)라 전부 메모리에 들어간다.
   const verified: Array<[string, Buffer]> = []
 
   for (const [downloaded, [key, expected]] of files.entries()) {

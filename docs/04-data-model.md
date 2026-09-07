@@ -166,7 +166,7 @@ type Comparisons = { items: Comparison[] }   // 48쌍 · 구성원 145명
 **v1은 구조화하지 않는다.** 원본 61페이지를 이미지 자산(`anatomy/pages/001..061.webp`)으로 올리고, 수동 목차 하나만 만든다 (2026-08-26 리뷰 D8 — 판독 20~40시간의 학습 ROI 없음, 이미지화는 반나절).
 
 ```ts
-type AnatomyToc = { entries: Array<{ id: string; title: string; page: number }> }  // 21항목 수동 작성, anatomy/toc.json
+type AnatomyToc = { entries: Array<{ id: string; title: string; page: number }> }  // 36항목 수동 작성, anatomy/toc.json
 ```
 
 아래 구조화 스키마는 **시험 후 과제**로 보존한다. 재개 시 유일한 재현 불가 산출물이 된다.
@@ -263,6 +263,7 @@ PART 3은 서술 위주라 구조를 얕게 잡는다. 과도한 구조화는 �
 ## 추출 파이프라인
 
 ```
+pnpm data:anatomy    해부서 PDF → data/anatomy/pages/   (61쪽 렌더링. 1회성)
 pnpm data:extract    SOURCE_PDF_DIR → data/   (둘 다 로컬, gitignored)
 pnpm data:verify     data/ 전수 검증. 실패하면 exit 1 (배포 차단)
 pnpm data:publish    data/ + tests/fixtures/ → S3 업로드
@@ -287,7 +288,7 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 |---|---|
 | 문제 1019 | `pdftotext -layout` → `Q. NNN` 블록 분할 → 절 파싱 → 주제 태깅 → `data/chunks/chunk-NNN.json` 11개 + `data/index.json` |
 | 노트 203 + 48 | 모바일 PDF(파일 3)를 파싱하고 PC판(파일 2)과 합친다. 두 판본이 줄을 접는 자리가 달라 이음매 공백을 복원할 수 있고, 읽어 낸 글자가 다르면 그 자리에서 실패한다. ★ 중요도는 파일 2에만 있다 |
-| 해부서 | **스크립트 아님.** 페이지를 이미지로 렌더링해 수동 판독 |
+| 해부서 | **`data:extract`가 만들지 않는다.** 쪽 이미지는 `data:anatomy`가 따로 렌더링하고 `toc.json`은 수동 판독물이다. extract는 `data/anatomy/`에 이미 있는 것을 manifest에 담기만 한다 |
 | manifest | 위 산출물과 `tests/fixtures/`의 sha256·bytes를 재서 `data/manifest.json` |
 
 **문항 통합본(`questions.json`)은 두지 않는다** (2026-08-31 결정, SJO-7). 청크를 이으면 같은 데이터라 둘을 다 두면 갈라질 자리가 생기고, CDN에 올라가지 않으므로 `data:pull`로 복구되지 않아 기기마다 `data/`의 구성이 달라진다.
@@ -329,6 +330,12 @@ pnpm data:pull       CDN → data/ + tests/fixtures/   (새 기기 복구)
 
 ## 해부서 자산화 진행 방식
 
-v1: `pdftoppm`으로 61장 렌더링 → webp 변환 → `toc.json` 21항목 수동 작성 → publish. 반나절 작업이다.
+`pnpm data:anatomy`가 61장을 렌더링하고(`pdftoppm` → `cwebp`, 150dpi·q75), `toc.json` 36항목은 손으로 쓴다 → `data:extract` → `data:verify` → publish.
+
+**150dpi·q75는 실측으로 고른 값이다** (2026-09-07, SJO-9): 폰 3x 화면(≈1170px)에 A4 한 쪽이 원본 크기로 들어간다. 110dpi는 확대하면 흐려지고, q85는 눈으로 구별되지 않는데 20% 크다. 결과 61쪽 4.5MB, 쪽당 평균 75KB.
+
+**목차는 36항목이다** — 절 33개(`0-1` · `1-1`~`1-6` · `2-1`~`2-21` · `3-1`~`3-5`) + PART 표지 3개. 이슈에 적혀 있던 「21항목」은 PART 2의 서비스 21개를 옮겨 적은 값이었다. `id`는 원본의 절 번호를 그대로 쓰고 `title`은 **그 절의 첫 쪽에 인쇄된 제목 그대로**다 — 표지의 목록과 제목이 조금씩 다른 절이 있어(예: `2-17`·`2-19`) 어느 쪽이 정본인지 정해 두지 않으면 대조가 성립하지 않는다.
+
+`page`는 `pages/NNN.webp`의 **파일 번호**다. 원본에 인쇄된 쪽번호와도 같다 — 번호가 인쇄된 55쪽 전부에서 일치를 확인했고, 나머지 6쪽(표지 · `0-1` 쪽 · PART 표지 3장 · 뒤표지)은 번호 자체가 없다. 한 쪽에서 두 절이 시작하는 자리가 있어(59·60쪽) `page`는 오름차순이 아니라 **비내림차순**이다.
 
 구조화 판독을 시험 후 재개할 때는 PART 1을 먼저 만들어 구조를 확인받고 PART 2·3을 채운다. 전부 읽은 뒤에 "구조가 다르다"가 나오면 손실이 크다.
