@@ -132,6 +132,10 @@ postgresql://postgres.<ref>:<pw>@aws-0-ap-northeast-2.pooler.supabase.com:6543/p
 
 그래도 끈 채로 둔다. 현행 문서가 지시하고, 비용이 0이고, 로컬 프로브가 서버리스의 인스턴스 교체까지 재현했다고 보장할 수 없다. **파괴 사례를 확인해서가 아니라 확인하지 못해서 두는 것이다.**
 
+**트랜잭션과 행 잠금은 트랜잭션 모드에서 그대로 쓴다.** 못 쓰는 것은 **세션 수준** 기능이다 — prepared statement · `SET` · `LISTEN/NOTIFY`(Supabase 「Choose a connection mode」). 행 잠금은 트랜잭션 수명이라 여기 들지 않는다.
+
+2026-09-08 실측(SJO-53): 로컬에서 풀러 6543으로 커넥션 둘을 열어 ① 한쪽이 `select … for update`로 잡은 행은 다른 쪽의 `for update`를 **commit 전까지 막고** ② commit 뒤에는 통과하며 ③ 잠금 없는 `select`는 애초에 안 막힌다 — 3조건 3통과. ③이 음성 대조다: 그것이 없으면 「막혔다」가 그냥 느린 것과 구별되지 않는다. 실제 쓰임은 `docs/05` 「세션 채점」.
+
 ORM은 **Drizzle**을 쓴다. 마이그레이션이 순수 SQL 파일이라 빌드 스텝이 늘지 않고, `postgres-js` 드라이버에 `prepare: false`를 주면 끝난다.
 
 ```ts

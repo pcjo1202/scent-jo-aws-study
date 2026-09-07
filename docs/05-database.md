@@ -180,6 +180,12 @@ order by question_id, created_at desc, id desc;
 
 세션의 `question_ids` 65개 중 결과에 없는 문항은 **미응답 → 오답**으로 처리한다.
 
+**이 쿼리와 답안 제출은 세션 행을 잠가 직렬화한다.** `POST /attempts`(exam)와 `POST /exams/:id/finish`가 둘 다 트랜잭션 안에서 `select … from exam_sessions where id = $1 and user_id = $2 for update`로 시작하고, 그 트랜잭션 안에서 각각 insert와 「답안 읽기 → `finished_at` 확정」을 끝낸다.
+
+잠금이 없으면 `finish`가 답안을 읽은 **뒤** 커밋된 답이 `score`에는 빠지고 나중 `GET /exams/:id`의 `results`에는 들어, **저장된 상태가 영구히 갈린다** — 같은 화면이 「64점」과 정답 65개를 동시에 보여준다. `created_at <= finished_at`으로 자르는 것으로는 닫히지 않는다: `now()`가 트랜잭션 시작 시각이라 나중에 커밋한 답의 `created_at`이 더 앞일 수 있다.
+
+**한쪽만 잠그면 아무것도 직렬화되지 않는다** — 두 경로가 같은 행을 같은 방식으로 잠글 때만 성립한다. 잠금이 트랜잭션 풀러(:6543)에서 성립하는 것은 실측했다 (`docs/03` 「데이터베이스 연결」). (2026-09-08, SJO-53)
+
 ### 카테고리별 정답률
 
 카테고리는 CDN 인덱스에 있고 DB에 없으므로 **조인할 수 없다.** Nest가 메모리에 캐시한 인덱스와 위의 풀이 상태 맵을 애플리케이션에서 합친다.
@@ -365,10 +371,10 @@ type ExamResult = {
 // POST /exams/:id/finish  → 이미 종료된 세션이면 409
 { score: number, results: ExamResult[] }        // score는 0..65
 
-// **알려진 경합 (SJO-53, 미해결).** 답안 읽기와 finished_at 확정 사이에 그 세션으로
-// 들어온 attempt가 커밋되면, score는 그 답을 빼고 계산됐는데 이후 GET의 results에는
-// 든다 — 저장된 상태가 갈린다. created_at으로 자르는 것으로는 안 닫힌다(now()가
-// 트랜잭션 시작 시각이다). 닫으려면 POST /attempts와 finish가 세션 행을 잠가야 한다.
+// **답안 읽기와 finished_at 확정은 세션 행을 잠근 한 트랜잭션 안에서 일어난다** —
+// POST /attempts(exam)가 같은 행을 같은 방식으로 잠근다 (「세션 채점」). 잠그지 않으면
+// score는 그 답을 빼고 계산됐는데 이후 GET의 results에는 들어 저장된 상태가 갈린다.
+// (SJO-53에서 닫았다. 2026-09-08)
 
 // 재호출이 409인 이유는 「종료된 세션에 답안 제출 409」·「종료된 세션 삭제 409」와 같은
 // 계열이기 때문이다. 두 기기에서 동시에 종료하면 진 쪽이 409를 받고 GET /exams/:id로

@@ -19,6 +19,7 @@ import type {
   ExamAttemptResponse,
   IndexEntry,
 } from '@aws-study/shared'
+import type { AttemptRow } from './attempts.repository'
 
 /** 오프라인 큐 재전송만 `answeredAt`을 갖는다. */
 type AttemptInput = CreateAttemptRequest & { answeredAt?: string }
@@ -35,19 +36,31 @@ export class AttemptsService {
     input: AttemptInput,
   ): Promise<AttemptResponse | ExamAttemptResponse> {
     const entry = await this.loadEntry(input)
-    const sessionId = await this.resolveSessionId(userId, input)
     const isCorrect = grade(input.selected, entry.answer)
 
-    await this.repository.insertAttempt({
+    /**
+     * exam이 아니면 `sessionId`를 **무시하고** null을 둔다 — `attempts_session_source` check가
+     * DB에서 같은 규칙을 강제하므로 여기서 따로 400을 만들 이유가 없다. 무시하는 것이
+     * 「무엇이든 받는다」는 뜻은 아니다: 값의 **모양**은 DTO의 `@IsUUID()`가 앞에서 거른다.
+     */
+    const row: AttemptRow = {
       userId,
       questionId: input.questionId,
-      sessionId,
+      sessionId: null,
       source: input.source,
       selected: input.selected,
       isCorrect,
       durationMs: input.durationMs,
       createdAt: input.answeredAt === undefined ? undefined : new Date(input.answeredAt),
-    })
+    }
+
+    if (input.source === 'exam') {
+      await this.insertExamAttempt(userId, input, row)
+
+      return { accepted: true }
+    }
+
+    await this.repository.insertAttempt(row)
 
     // ponytail: 시도와 포인터가 한 트랜잭션이 아니다. 포인터만 실패하면 다음 순차 제출의
     // greatest()가 스스로 따라잡는다 — 원장은 attempts이고 포인터는 파생이다.
@@ -55,9 +68,38 @@ export class AttemptsService {
       await this.repository.advancePointer(userId, input.questionId)
     }
 
-    if (input.source === 'exam') return { accepted: true }
-
     return { isCorrect, answer: entry.answer }
+  }
+
+  /**
+   * **세션 행을 잠그고 같은 트랜잭션에서 insert한다** (`docs/05` 「세션 채점」). 잠금 없이
+   * 조회만 하면 검사와 insert 사이가 열려, 그 창에 `finish`가 답안을 읽고 확정하면 이 답이
+   * `score`에는 빠지고 나중 `results`에는 들어 저장된 상태가 영구히 갈린다 (SJO-53).
+   *
+   * 포인터 갱신은 여기 없다 — `shouldAdvancePointer`가 `sequential`만 올리므로 exam 경로는
+   * 애초에 포인터를 건드리지 않는다.
+   */
+  private async insertExamAttempt(
+    userId: string,
+    input: AttemptInput,
+    row: AttemptRow,
+  ): Promise<void> {
+    const sessionId = input.sessionId
+    if (sessionId === undefined) {
+      throw new BadRequestException('exam 시도에는 sessionId가 필요하다')
+    }
+
+    await this.repository.transaction(async (tx) => {
+      const session = await this.repository.lockSession(sessionId, userId, tx)
+      if (session === undefined) throw new NotFoundException('세션을 찾을 수 없다')
+      if (session.finishedAt !== null) throw new ConflictException('이미 종료된 세션이다')
+
+      if (!session.questionIds.includes(input.questionId)) {
+        throw new BadRequestException('그 세션이 묻지 않은 문항이다')
+      }
+
+      await this.repository.insertAttempt({ ...row, sessionId }, tx)
+    })
   }
 
   /**
@@ -114,30 +156,6 @@ export class AttemptsService {
     return entry
   }
 
-  /**
-   * exam이 아니면 `sessionId`를 **무시하고** null을 준다. `attempts_session_source` check가
-   * DB에서 같은 규칙을 강제하므로 여기서 따로 400을 만들 이유가 없다.
-   *
-   * 무시하는 것이 「무엇이든 받는다」는 뜻은 아니다 — 값의 **모양**은 DTO의 `@IsUUID()`가
-   * 앞에서 거르므로 uuid가 아닌 `sessionId`는 여기 오기 전에 400이다.
-   */
-  private async resolveSessionId(userId: string, input: AttemptInput): Promise<string | null> {
-    if (input.source !== 'exam') return null
-
-    if (input.sessionId === undefined) {
-      throw new BadRequestException('exam 시도에는 sessionId가 필요하다')
-    }
-
-    const session = await this.repository.findSession(input.sessionId, userId)
-    if (session === undefined) throw new NotFoundException('세션을 찾을 수 없다')
-    if (session.finishedAt !== null) throw new ConflictException('이미 종료된 세션이다')
-
-    if (!session.questionIds.includes(input.questionId)) {
-      throw new BadRequestException('그 세션이 묻지 않은 문항이다')
-    }
-
-    return input.sessionId
-  }
 }
 
 const CLIENT_ERROR_MIN = 400

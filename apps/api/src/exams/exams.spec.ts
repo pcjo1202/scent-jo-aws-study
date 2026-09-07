@@ -16,6 +16,9 @@ import type {
   SessionAttemptRow,
 } from './exams.repository'
 
+/** 스텁 트랜잭션이 콜백에 주는 표식. 문장이 이걸 받았으면 트랜잭션 안이다. */
+const TX = { transaction: true }
+
 const USER_ID = '00000000-0000-4000-8000-000000000001'
 const SESSION_ID = '00000000-0000-4000-8000-0000000000ff'
 const VERSION = 'v2'
@@ -47,6 +50,8 @@ function harness(overrides: Overrides = {}) {
   const insertSession = vi.fn<(row: InsertedSession) => Promise<string>>(
     overrides.insertSession ?? (() => Promise.resolve(SESSION_ID)),
   )
+  const lockSession = vi.fn(() => Promise.resolve(overrides.session))
+  const findSessionAttempts = vi.fn(() => Promise.resolve(overrides.attempts ?? []))
 
   const repository = {
     insertSession,
@@ -55,7 +60,12 @@ function harness(overrides: Overrides = {}) {
     finishSession,
     listSessions: () => Promise.resolve(overrides.sessions ?? []),
     findSession: () => Promise.resolve(overrides.session),
-    findSessionAttempts: () => Promise.resolve(overrides.attempts ?? []),
+    // 스텁 트랜잭션은 콜백을 그대로 돌리되 **표식을 넘긴다** — 세 문장이 같은 핸들을 받았는지
+    // 세면 「트랜잭션 밖으로 샌 문장」이 잡힌다. 잠금이 실제로 걸리는지는 여기서 셀 수 없다
+    // (스텁 경계 밖이다) — `.toSQL()`과 `exam-race.spec.ts`가 그것을 센다.
+    transaction: (work: (tx: unknown) => Promise<unknown>) => work(TX),
+    lockSession,
+    findSessionAttempts,
   } as unknown as ExamsRepository
 
   const catalogService = {
@@ -77,6 +87,8 @@ function harness(overrides: Overrides = {}) {
     updateCursor,
     deleteSession,
     finishSession,
+    lockSession,
+    findSessionAttempts,
   }
 }
 
@@ -353,7 +365,24 @@ describe('POST /exams/:id/finish — 채점', () => {
       EXAM_QUESTION_COUNT - 2,
     )
     expect(results.every((result) => result.isCorrect === (result.questionId === 1))).toBe(true)
-    expect(finishSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, 1)
+    expect(finishSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, 1, TX)
+  })
+
+  /**
+   * 셋 중 하나라도 트랜잭션 밖으로 새면 잠금이 답안 읽기를 못 덮어 경합이 그대로 열린다
+   * (SJO-53). 잠금이 **실제로** 걸리는지는 스텁 밖이라 여기서 셀 수 없다 —
+   * `exam-ownership.spec.ts`의 `.toSQL()`과 `exam-race.spec.ts`가 그것을 센다.
+   */
+  it('잠금·답안 읽기·확정이 같은 트랜잭션에서 일어난다', async () => {
+    const { service, lockSession, findSessionAttempts, finishSession } = harness({
+      session: session(),
+    })
+
+    await service.finishExam(USER_ID, SESSION_ID)
+
+    expect(lockSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, TX)
+    expect(findSessionAttempts).toHaveBeenCalledWith(SESSION_ID, TX)
+    expect(finishSession).toHaveBeenCalledWith(SESSION_ID, USER_ID, 0, TX)
   })
 
   /**
