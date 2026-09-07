@@ -136,3 +136,18 @@ export type CategoryStats = {
 }
 
 export type StatsResponse = { byCategory: CategoryStats[] }
+
+/**
+ * `04-data-model.md` 「oneliners.json」. `/notes`의 데이터이지만 문제 풀이 화면도 읽는다 —
+ * 채점 후 ④ 등장 서비스 칩을 누르면 그 자리에서 펼쳐진다 (`DESIGN.md` 「④ 등장 서비스」).
+ *
+ * **`service`는 유일하지 않다.** 한 서비스가 카테고리를 달리해 두 번 실려 항목 203개에 고유
+ * 이름은 202개다.
+ */
+export type OneLiner = {
+  service: string
+  category: string
+  note: string
+}
+
+export type OneLiners = { items: OneLiner[] }

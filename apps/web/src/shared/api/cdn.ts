@@ -1,12 +1,13 @@
 import { queryOptions } from '@tanstack/react-query'
 
-import type { Chunk, Manifest, QuestionIndex } from '@aws-study/shared'
+import type { Chunk, Manifest, OneLiners, QuestionIndex } from '@aws-study/shared'
 
 import { dataBaseUrl } from '@/shared/config/env'
 
 /** manifest의 `files` 키와 같은 형태여야 한다 — `questions/chunk-001.json` (`docs/04` 「경로 레이아웃」). */
 const CHUNK_NUMBER_DIGITS = 3
 const INDEX_PATH = 'questions/index.json'
+const ONE_LINERS_PATH = 'notes/oneliners.json'
 
 /**
  * 세 쿼리 모두 **페이지 세션 동안 고정**이다. 재조회하지 않으며 새 버전은 새로고침에서만
@@ -28,6 +29,9 @@ export const cdnKeys = {
   },
   chunk(version: string, chunk: number) {
     return [...cdnKeys.all, version, 'chunk', chunk] as const
+  },
+  oneLiners(version: string) {
+    return [...cdnKeys.all, version, 'oneliners'] as const
   },
 }
 
@@ -74,6 +78,18 @@ export function chunkQuery(manifest: Manifest, chunk: number) {
   return queryOptions({
     queryKey: cdnKeys.chunk(manifest.version, chunk),
     queryFn: ({ signal }) => fetchJson<Chunk>(`${manifest.base}/${chunkPath(chunk)}`, signal),
+    ...SESSION_PINNED,
+  })
+}
+
+/**
+ * `/notes`의 데이터이지만 문제 풀이 화면이 먼저 읽는다 — 채점 후 ④ 등장 서비스 칩이 누르면
+ * 그 자리에서 한줄노트를 펼친다 (`DESIGN.md` 「④ 등장 서비스」).
+ */
+export function oneLinersQuery(manifest: Manifest) {
+  return queryOptions({
+    queryKey: cdnKeys.oneLiners(manifest.version),
+    queryFn: ({ signal }) => fetchJson<OneLiners>(`${manifest.base}/${ONE_LINERS_PATH}`, signal),
     ...SESSION_PINNED,
   })
 }

@@ -277,6 +277,69 @@
   }
 
   /*
+   * 앱바 (DESIGN.md 「공통 헤더·네비게이션 · 앱바」). 상단 고정 56px이고 웹뷰에서는 시스템
+   * 상태바가 그 위에 겹치므로 safe-area를 위쪽에도 반영한다. 높이는 유틸(h-14)이 주고
+   * 여기서는 유틸로 쓸 수 없는 것만 맡는다.
+   */
+  .app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /*
+   * 화면 보조 패널 (DESIGN.md 「화면 보조 패널」). compact·medium은 전체 화면 시트,
+   * expanded는 좌측 320px 상시 패널이다. **내용은 같고 담는 그릇만 다르다** — 그래서 마크업이
+   * 하나이고 여기서 그릇만 바꾼다.
+   *
+   * 시트는 앱바를 덮지만(유일한 이탈 경로가 시트 헤더의 arrow_back이 된다) 상시 패널은
+   * 앱바와 진행 바 아래에서 시작한다 — 둘 다 화면 전폭이기 때문이다. 60px은 앱바 56 +
+   * 진행 바 4다.
+   */
+  .filter-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    overflow-y: auto;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .filter-panel-closed {
+    display: none;
+  }
+
+  @media (width >= theme(--breakpoint-expanded)) {
+    .filter-panel,
+    .filter-panel-closed {
+      display: block;
+      position: sticky;
+      inset: auto;
+      top: calc(60px + env(safe-area-inset-top));
+      z-index: auto;
+      flex: 0 0 320px;
+      align-self: flex-start;
+      max-height: calc(100dvh - 60px - env(safe-area-inset-top));
+      padding-top: 0;
+      border-inline-end: 1px solid var(--sys-color-outline-variant);
+    }
+
+    /* 상시 패널에는 헤더가 없다 — 그룹 제목이 이미 구조를 나른다. 적용 버튼도 없다:
+       바로 반영되므로 닫는 동작에 개수를 실을 이유가 없다. */
+    .filter-panel-header,
+    .filter-panel-apply {
+      display: none;
+    }
+  }
+
+  /* 시트에서는 반대다. 개수는 「N문제 보기」 버튼이 나른다. */
+  @media (width < theme(--breakpoint-expanded)) {
+    .filter-panel-count {
+      display: none;
+    }
+  }
+
+  /*
    * 하단 액션 바 (DESIGN.md 「하단 액션 바」). compact에서 고정하는 이유는 긴 지문을 다
    * 스크롤해야 버튼에 닿는 것이 1019번 반복할 동작으로 부적절하기 때문이다. expanded에서는
    * 읽기 칼럼이 짧아 그럴 이유가 없으므로 문서 흐름 안으로 돌아온다.

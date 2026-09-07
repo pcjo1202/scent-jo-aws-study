@@ -18,7 +18,7 @@ export function ExplanationBlock({
   children,
 }: {
   requirements: string[]
-  services: Array<{ name: string; note: string }>
+  services: Array<{ name: string; note: string | undefined }>
   /** 채점 후 선택지 목록 — `GradedChoiceList`. */
   children: ReactNode
 }) {

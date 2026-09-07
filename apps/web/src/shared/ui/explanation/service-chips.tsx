@@ -16,8 +16,17 @@ import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
  * 펼침을 색으로 표시하지 않는다. `secondary-container`는 **선택된 선택지와 선택된 필터
  * 칩에만** 배정돼 있고 (`DESIGN.md` 「Color · 역할 목록」), 이 칩은 필터가 아니라 노트
  * 토글이다. 상태는 마커 회전과 `aria-expanded`가 나른다.
+ *
+ * **노트가 없는 서비스가 7개 있다** — `S3`·`IAM` 같은 루트 이름은 태깅을 위해 보완한 것이고
+ * 노트는 기능 단위(`S3 Standard`)로만 싣는다 (`docs/04-data-model.md` 「노트가 빠뜨린 이름」).
+ * 그 칩은 **누를 수 없는 표시로** 그린다 — 지우면 「이 문제에 S3가 나온다」가 사라지고,
+ * 버튼으로 두면 눌러도 아무 일이 없다.
  */
-export function ServiceChips({ services }: { services: Array<{ name: string; note: string }> }) {
+export function ServiceChips({
+  services,
+}: {
+  services: Array<{ name: string; note: string | undefined }>
+}) {
   const noteId = useId()
   const [openName, setOpenName] = useState<string | null>(null)
 
@@ -31,17 +40,23 @@ export function ServiceChips({ services }: { services: Array<{ name: string; not
       <ul className="flex flex-wrap gap-2">
         {services.map((service) => (
           <li key={service.name}>
-            <Chip
-              aria-expanded={service.name === openName}
-              aria-controls={noteId}
-              onClick={() => setOpenName(service.name === openName ? null : service.name)}
-            >
-              {service.name}
-              <MaterialSymbol
-                name="expand_more"
-                className={`size-4 ${service.name === openName ? 'rotate-180' : ''}`}
-              />
-            </Chip>
+            {service.note ? (
+              <Chip
+                aria-expanded={service.name === openName}
+                aria-controls={noteId}
+                onClick={() => setOpenName(service.name === openName ? null : service.name)}
+              >
+                {service.name}
+                <MaterialSymbol
+                  name="expand_more"
+                  className={`size-4 ${service.name === openName ? 'rotate-180' : ''}`}
+                />
+              </Chip>
+            ) : (
+              <span className="chip inline-flex items-center rounded-corner-full bg-surface-container-high px-3 text-label-medium text-on-surface-variant">
+                {service.name}
+              </span>
+            )}
           </li>
         ))}
       </ul>
@@ -52,7 +67,7 @@ export function ServiceChips({ services }: { services: Array<{ name: string; not
         id={noteId}
         className={
           openService
-            ? 'mt-2 rounded-corner-medium bg-surface-container-low px-4 py-3 text-body-medium'
+            ? 'mt-2 rounded-corner-medium border border-outline bg-surface-container-low px-4 py-3 text-body-medium'
             : ''
         }
       >
