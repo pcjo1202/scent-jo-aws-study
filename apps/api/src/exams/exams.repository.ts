@@ -63,14 +63,21 @@ export function sessionAttemptsQuery(db: Db, sessionId: string) {
  * 존재 여부를 흘린다.
  *
  * 조건을 함수 하나로 둔 이유는 네 경로(조회·커서·삭제·종료)가 각자 `and(...)`를 쓰면
- * **한 곳에서 `user_id`가 빠져도 나머지가 멀쩡해 보이기** 때문이다. 여기 한 줄이 빠지면
- * 네 개가 동시에 열리고, 스펙이 그걸 SQL 문자열에서 잡는다.
+ * **한 곳에서 `user_id`가 빠져도 나머지가 멀쩡해 보이기** 때문이다.
+ *
+ * 서비스를 치는 스펙은 이걸 못 잡는다 — 리포지토리를 스텁으로 두므로 조건이 빠져도 404가
+ * 그대로 나온다 (2026-09-07 뮤테이션 실측). 잡는 것은 아래 쿼리 함수들의 `.toSQL()`이다.
  */
 export function ownedSession(sessionId: string, userId: string) {
   return and(eq(examSessions.id, sessionId), eq(examSessions.userId, userId))
 }
 
-/** `.toSQL()`로 소유자 조건이 실제로 붙었는지를 스펙이 세기 위해 분리했다. */
+/**
+ * 아래 네 쿼리를 `Db`를 받는 함수로 뺀 이유는 하나다 — **`.toSQL()`로 조건이 실제로
+ * 붙었는지를 스펙이 세기 위해서다.** 리포지토리 메서드 안에 두면 `await`이 접속을 시도해
+ * 스펙이 문자열을 볼 수 없고, 서비스를 치는 스펙은 리포지토리를 스텁으로 두므로
+ * **조건이 통째로 빠져도 전부 통과한다** (2026-09-07 뮤테이션으로 실측).
+ */
 export function findSessionQuery(db: Db, sessionId: string, userId: string) {
   return db
     .select({
@@ -84,6 +91,44 @@ export function findSessionQuery(db: Db, sessionId: string, userId: string) {
     })
     .from(examSessions)
     .where(ownedSession(sessionId, userId))
+}
+
+/** 정렬이 계약이다 — 대시보드 「최근 모의고사 3개」가 앞에서 세 개를 자른다 (`docs/05`). */
+export function listSessionsQuery(db: Db, userId: string) {
+  return db
+    .select({
+      id: examSessions.id,
+      startedAt: examSessions.startedAt,
+      finishedAt: examSessions.finishedAt,
+      score: examSessions.score,
+    })
+    .from(examSessions)
+    .where(eq(examSessions.userId, userId))
+    .orderBy(desc(examSessions.startedAt))
+}
+
+export function updateCursorQuery(db: Db, sessionId: string, userId: string, cursor: number) {
+  return db.update(examSessions).set({ cursor }).where(ownedSession(sessionId, userId))
+}
+
+/** 진행 중 세션만 지운다 — 종료된 세션이 답안째 사라지는 경합을 SQL에서 막는다. */
+export function deleteSessionQuery(db: Db, sessionId: string, userId: string) {
+  return db
+    .delete(examSessions)
+    .where(and(ownedSession(sessionId, userId), isNull(examSessions.finishedAt)))
+    .returning({ id: examSessions.id })
+}
+
+/**
+ * `finished_at is null`이 **두 기기 동시 종료에서 점수 덮어쓰기를 막는 유일한 방어선**이다.
+ * 서비스의 선조회는 잠금이 아니라 조회라 그 사이가 열려 있다.
+ */
+export function finishSessionQuery(db: Db, sessionId: string, userId: string, score: number) {
+  return db
+    .update(examSessions)
+    .set({ score, finishedAt: sql`now()` })
+    .where(and(ownedSession(sessionId, userId), isNull(examSessions.finishedAt)))
+    .returning({ id: examSessions.id })
 }
 
 @Injectable()
@@ -110,16 +155,7 @@ export class ExamsRepository {
 
   /** 최근 순. 목록에 `question_ids`를 싣지 않는다 (`docs/05` 「GET /exams」). */
   async listSessions(userId: string): Promise<ExamSessionListRow[]> {
-    return this.db
-      .select({
-        id: examSessions.id,
-        startedAt: examSessions.startedAt,
-        finishedAt: examSessions.finishedAt,
-        score: examSessions.score,
-      })
-      .from(examSessions)
-      .where(eq(examSessions.userId, userId))
-      .orderBy(desc(examSessions.startedAt))
+    return listSessionsQuery(this.db, userId)
   }
 
   async findSession(sessionId: string, userId: string): Promise<ExamSessionRow | undefined> {
@@ -139,12 +175,21 @@ export class ExamsRepository {
   }
 
   async updateCursor(sessionId: string, userId: string, cursor: number): Promise<void> {
-    await this.db.update(examSessions).set({ cursor }).where(ownedSession(sessionId, userId))
+    await updateCursorQuery(this.db, sessionId, userId, cursor)
   }
 
-  /** `attempts.session_id`가 `on delete cascade`라 답안도 함께 사라진다 (`docs/05`). */
-  async deleteSession(sessionId: string, userId: string): Promise<void> {
-    await this.db.delete(examSessions).where(ownedSession(sessionId, userId))
+  /**
+   * `attempts.session_id`가 `on delete cascade`라 답안도 함께 사라진다 (`docs/05`).
+   *
+   * `finished_at is null`이 SQL에 붙는 이유는 `finishSession`과 같다 — 서비스의 선조회와
+   * 이 문장 사이가 열려 있어, A가 `finish`하는 동안 B가 `DELETE`를 보내면 B의 선조회는
+   * `finishedAt = null`을 보고 통과한다. 그러면 **점수까지 확정된 세션이 답안째 사라진다.**
+   * 0행이면 서비스가 409로 옮긴다.
+   */
+  async deleteSession(sessionId: string, userId: string): Promise<boolean> {
+    const deleted = await deleteSessionQuery(this.db, sessionId, userId)
+
+    return deleted.length > 0
   }
 
   /**
@@ -156,11 +201,7 @@ export class ExamsRepository {
    * 요청이 앞선 점수를 덮어쓸 수 있다.
    */
   async finishSession(sessionId: string, userId: string, score: number): Promise<boolean> {
-    const updated = await this.db
-      .update(examSessions)
-      .set({ score, finishedAt: sql`now()` })
-      .where(and(ownedSession(sessionId, userId), isNull(examSessions.finishedAt)))
-      .returning({ id: examSessions.id })
+    const updated = await finishSessionQuery(this.db, sessionId, userId, score)
 
     return updated.length > 0
   }

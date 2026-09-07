@@ -55,6 +55,20 @@ export class CatalogService {
   }
 
   /**
+   * 채점에 필요한 것을 **같은 캐시 스냅샷에서** 준다 — 버전 대조와 정답 조회가 갈리면 안 된다.
+   *
+   * `getVersion()`으로 v1을 확인한 뒤 `listEntries()`를 따로 부르면 그 사이 5분 재확인이
+   * 캐시를 v2로 바꿀 수 있고, 그러면 **v1 기준으로 저장된 `is_correct`에 v2의 정답을 붙여**
+   * 「내 답 B / 정답 B / 오답」을 그린다. `loadExamPool()`이 세션 생성에서 막는 것과 같은
+   * split read다 (2026-09-07 리뷰).
+   */
+  async loadGradingSnapshot() {
+    const { version, entries } = await this.ensureIndex()
+
+    return { version, entries: [...entries.values()] }
+  }
+
+  /**
    * 추첨 풀과 버전을 **같은 캐시 스냅샷에서** 준다.
    *
    * `content_version`은 「이 65문항이 어느 버전의 정답으로 채점되는가」를 뜻한다. 문항을

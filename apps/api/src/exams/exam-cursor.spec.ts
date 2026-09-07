@@ -6,14 +6,10 @@ import { EXAM_QUESTION_COUNT } from '../catalog/grading'
 import { UpdateExamDto } from './dto/update-exam.dto'
 
 /**
- * `cursor` 범위 검증은 **400과 500의 경계**다 (SJO-30 E3, SJO-13 리뷰에서 나옴).
+ * `cursor` 범위 검증은 **400과 500의 경계**다 (근거는 `docs/05` 「PATCH /exams/:id」).
  *
- * DB의 `exam_sessions_cursor` check가 같은 범위를 강제하지만 그건 Postgres 23514를
- * 던지고, 그건 `HttpException`이 아니라 500이 된다. DTO가 없으면 클라이언트가 자기
- * 잘못을 서버 장애로 읽는다.
- *
- * `main.ts`의 전역 `ValidationPipe`를 여기서 띄우지 않고 DTO를 직접 친다 — 그 파일은
- * import 시점에 앱을 띄운다 (`attempts-batch.spec.ts`와 같은 이유).
+ * `main.ts`의 전역 `ValidationPipe`를 띄우지 않고 DTO를 직접 치는 이유는 그 파일이
+ * import 시점에 앱을 띄우기 때문이다 (`attempts-batch.spec.ts`와 같다).
  */
 function violations(value: unknown) {
   return validateSync(plainToInstance(UpdateExamDto, value)).flatMap((error) =>

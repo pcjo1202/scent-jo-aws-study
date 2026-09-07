@@ -3,13 +3,18 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createDb } from '../db/db.provider'
 import { EXAM_QUESTION_COUNT } from '../catalog/grading'
-import { sessionAttemptsQuery } from './exams.repository'
+import { listSessionsQuery, sessionAttemptsQuery } from './exams.repository'
 import { ExamsService, isUniqueViolation, toAnswers } from './exams.service'
 
 import type { IndexEntry } from '@aws-study/shared'
 import type { CatalogService } from '../catalog/catalog.service'
 import type { ProgressRepository, QuestionState } from '../progress/progress.repository'
-import type { ExamSessionRow, ExamsRepository, SessionAttemptRow } from './exams.repository'
+import type {
+  ExamSessionListRow,
+  ExamSessionRow,
+  ExamsRepository,
+  SessionAttemptRow,
+} from './exams.repository'
 
 const USER_ID = '00000000-0000-4000-8000-000000000001'
 const SESSION_ID = '00000000-0000-4000-8000-0000000000ff'
@@ -31,11 +36,13 @@ type Overrides = {
   version?: string
   insertSession?: (row: InsertedSession) => Promise<string>
   finishSession?: () => Promise<boolean>
+  deleteSession?: () => Promise<boolean>
+  sessions?: ExamSessionListRow[]
 }
 
 function harness(overrides: Overrides = {}) {
   const updateCursor = vi.fn(() => Promise.resolve())
-  const deleteSession = vi.fn(() => Promise.resolve())
+  const deleteSession = vi.fn(overrides.deleteSession ?? (() => Promise.resolve(true)))
   const finishSession = vi.fn(overrides.finishSession ?? (() => Promise.resolve(true)))
   const insertSession = vi.fn<(row: InsertedSession) => Promise<string>>(
     overrides.insertSession ?? (() => Promise.resolve(SESSION_ID)),
@@ -46,7 +53,7 @@ function harness(overrides: Overrides = {}) {
     updateCursor,
     deleteSession,
     finishSession,
-    listSessions: () => Promise.resolve([]),
+    listSessions: () => Promise.resolve(overrides.sessions ?? []),
     findSession: () => Promise.resolve(overrides.session),
     findSessionAttempts: () => Promise.resolve(overrides.attempts ?? []),
   } as unknown as ExamsRepository
@@ -55,6 +62,8 @@ function harness(overrides: Overrides = {}) {
     loadExamPool: () =>
       Promise.resolve({ version: overrides.version ?? VERSION, questionIds: POOL }),
     getVersion: () => Promise.resolve(overrides.version ?? VERSION),
+    loadGradingSnapshot: () =>
+      Promise.resolve({ version: overrides.version ?? VERSION, entries: POOL.map(entry) }),
     listEntries: () => Promise.resolve(POOL.map(entry)),
   } as unknown as CatalogService
 
@@ -237,6 +246,16 @@ describe('DELETE /exams/:id — 포기', () => {
     expect(deleteSession).toHaveBeenCalledWith(SESSION_ID, USER_ID)
   })
 
+  /** 선조회와 DELETE 사이에 A가 finish하면 SQL이 0행을 준다 — 점수가 확정된 세션을 지키는 자리다. */
+  it('경합에서 0행이 지워지면 409다', async () => {
+    const { service } = harness({
+      session: session(),
+      deleteSession: () => Promise.resolve(false),
+    })
+
+    await expect(service.deleteExam(USER_ID, SESSION_ID)).rejects.toBeInstanceOf(ConflictException)
+  })
+
   it('종료된 세션은 409이고 지우지 않는다', async () => {
     const { service, deleteSession } = harness({
       session: session({ finishedAt: new Date(), score: 40 }),
@@ -244,6 +263,44 @@ describe('DELETE /exams/:id — 포기', () => {
 
     await expect(service.deleteExam(USER_ID, SESSION_ID)).rejects.toBeInstanceOf(ConflictException)
     expect(deleteSession).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /exams — 목록', () => {
+  it('네 필드만 주고 Date를 ISO로 바꾼다 — questionIds는 안 담는다', async () => {
+    const { service } = harness({
+      sessions: [
+        {
+          id: SESSION_ID,
+          startedAt: new Date('2026-09-07T01:00:00.000Z'),
+          finishedAt: new Date('2026-09-07T02:00:00.000Z'),
+          score: 42,
+        },
+        {
+          id: 'other',
+          startedAt: new Date('2026-09-06T01:00:00.000Z'),
+          finishedAt: null,
+          score: null,
+        },
+      ],
+    })
+
+    const { sessions } = await service.listExams(USER_ID)
+
+    expect(sessions[0]).toEqual({
+      id: SESSION_ID,
+      startedAt: '2026-09-07T01:00:00.000Z',
+      finishedAt: '2026-09-07T02:00:00.000Z',
+      score: 42,
+    })
+    expect(sessions[1]?.finishedAt).toBeNull()
+    expect(Object.keys(sessions[0] ?? {})).not.toContain('questionIds')
+  })
+
+  it('세션 0건은 빈 목록이다 — 오류가 아니라 빈 상태다', async () => {
+    const { service } = harness()
+
+    expect(await service.listExams(USER_ID)).toEqual({ sessions: [] })
   })
 })
 
@@ -361,6 +418,14 @@ describe('세션 채점 쿼리', () => {
 
     return sessionAttemptsQuery(db, SESSION_ID).toSQL().sql
   }
+
+  it('목록은 startedAt 내림차순이다 (`docs/05` 「GET /exams」)', () => {
+    const db = createDb('postgres://smoke:smoke@127.0.0.1:5432/smoke')
+
+    expect(listSessionsQuery(db, USER_ID).toSQL().sql).toContain(
+      'order by "exam_sessions"."started_at" desc',
+    )
+  })
 
   it('문항별 최신 한 행만 남긴다', () => {
     expect(buildSql()).toContain('distinct on ("attempts"."question_id")')

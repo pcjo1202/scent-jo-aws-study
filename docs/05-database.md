@@ -365,6 +365,11 @@ type ExamResult = {
 // POST /exams/:id/finish  → 이미 종료된 세션이면 409
 { score: number, results: ExamResult[] }        // score는 0..65
 
+// **알려진 경합 (SJO-53, 미해결).** 답안 읽기와 finished_at 확정 사이에 그 세션으로
+// 들어온 attempt가 커밋되면, score는 그 답을 빼고 계산됐는데 이후 GET의 results에는
+// 든다 — 저장된 상태가 갈린다. created_at으로 자르는 것으로는 안 닫힌다(now()가
+// 트랜잭션 시작 시각이다). 닫으려면 POST /attempts와 finish가 세션 행을 잠가야 한다.
+
 // 재호출이 409인 이유는 「종료된 세션에 답안 제출 409」·「종료된 세션 삭제 409」와 같은
 // 계열이기 때문이다. 두 기기에서 동시에 종료하면 진 쪽이 409를 받고 GET /exams/:id로
 // 결과를 읽는다 — 세션은 정상 종료돼 있다. 멱등 200을 기각한 이유는 content_version

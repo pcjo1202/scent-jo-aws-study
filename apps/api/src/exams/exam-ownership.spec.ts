@@ -2,7 +2,12 @@ import { NotFoundException } from '@nestjs/common'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createDb } from '../db/db.provider'
-import { findSessionQuery } from './exams.repository'
+import {
+  deleteSessionQuery,
+  finishSessionQuery,
+  findSessionQuery,
+  updateCursorQuery,
+} from './exams.repository'
 import { ExamsService } from './exams.service'
 
 import type { CatalogService } from '../catalog/catalog.service'
@@ -43,19 +48,20 @@ function serviceWhereRepositoryScopesByOwner() {
   )
 
   const updateCursor = vi.fn(() => Promise.resolve())
-  const deleteSession = vi.fn(() => Promise.resolve())
   const finishSession = vi.fn(() => Promise.resolve(true))
+  const deleteSessionMock = vi.fn(() => Promise.resolve(true))
 
   const repository = {
     findSession,
     updateCursor,
-    deleteSession,
+    deleteSession: deleteSessionMock,
     finishSession,
     findSessionAttempts: () => Promise.resolve([]),
   } as unknown as ExamsRepository
 
   const catalogService = {
     getVersion: () => Promise.resolve('v2'),
+    loadGradingSnapshot: () => Promise.resolve({ version: 'v2', entries: [] }),
     listEntries: () => Promise.resolve([]),
   } as unknown as CatalogService
 
@@ -67,7 +73,7 @@ function serviceWhereRepositoryScopesByOwner() {
     service: new ExamsService(repository, catalogService, progressRepository),
     findSession,
     updateCursor,
-    deleteSession,
+    deleteSession: deleteSessionMock,
     finishSession,
   }
 }
@@ -126,25 +132,51 @@ describe('소유권 — 남의 세션은 404다', () => {
  * 위 스펙은 리포지토리를 스텁으로 두므로 **SQL에서 `user_id`가 빠져도 통과한다.**
  * 실제 방어선은 쿼리 문자열이라 여기서 따로 센다 (`progress.spec.ts`와 같은 형태).
  */
+function db() {
+  return createDb('postgres://smoke:smoke@127.0.0.1:5432/smoke')
+}
+
+/**
+ * `:id`를 받는 쿼리 **전부**를 센다. 조회 하나만 세면 나머지 셋은 무방비인데도 초록이다 —
+ * 2026-09-07 리뷰가 뮤테이션으로 그것을 실측했다: 쓰기 3개에서 `ownedSession()`을 동시에
+ * 빼도 397건이 전부 통과했다.
+ */
+const OWNED_QUERIES: Array<[string, () => string]> = [
+  ['findSessionQuery', () => findSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql],
+  ['updateCursorQuery', () => updateCursorQuery(db(), SESSION_ID, OWNER_ID, 3).toSQL().sql],
+  ['deleteSessionQuery', () => deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql],
+  ['finishSessionQuery', () => finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql],
+]
+
 describe('소유권 — 쿼리에 user_id가 붙는다', () => {
-  function buildSql() {
-    const db = createDb('postgres://smoke:smoke@127.0.0.1:5432/smoke')
-
-    return findSessionQuery(db, SESSION_ID, OWNER_ID).toSQL().sql
-  }
-
-  it('세션 조회가 id와 user_id를 함께 건다', () => {
-    const sql = buildSql()
+  it.each(OWNED_QUERIES)('%s가 id와 user_id를 함께 건다', (_name, build) => {
+    const sql = build()
 
     expect(sql).toContain('"id" =')
-    expect(sql).toContain('"user_id" =')
+    expect(sql).toMatch(/"user_id" = \$\d/)
+  })
+})
+
+/**
+ * 진행 중 세션만 바꾸는 두 쿼리. 이 조건이 **경합의 유일한 방어선**이라 서비스의 선조회로는
+ * 대체되지 않는다 — 선조회는 잠금이 아니라 조회다.
+ */
+describe('경합 가드 — finished_at is null', () => {
+  it('finishSessionQuery가 진행 중 세션만 갱신한다', () => {
+    expect(finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql).toContain(
+      '"finished_at" is null',
+    )
   })
 
-  /**
-   * `ownedSession()`이 네 경로가 쓰는 단 하나의 조건이라, 이 한 줄이 무너지면 조회·커서·
-   * 삭제·종료가 동시에 열린다. 그래서 조건을 여기서 못박는다.
-   */
-  it('user_id 조건 없이는 만들어지지 않는다', () => {
-    expect(buildSql()).toMatch(/"user_id" = \$\d/)
+  it('deleteSessionQuery가 진행 중 세션만 지운다', () => {
+    expect(deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql).toContain(
+      '"finished_at" is null',
+    )
+  })
+
+  /** 0행을 서비스가 409로 옮길 수 있어야 한다 — returning이 없으면 구분이 불가능하다. */
+  it('둘 다 갱신·삭제된 행을 돌려준다', () => {
+    expect(finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql).toContain('returning')
+    expect(deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql).toContain('returning')
   })
 })

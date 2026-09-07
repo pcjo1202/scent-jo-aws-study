@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common'
 
 import { CurrentUser } from '../auth/current-user.decorator'
 import { CreateExamDto } from './dto/create-exam.dto'
@@ -44,7 +55,9 @@ export class ExamsController {
     return this.examsService.deleteExam(user.id, id)
   }
 
+  /** 상태 전이지 생성이 아니다 — Nest 기본값 201을 200으로 되돌린다. */
   @Post(':id/finish')
+  @HttpCode(HttpStatus.OK)
   finish(@CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.examsService.finishExam(user.id, id)
   }

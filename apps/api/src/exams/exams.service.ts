@@ -12,6 +12,7 @@ import type {
   DeleteExamResponse,
   ExamResult,
   ExamSessionResponse,
+  IndexEntry,
   FinishExamResponse,
   ListExamsResponse,
   UpdateExamResponse,
@@ -21,8 +22,8 @@ import type { ExamSessionRow, SessionAttemptRow } from './exams.repository'
 /** 진행 중 세션이 이미 있을 때 `exam_sessions_one_active_idx`가 주는 코드. */
 const UNIQUE_VIOLATION = '23505'
 
-/** cause 사슬을 따라갈 깊이. 순환 참조에서 요청이 매달리지 않게 한다. */
-const MAX_CAUSE_DEPTH = 4
+/** 검사할 겹 수. 순환 참조에서 요청이 매달리지 않게 한다. */
+const MAX_CAUSE_DEPTH = 5
 
 @Injectable()
 export class ExamsService {
@@ -77,7 +78,14 @@ export class ExamsService {
       score: session.score,
       answers: toAnswers(attempts),
       // 진행 중이면 null이다 — 시험 도중에 정오가 새면 안 된다 (`docs/02` 「진행」).
-      results: session.finishedAt === null ? null : await this.buildResults(session, attempts),
+      results:
+        session.finishedAt === null
+          ? null
+          : toResults(
+              session.questionIds,
+              attempts,
+              (await this.catalogService.loadGradingSnapshot()).entries,
+            ),
     }
   }
 
@@ -96,7 +104,9 @@ export class ExamsService {
       throw new ConflictException('종료된 세션은 삭제할 수 없다')
     }
 
-    await this.repository.deleteSession(sessionId, userId)
+    // 선조회와 이 문장 사이에 A가 finish하면 0행이다 — 점수가 확정된 세션을 지우지 않는다.
+    const deleted = await this.repository.deleteSession(sessionId, userId)
+    if (!deleted) throw new ConflictException('종료된 세션은 삭제할 수 없다')
 
     return { deleted: true }
   }
@@ -111,13 +121,14 @@ export class ExamsService {
     const session = await this.requireSession(userId, sessionId)
     if (session.finishedAt !== null) throw new ConflictException('이미 종료된 세션이다')
 
-    const version = await this.catalogService.getVersion()
+    // 버전 대조와 정답 조회가 한 스냅샷이다 — 갈리면 v1 정오에 v2 정답이 붙는다.
+    const { version, entries } = await this.catalogService.loadGradingSnapshot()
     if (version !== session.contentVersion) {
       throw new ConflictException('세션을 시작한 뒤 문제 데이터가 바뀌었다')
     }
 
     const attempts = await this.repository.findSessionAttempts(sessionId)
-    const results = await this.buildResults(session, attempts)
+    const results = toResults(session.questionIds, attempts, entries)
     const score = results.filter((result) => result.isCorrect).length
 
     // 진 쪽이 0행을 건드린다 — 두 기기가 동시에 눌러도 점수가 덮이지 않는다.
@@ -163,33 +174,37 @@ export class ExamsService {
 
     return pickExamQuestions([...unsolved, ...filler])
   }
+}
 
-  /**
-   * `isCorrect`는 **채점 당시 저장된 값**이고 카탈로그로 다시 채점하지 않는다. 재채점하면
-   * `content_version`이 갈린 세션에서 DB에 박힌 `score`와 어긋나, 같은 화면이 「62점」과
-   * 정답 63개를 동시에 보여준다 (`docs/05` 「주요 요청/응답」).
-   *
-   * `answer`만 카탈로그에서 읽는다 — 해설 화면이 정답을 보여줘야 하고 그건 DB에 없다.
-   */
-  private async buildResults(
-    session: ExamSessionRow,
-    attempts: SessionAttemptRow[],
-  ): Promise<ExamResult[]> {
-    const entries = await this.catalogService.listEntries()
-    const answers = new Map(entries.map((entry) => [entry.id, entry.answer]))
-    const byQuestion = new Map(attempts.map((attempt) => [attempt.questionId, attempt]))
+/**
+ * `isCorrect`는 **채점 당시 저장된 값**이고 카탈로그로 다시 채점하지 않는다. 재채점하면
+ * `content_version`이 갈린 세션에서 DB에 박힌 `score`와 어긋나, 같은 화면이 「62점」과
+ * 정답 63개를 동시에 보여준다 (`docs/05` 「주요 요청/응답」).
+ *
+ * `answer`만 카탈로그에서 읽는다 — 해설 화면이 정답을 보여줘야 하고 그건 DB에 없다.
+ */
+export function toResults(
+  questionIds: number[],
+  attempts: SessionAttemptRow[],
+  entries: IndexEntry[],
+): ExamResult[] {
+  const answers = new Map(entries.map((entry) => [entry.id, entry.answer]))
+  const byQuestion = new Map(attempts.map((attempt) => [attempt.questionId, attempt]))
 
-    return session.questionIds.map((questionId) => {
-      const attempt = byQuestion.get(questionId)
+  return questionIds.map((questionId) => {
+    const attempt = byQuestion.get(questionId)
 
-      return {
-        questionId,
-        selected: attempt?.selected ?? null,
-        answer: answers.get(questionId) ?? [],
-        isCorrect: attempt?.isCorrect ?? false,
-      }
-    })
-  }
+    return {
+      questionId,
+      selected: attempt?.selected ?? null,
+      // 빈 배열은 「정답 없음」이 아니라 **카탈로그에 그 문항이 없다**는 뜻이다. v2에서
+      // 문항이 빠진 옛 세션을 열 때만 가능하고, 그 세션은 finish에서 이미 409다 —
+      // 남는 경로는 종료된 세션의 재열람뿐이라 화면이 정답 자리를 비운다. 던지지 않는
+      // 이유는 나머지 64문항의 리뷰까지 막을 이유가 없어서다.
+      answer: answers.get(questionId) ?? [],
+      isCorrect: attempt?.isCorrect ?? false,
+    }
+  })
 }
 
 /** 문항별 최신 답안. 아직 안 고른 문항은 키가 없다. */
@@ -207,7 +222,7 @@ export function toAnswers(attempts: SessionAttemptRow[]): Record<number, ChoiceK
  */
 export function isUniqueViolation(error: unknown): boolean {
   for (let current = error, depth = 0; current !== null && current !== undefined; depth += 1) {
-    if (depth > MAX_CAUSE_DEPTH) return false
+    if (depth >= MAX_CAUSE_DEPTH) return false
     if (typeof current === 'object' && 'code' in current && current.code === UNIQUE_VIOLATION) {
       return true
     }
