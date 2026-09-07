@@ -4,7 +4,7 @@ git이 알 수 없는 외부 상태의 **현재값**만 적는다. 할 일은 `T
 
 바꿨으면 그 자리에서 덮어쓴다. 이력은 남기지 않는다 (데이터 변경 이력만 `docs/data-changelog.md`).
 
-_최종 갱신: 2026-09-07_
+_최종 갱신: 2026-09-08_
 
 ## 인프라
 
@@ -16,7 +16,7 @@ _최종 갱신: 2026-09-07_
 | Supabase 프로젝트 | **생성됨** · ref `xeaucvsadpmaeuxpfokq` · `ap-northeast-2` |
 | Supabase JWT 비대칭 서명 전환 | **적용됨** · JWKS `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` 200 · `alg=ES256`(EC P-256) · `kid=c1836c43-1d7a-4131-8008-29a156bee9e1` · 토큰 `iss`=`https://<ref>.supabase.co/auth/v1` · `aud`=`authenticated` (2026-09-06 실토큰 실측, SJO-50). **`/auth/v1/jwks`는 JWKS 엔드포인트가 아니다** — apikey를 요구해 401 (SJO-41) |
 | Supabase Data API(PostgREST) | **꺼져 있음** — 2026-09-04 **실측 확정**(SJO-13). 테이블 3개를 만든 뒤 `exam_sessions`·`attempts`·`study_progress` × publishable·legacy anon 키로 읽기 6건, 쓰기 1건을 쟀고 전부 503(PGRST002)이다. 테이블 0개일 때의 503은 판정 근거가 아니었으나 이제는 갈린다 (`docs/07` §1) |
-| Supabase Auth URL 설정 | **로컬은 고쳐졌다. 프로덕션·프리뷰는 미확인.** 2026-09-07 사람이 콘솔에서 수정 후 실제 Google 로그인이 `http://localhost:3000/`으로 돌아오는 것 확인(SJO-19). **확인된 것은 로컬 한 칸뿐이다** — `https://saa.scent-jo.dev/**`·`https://aws-study-*-smelljo.vercel.app/**`이 Redirect URLs에 들었는지는 재지 않았다. SJO-28(프로덕션 출시) 전에 콘솔에서 셋을 다시 센다.<br>고치기 전 상태(2026-09-06 실측): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다. Supabase는 `redirect_to`가 허용 목록에 없으면 **조용히 Site URL로 떨어뜨리므로** 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. Site URL이 **api 프로젝트**를 가리키고 있었고, 원인은 Vercel 통합이 api에 연결된 것으로 보인다(아래 통합 행) — **재동기화로 되돌아갈 수 있다**.<br>**`/auth/v1/authorize`의 응답으로는 판정할 수 없다** — `evil.example`에도 302를 준다(2026-09-06 음성 대조). 검증은 콜백에서 일어나 **실제 로그인으로만** 확인된다. MCP에 auth 설정 도구가 없어 코드로는 못 고친다 |
+| Supabase Auth URL 설정 | **다시 깨졌다 (2026-09-08 실측, SJO-23).** 로컬(`http://localhost:3000/login`)에서 실제 Google 로그인이 또 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어졌고, 사람이 프로덕션도 같다고 보고했다 — Site URL이 api 프로젝트를 가리키고 두 오리진이 Redirect URLs에 없다는 뜻이다. 코드는 `redirectTo: ${window.location.origin}/`를 정확히 넘긴다(`google-sign-in-button.tsx`). **재동기화 의심** — 통합이 api 프로젝트에 연결된 채다(아래 통합 행). 고치는 값은 `docs/07` §1.<br>이전 상태: 2026-09-07 사람이 콘솔에서 수정 후 실제 로그인이 `http://localhost:3000/`으로 돌아오는 것 확인(SJO-19) — **그 수정이 하루를 못 갔다.** **확인된 것은 로컬 한 칸뿐이다** — `https://saa.scent-jo.dev/**`·`https://aws-study-*-smelljo.vercel.app/**`이 Redirect URLs에 들었는지는 재지 않았다. SJO-28(프로덕션 출시) 전에 콘솔에서 셋을 다시 센다.<br>고치기 전 상태(2026-09-06 실측): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다. Supabase는 `redirect_to`가 허용 목록에 없으면 **조용히 Site URL로 떨어뜨리므로** 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. Site URL이 **api 프로젝트**를 가리키고 있었고, 원인은 Vercel 통합이 api에 연결된 것으로 보인다(아래 통합 행) — **재동기화로 되돌아갈 수 있다**.<br>**`/auth/v1/authorize`의 응답으로는 판정할 수 없다** — `evil.example`에도 302를 준다(2026-09-06 음성 대조). 검증은 콜백에서 일어나 **실제 로그인으로만** 확인된다. MCP에 auth 설정 도구가 없어 코드로는 못 고친다 |
 | Supabase Email 프로바이더 | **꺼져 있음** — 2026-09-06 `/auth/v1/settings` 실측 `external.email: false` · `external.anonymous_users: false` · `external.google: true` · `disable_signup: false`. **로그인 수단이 Google 하나뿐이므로 토큰이 필요한 검증은 사람이 실제로 로그인해야 얻는다** — 임시 계정을 만들 경로가 없다 (SJO-50) |
 | Google OAuth 클라이언트 | **등록됨** · `authorize` 302 → `accounts.google.com` · `redirect_uri`는 Supabase 콜백 |
 | S3 오리진 버킷 | `scent-jo-image-s3-bucket-<account-id>-ap-northeast-2-an` · ap-northeast-2 · OAC 전용(공개 읽기 없음). **실명은 `scripts/.env`의 `S3_BUCKET`에만 둔다** — 이름에 AWS 계정 ID가 들어 있고 이 레포는 public이다. **`static-cdn.scent-jo.dev`는 버킷이 아니라 CloudFront 별칭이다** — 버킷 이름으로 쓰면 `NoSuchBucket` (2026-09-04 실측, SJO-8) |
