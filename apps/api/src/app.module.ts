@@ -8,6 +8,7 @@ import { CatalogModule } from './catalog/catalog.module'
 import { DbModule } from './db/db.module'
 import { validateEnv } from './env'
 import { ProgressModule } from './progress/progress.module'
+import { StatsModule } from './stats/stats.module'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProgressModule } from './progress/progress.module'
     CatalogModule,
     AttemptsModule,
     ProgressModule,
+    StatsModule,
   ],
   controllers: [AppController],
 })
