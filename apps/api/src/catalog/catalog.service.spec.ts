@@ -159,3 +159,29 @@ it('⑨ manifest에 version이 없으면 500이 아니라 503이다', async () =
 
   await expect(createService().getEntry(1)).rejects.toBeInstanceOf(ServiceUnavailableException)
 })
+
+/**
+ * `content_version`은 「이 65문항이 어느 버전의 정답으로 채점되는가」를 뜻한다. 문항과
+ * 버전을 따로 물으면 그 사이 5분 재확인이 끼어들어 v1 문항에 v2 버전이 박힐 수 있고,
+ * 그 세션은 `finish`에서 영원히 409다 (SJO-16).
+ */
+it('⑨ loadExamPool은 문항과 버전을 같은 스냅샷에서 준다', async () => {
+  const service = createService()
+
+  const first = await service.loadExamPool()
+  expect(first.version).toBe('v1')
+  expect(first.questionIds).toEqual([1])
+
+  liveVersion = 'v2'
+  vi.advanceTimersByTime(MANIFEST_CHECK_INTERVAL_MS)
+
+  const second = await service.loadExamPool()
+  expect(second.version).toBe('v2')
+  expect(await service.getVersion()).toBe('v2')
+})
+
+it('⑩ getVersion은 캐시가 비면 503이다 — 낡은 버전을 지어내지 않는다', async () => {
+  isFailing = true
+
+  await expect(createService().getVersion()).rejects.toBeInstanceOf(ServiceUnavailableException)
+})

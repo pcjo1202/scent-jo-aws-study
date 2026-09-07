@@ -41,16 +41,21 @@ export function grade(selected: ChoiceKey[], answer: ChoiceKey[]): boolean {
  *
  * 뽑은 것을 풀에서 빼므로 중복이 구조적으로 불가능하다. 정렬 셔플(`sort(() => random())`)은
  * 코드가 더 짧지만 균등하지 않다.
+ *
+ * `count`를 받는 이유는 「안 푼 문항 우선」이 **모자란 만큼만** 푼 문항에서 채우기 때문이다
+ * (`05-database.md` 「POST /exams」). 풀 크기와 `count`가 같으면 결과는 그 풀의 셔플이고,
+ * 안 푼 것과 채운 것을 합쳐 다시 섞는 데 그 성질을 쓴다 — 안 푼 문항이 앞에 몰리면
+ * 화면이 문항 순서만으로 「이건 처음 보는 문제」를 알려 준다.
  */
-export function pickExamQuestions(questionIds: number[]): number[] {
-  if (questionIds.length < EXAM_QUESTION_COUNT) {
-    throw new Error(`추첨할 문항이 ${EXAM_QUESTION_COUNT}개보다 적다: ${questionIds.length}개`)
+export function pickExamQuestions(questionIds: number[], count = EXAM_QUESTION_COUNT): number[] {
+  if (questionIds.length < count) {
+    throw new Error(`추첨할 문항이 ${count}개보다 적다: ${questionIds.length}개`)
   }
 
   const pool = [...questionIds]
   const picked: number[] = []
 
-  while (picked.length < EXAM_QUESTION_COUNT) {
+  while (picked.length < count) {
     picked.push(...pool.splice(Math.floor(Math.random() * pool.length), 1))
   }
 

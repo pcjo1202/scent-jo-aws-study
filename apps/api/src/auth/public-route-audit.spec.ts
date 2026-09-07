@@ -107,8 +107,8 @@ function routesOf(controller: Constructor): Route[] {
 
 const ROUTES = collectControllers(AppModule as unknown as Constructor).flatMap(routesOf)
 
-/** 도메인 라우트 6개 + `/health`. 늘리는 이슈가 이 숫자를 같이 고친다. */
-const EXPECTED_ROUTE_COUNT = 7
+/** 도메인 라우트 12개 + `/health`. 늘리는 이슈가 이 숫자를 같이 고친다 (SJO-16이 exam 6개). */
+const EXPECTED_ROUTE_COUNT = 13
 
 describe('AppModule의 @Public() 감사', () => {
   it('라우트를 실제로 찾았다 — 0건은 통과가 아니다', () => {
@@ -133,5 +133,5 @@ it('감사가 보는 것이 실제 경로다', () => {
     (controller) => Reflect.getMetadata(PATH_METADATA, controller) as string,
   )
 
-  expect(new Set(paths)).toEqual(new Set(['/', 'me', 'attempts', 'stats']))
+  expect(new Set(paths)).toEqual(new Set(['/', 'me', 'attempts', 'exams', 'stats']))
 })
