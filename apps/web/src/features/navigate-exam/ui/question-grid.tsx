@@ -48,7 +48,7 @@ export function QuestionGrid({
 
   return (
     <SidePanel label="문제 이동" isOpen={isOpen} onClose={onClose}>
-      <ul className="question-grid">
+      <ul className="question-grid grid gap-2">
         {questionIds.map((id, position) => {
           const isAnswered = (answers[id]?.length ?? 0) > 0
           const state = position === cursor ? 'current' : isAnswered ? 'answered' : 'unanswered'

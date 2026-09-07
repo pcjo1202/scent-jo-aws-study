@@ -322,13 +322,10 @@
    * (가운데 정렬·max-width·테두리)을 걷어내고 전체 화면으로 편다.
    */
   /* 폭은 `min()`이고 scrim은 가상 요소라 둘 다 유틸로 쓸 수 없다 (`DESIGN.md` 「다이얼로그」). */
+  /* 폭이 `min()`이라 유틸로 쓸 수 없다. 가운데 정렬은 마크업의 `m-auto`가 맡는다 —
+     preflight의 `margin: 0`이 UA의 `margin: auto`를 덮으므로 그 유틸이 필요하다
+     (2026-09-08 실화면, SJO-23). */
   .dialog {
-    /*
-     * `margin: auto`가 모달 `dialog`를 가운데 놓는 UA 규칙인데, preflight의 `margin: 0`이
-     * 그것을 덮어 다이얼로그가 좌상단에 붙는다 (2026-09-08 실화면, SJO-23). base보다 뒤인
-     * components에서 되돌린다 — 유틸(`m-auto`)로 쓰면 시트(`.side-panel`)까지 끌려간다.
-     */
-    margin: auto;
     width: min(320px, 100vw - var(--sys-layout-margin) * 2);
     max-width: none;
   }
@@ -387,6 +384,12 @@
     }
   }
 
+  /* 열 수가 아니라 칸 크기가 규칙이다 (`DESIGN.md` 「문제 이동 그리드」). `auto-fill`은 유틸로
+     쓰면 임의값이라 여기 남고, `grid`·`gap-2`는 마크업 유틸이 맡는다. */
+  .question-grid {
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  }
+
   /* 시트에만 있는 헤더·적용 버튼과 패널에만 있는 하단 줄은 **유틸로** 감춘다
      (`expanded:hidden` · `hidden expanded:flex`). 여기 `display: none`을 쓰면 마크업의
      `flex`·`inline-flex` 유틸에 진다 — utilities 레이어가 components보다 뒤다. */
@@ -400,12 +403,6 @@
    * 버튼이 화면 밑단에 붙어 보이지 않게 하기 위해서다. safe-area와 함께 Tailwind 임의값이
    * 되므로 여기 둔다.
    */
-  .question-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-    gap: 8px;
-  }
-
   .action-bar {
     position: fixed;
     inset-inline: 0;

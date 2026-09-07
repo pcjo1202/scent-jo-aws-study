@@ -108,11 +108,19 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
 
   const unsolvedChip = (
     <Chip isSelected={prefersUnsolved} onClick={() => setPrefersUnsolved((current) => !current)}>
-      안 푼 문항 우선
+      안 푼 문제 우선
     </Chip>
   )
 
-  const banner = failure && <StatusBanner kind="error">{FAILURE_MESSAGE[failure]}</StatusBanner>
+  /**
+   * 라이브 리전은 **배너보다 먼저** DOM에 있어야 낭독되므로 비어 있어도 항상 렌더한다
+   * (`DESIGN.md` 「상태 배너」). `contents`는 빈 컨테이너가 flex gap 하나를 만들지 않게 한다.
+   */
+  const banner = (
+    <div aria-live="polite" className="contents">
+      {failure && <StatusBanner kind="error">{FAILURE_MESSAGE[failure]}</StatusBanner>}
+    </div>
+  )
 
   const abandonDialog = (
     <ConfirmDialog
@@ -135,15 +143,11 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
       <>
         <AppBar title="모의고사" backHref="/" />
         <div className="app-bar-gutter-top flex min-h-dvh flex-col">
-          {banner && <div className="px-screen pt-4">{banner}</div>}
+          <div className="px-screen pt-4">{banner}</div>
           <EmptyState
             message="아직 모의고사 기록이 없다"
-            actions={
-              <>
-                {unsolvedChip}
-                {startButton}
-              </>
-            }
+            options={unsolvedChip}
+            actions={startButton}
           />
         </div>
       </>
@@ -206,7 +210,7 @@ function ActiveSessionCard({
   isBusy: boolean
 }) {
   return (
-    <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-corner-medium bg-surface-container px-4 py-2 text-body-medium">
+    <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-corner-medium border border-outline bg-surface-container px-4 py-2 text-body-medium">
       <span className="flex-1">
         진행 중인 모의고사 · {formatSessionDate(session.startedAt)} 시작
       </span>

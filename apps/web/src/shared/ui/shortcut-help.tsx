@@ -22,7 +22,7 @@ export function ShortcutHelp({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       ref={dialogRef}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="dialog rounded-corner-extra-large bg-surface-container-high p-6 text-on-surface"
+      className="dialog m-auto rounded-corner-extra-large bg-surface-container-high p-6 text-on-surface"
     >
       <h2 id={titleId}>단축키</h2>
       <dl className="mt-4 flex flex-col gap-2 text-body-medium">

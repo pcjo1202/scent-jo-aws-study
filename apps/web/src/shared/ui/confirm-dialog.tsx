@@ -39,7 +39,7 @@ export function ConfirmDialog({
       onClose={onCancel}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      className="dialog rounded-corner-extra-large bg-surface-container-high p-6 text-on-surface"
+      className="dialog m-auto rounded-corner-extra-large bg-surface-container-high p-6 text-on-surface"
     >
       <h2 id={titleId} className="text-title-medium">
         {title}

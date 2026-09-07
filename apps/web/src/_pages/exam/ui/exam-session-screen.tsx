@@ -7,6 +7,7 @@ import { useMemo, useRef, useState } from 'react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
+import { ApiError } from '@/shared/api/api-client'
 import { manifestQuery, oneLinersQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examKeys, examQuery } from '@/shared/api/exams'
 import { CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
@@ -28,10 +29,13 @@ import { submitExamAttempt } from '@/features/submit-answer/api/submit-exam-atte
 
 import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
 
+import { createSaveQueue } from '../lib/save-queue'
+
 const SCREEN_NAME = '모의고사'
 
+const CONFLICT = 409
+
 const FAILURE_MESSAGE = {
-  answer: '답안을 저장하지 못했다',
   cursor: '진행 위치를 저장하지 못했다',
   finish: '모의고사를 종료하지 못했다',
 } as const
@@ -44,9 +48,15 @@ type Failure = keyof typeof FAILURE_MESSAGE
  * 정오를 숨기는 것은 새 부품이 아니라 `graded`에 `null`을 계속 넘기는 것이다 — 같은
  * `QuestionRunner`를 세 화면이 쓰고 채점 시점만 다르다 (「공통: 문제 풀이 컴포넌트」).
  *
- * **위치도 답도 서버가 원본이다.** 화면에 들어올 때 서버 값으로 시작하고(캐시를 안 쓴다),
- * 옮길 때마다 `PATCH`로 위치를, 고를 때마다 `POST /attempts`로 답을 보낸다. 그래야 PC에서
- * 시작한 세션을 폰이 그대로 이어받는다.
+ * **위치도 답도 서버가 원본이다.** 화면에 들어올 때 서버 값으로 시작하고, 옮길 때마다 `PATCH`로
+ * 위치를, 고를 때마다 `POST /attempts`로 답을 보낸다. 그래야 PC에서 시작한 세션을 폰이 그대로
+ * 이어받는다.
+ *
+ * **되는 것은 「들어올 때」까지다.** 커서·답은 마운트 시점의 서버 값으로 초기화하고 그 뒤의
+ * 재조회를 따라가지 않는다 — 화면을 보는 동안 다른 기기가 옮긴 위치는 반영되지 않고, 같은
+ * 브라우저에서 캐시가 살아 있는 채로 되돌아오면 그 값으로 선다. 두 기기를 동시에 여는 것을
+ * 막지 않기로 한 정책(`docs/02` 「기기 간 동기화 정책」 — 마지막 답이 남는다) 안에서는 손해가
+ * 「화면이 조금 낡는다」뿐이라 여기서 동기화를 만들지 않는다.
  */
 export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessionId: string }) {
   const router = useRouter()
@@ -61,18 +71,19 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
     Math.min(Math.max(session.cursor, 0), session.questionIds.length - 1),
   )
   const [answers, setAnswers] = useState<Record<number, ChoiceKey[]>>(session.answers)
+  /**
+   * **저장 실패는 문항별로 센다.** 하나로 두면 5번 저장이 실패한 뒤 6번이 성공할 때 배너가
+   * 지워져, 채점에 안 들어갈 답이 저장된 것처럼 보인다. 재전송 큐는 SJO-22 소관이고 여기서는
+   * 「무엇이 저장 안 됐는지」를 잃지 않는 것까지 한다.
+   */
+  const [unsavedIds, setUnsavedIds] = useState<number[]>([])
   const [failure, setFailure] = useState<Failure | null>(null)
   const [isFinishOpen, setFinishOpen] = useState(false)
   const [isFinishing, setFinishing] = useState(false)
   const [isHelpOpen, setHelpOpen] = useState(false)
   const [isGridOpen, setGridOpen] = useState(false)
 
-  /**
-   * 저장 요청을 **한 줄로 세운다.** 복수정답 문항에서 연달아 고르면 `[A]`와 `[A, B]`가 거의
-   * 동시에 나가는데, 뒤엣것이 먼저 커밋되면 마지막 답이 `[A]`로 남아 **채점 대상이 뒤집힌다.**
-   * 순서를 지키는 비용이 요청 하나를 기다리는 것뿐이라 낙관적 UI는 그대로 유지된다.
-   */
-  const pendingRef = useRef<Promise<unknown>>(Promise.resolve())
+  const enqueueRef = useRef(createSaveQueue())
 
   const entriesById = useMemo(
     () => new Map(index.entries.map((entry) => [entry.id, entry])),
@@ -89,52 +100,83 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
   const selected = questionId === undefined ? [] : (answers[questionId] ?? [])
   const isLast = cursor === total - 1
 
-  function enqueue(run: () => Promise<unknown>, kind: Failure) {
-    pendingRef.current = pendingRef.current
-      .catch(() => undefined)
-      .then(run)
-      .then(
-        () => setFailure((current) => (current === kind ? null : current)),
-        () => setFailure(kind),
-      )
+  /**
+   * **409는 이 세션이 이미 끝났다는 뜻이다** — 다른 기기가 종료했다. api가 종료된 세션의 답안
+   * 제출을 잠금으로 막으므로(SJO-53) 이제 확정적으로 온다. 저장 실패로 표시하지 않고 서버
+   * 상태를 다시 읽어 「이미 종료된 모의고사다」로 넘긴다.
+   */
+  function handleConflict() {
+    void queryClient.invalidateQueries({ queryKey: examKeys.detail(apiUrl, sessionId) })
+  }
 
-    return pendingRef.current
+  function isConflict(error: unknown) {
+    return error instanceof ApiError && error.status === CONFLICT
   }
 
   function moveTo(nextCursor: number) {
-    if (nextCursor < 0 || nextCursor >= total || nextCursor === cursor) return
+    if (nextCursor < 0 || nextCursor >= total || nextCursor === cursor || isFinishing) return
 
     setCursor(nextCursor)
-    void enqueue(() => saveCursor(apiUrl, sessionId, nextCursor), 'cursor')
+    enqueueRef
+      .current(() => saveCursor(apiUrl, sessionId, nextCursor))
+      .then(
+        () => setFailure((current) => (current === 'cursor' ? null : current)),
+        (error: unknown) => (isConflict(error) ? handleConflict() : setFailure('cursor')),
+      )
   }
 
-  /** 답은 고르는 즉시 서버로 간다 — 제출 버튼이 없고 마지막 답이 채점 대상이다. */
+  /**
+   * 답은 고르는 즉시 서버로 간다 — 제출 버튼이 없고 마지막 답이 채점 대상이다.
+   *
+   * **마지막 하나는 해제되지 않는다.** 빈 배열은 계약이 거절하고(`@ArrayMinSize(1)`), 거절된
+   * 사이 서버에는 옛 답이 남아 화면과 갈린다. 답을 바꾸려면 다른 선택지를 누른다 — 「미응답으로
+   * 되돌리기」는 계약을 넓혀야 하는 별도 이슈다 (`docs/02` 「진행」).
+   */
   function handleToggle(key: ChoiceKey) {
     if (!entry || isFinishing) return
 
     const next = toggleChoice(selected, key, { answerCount: entry.answer.length })
-    setAnswers((current) => ({ ...current, [entry.id]: next }))
-    void enqueue(() => submitExamAttempt(apiUrl, sessionId, entry.id, next), 'answer')
+    if (next.length === 0) return
+
+    const answeredId = entry.id
+    setAnswers((current) => ({ ...current, [answeredId]: next }))
+    enqueueRef
+      .current(() => submitExamAttempt(apiUrl, sessionId, answeredId, next))
+      .then(
+        () => setUnsavedIds((ids) => ids.filter((id) => id !== answeredId)),
+        (error: unknown) => {
+          if (isConflict(error)) return handleConflict()
+
+          setUnsavedIds((ids) => (ids.includes(answeredId) ? ids : [...ids, answeredId]))
+        },
+      )
   }
 
   /**
-   * **보낸 답이 먼저 닿은 뒤에 채점한다.** 대기 중인 저장을 기다리지 않으면 마지막에 고른 답이
-   * 채점에서 빠진다. 서버 쪽 경합(`finish`가 읽는 시점과 `POST /attempts` 커밋이 교차하는
-   * 것)은 SJO-53이 따로 고친다 — 여기서 할 수 있는 것은 내 요청을 먼저 보내는 것까지다.
+   * **보낸 답이 먼저 닿은 뒤에 채점한다.** 큐를 기다리지 않으면 마지막에 고른 답이 채점에서
+   * 빠진다. 기다리는 것은 **순서**이지 성공이 아니므로, 저장 못 한 답이 있으면 종료 전에
+   * 다이얼로그가 그 수를 말한다.
+   *
+   * `try`는 `finishExam` 한 줄만 감싼다 — 캐시 무효화나 이동이 던졌다고 「종료하지 못했다」를
+   * 띄우면, 이미 끝난 세션에 재시도를 유도해 영영 409를 받게 된다.
    */
   async function handleFinish() {
     setFinishOpen(false)
     setFinishing(true)
+
+    await enqueueRef.current(() => Promise.resolve()).catch(() => undefined)
+
     try {
-      await pendingRef.current.catch(() => undefined)
       await finishExam(apiUrl, sessionId)
-      await queryClient.invalidateQueries({ queryKey: examKeys.all })
-      // SJO-24가 `/exam/${sessionId}/result`로 바꾼다. 그 화면이 아직 없어 목록으로 돌려보낸다.
-      router.replace('/exam')
     } catch {
       setFailure('finish')
       setFinishing(false)
+      return
     }
+
+    await queryClient.invalidateQueries({ queryKey: examKeys.all })
+    // SJO-24가 `/exam/${sessionId}/result`로 바꾼다. 그 화면이 아직 없어 목록으로 돌려보낸다.
+    router.replace('/exam')
   }
 
   useQuestionShortcuts({
@@ -202,7 +244,20 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         />
 
         <main className="action-bar-gutter mx-auto flex w-full min-w-0 max-w-reading flex-1 flex-col gap-4 px-screen py-4">
-          {failure && <StatusBanner kind="error">{FAILURE_MESSAGE[failure]}</StatusBanner>}
+          {/*
+            라이브 리전은 **배너보다 먼저** DOM에 있어야 낭독된다 (`DESIGN.md` 「상태 배너」).
+            `contents`를 쓰는 이유는 이 자리가 flex 항목이라 빈 컨테이너가 gap 하나를 만들기
+            때문이다 — 최신 Chrome·Safari는 `display: contents` 요소를 접근성 트리에 노출한다
+            (`docs/01` 「운영 환경」의 브라우저 전제).
+          */}
+          <div aria-live="polite" className="contents">
+            {unsavedIds.length > 0 && (
+              <StatusBanner kind="error">
+                답안을 저장하지 못했다 · {unsavedIds.length}문제
+              </StatusBanner>
+            )}
+            {failure && <StatusBanner kind="error">{FAILURE_MESSAGE[failure]}</StatusBanner>}
+          </div>
 
           <QueryBoundary
             pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
@@ -247,7 +302,11 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
       <ConfirmDialog
         isOpen={isFinishOpen}
         title="모의고사를 종료한다"
-        description="미응답 문항은 오답으로 채점된다. 종료한 세션은 다시 풀 수 없다."
+        description={
+          unsavedIds.length > 0
+            ? `미응답 문제는 오답으로 채점된다. 저장하지 못한 답 ${unsavedIds.length}문제도 채점에 들어가지 않는다.`
+            : '미응답 문제는 오답으로 채점된다. 종료한 세션은 다시 풀 수 없다.'
+        }
         confirmLabel="종료"
         onConfirm={() => void handleFinish()}
         onCancel={() => setFinishOpen(false)}
