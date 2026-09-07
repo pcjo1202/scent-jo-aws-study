@@ -9,8 +9,26 @@ describe('toCdnKey', () => {
     expect(toCdnKey('comparisons.json')).toBe('notes/comparisons.json')
   })
 
+  it('해부서만 로컬과 CDN이 같은 경로다 — 62개를 평면에 두면 data/가 파묻힌다', () => {
+    expect(toCdnKey('anatomy/toc.json')).toBe('anatomy/toc.json')
+    expect(toCdnKey('anatomy/pages/001.webp')).toBe('anatomy/pages/001.webp')
+    expect(toCdnKey('anatomy/pages/061.webp')).toBe('anatomy/pages/061.webp')
+  })
+
   it('모르는 파일은 조용히 통과시키지 않는다 — 빠진 채로 배포되면 못 찾는다', () => {
-    expect(() => toCdnKey('anatomy/toc.json')).toThrow('CDN 경로를 정할 수 없다')
+    expect(() => toCdnKey('part1-patterns.json')).toThrow('CDN 경로를 정할 수 없다')
+  })
+
+  it('해부서 경로도 형태가 어긋나면 막는다 — immutable 경로라 틀린 이름은 v2 재배포다', () => {
+    for (const wrong of [
+      'anatomy/page/001.webp',
+      'anatomy/pages/1.webp',
+      'anatomy/pages/001.png',
+      'anatomy/pages/001.webp.bak',
+      'anatomy/toc.json.bak',
+    ]) {
+      expect(() => toCdnKey(wrong)).toThrow('CDN 경로를 정할 수 없다')
+    }
   })
 })
 
@@ -52,6 +70,9 @@ describe('toLocalPath', () => {
       'index.json',
       'oneliners.json',
       'comparisons.json',
+      'anatomy/toc.json',
+      'anatomy/pages/001.webp',
+      'anatomy/pages/061.webp',
     ]) {
       expect(toLocalPath(toCdnKey(local))).toBe(`data/${local}`)
     }
@@ -62,7 +83,8 @@ describe('toLocalPath', () => {
   })
 
   it('모르는 키는 조용히 통과시키지 않는다', () => {
-    expect(() => toLocalPath('anatomy/toc.json')).toThrow('로컬 경로를 정할 수 없다')
+    expect(() => toLocalPath('anatomy/part1-patterns.json')).toThrow('로컬 경로를 정할 수 없다')
+    expect(() => toLocalPath('anatomy/pages/1.webp')).toThrow('로컬 경로를 정할 수 없다')
   })
 })
 

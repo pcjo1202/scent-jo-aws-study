@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "anatomy": "node --env-file-if-exists=.env src/anatomy.ts",
     "extract": "node --env-file-if-exists=.env src/extract.ts",
     "verify": "node src/verify.ts",
     "publish": "node --env-file-if-exists=.env src/publish.ts",

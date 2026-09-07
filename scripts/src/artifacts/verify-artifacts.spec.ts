@@ -1,17 +1,22 @@
-import type { ChoiceKey, Question } from '@aws-study/shared'
+import type { AnatomyToc, ChoiceKey, Question } from '@aws-study/shared'
 import { describe, expect, it } from 'vitest'
 import type { Comparison } from '../notes/parse-comparison.ts'
 import type { OneLiner } from '../notes/parse-oneliner.ts'
 import { buildIndex, chunkFileName, chunkQuestions } from './build-chunks.ts'
 import {
+  ANATOMY_TOC_KEY,
   DEFAULT_VERSION,
   type FileDigest,
+  anatomyPageKey,
   buildManifest,
   digest,
   toCdnKey,
 } from './build-manifest.ts'
 import {
+  type Anatomy,
   type Artifacts,
+  EXPECTED_ANATOMY_PAGE_COUNT,
+  EXPECTED_ANATOMY_TOC_COUNT,
   EXPECTED_COMPARISON_COUNT,
   EXPECTED_FIXTURE_IDS,
   EXPECTED_ONE_LINER_COUNT,
@@ -100,6 +105,26 @@ function comparisons(): Comparison[] {
   }))
 }
 
+/**
+ * 실측 61쪽 · 목차 36항목 (`04-data-model.md` 「해부서」).
+ *
+ * 쪽이 **비내림차순**이다 — 한 쪽에서 두 절이 시작하는 자리가 실제로 있다(59·60쪽).
+ * 엄격한 오름차순으로 만들면 정상 산출물이 위반으로 잡힌다.
+ */
+function anatomy(): Anatomy {
+  return {
+    pageNumbers: Array.from({ length: EXPECTED_ANATOMY_PAGE_COUNT }, (_, index) => index + 1),
+    unknownFiles: [],
+    toc: {
+      entries: Array.from({ length: EXPECTED_ANATOMY_TOC_COUNT }, (_, index) => ({
+        id: `${index + 1}-1`,
+        title: `절 ${index + 1}`,
+        page: Math.min(index + 1, EXPECTED_ANATOMY_PAGE_COUNT),
+      })),
+    },
+  }
+}
+
 /** 산출물을 실제로 직렬화해 잰다 — manifest 검사가 보는 것이 그 값이다. */
 function measure(chunks: ReturnType<typeof chunkQuestions>, all: Artifacts['oneLiners']) {
   const files: Record<string, FileDigest> = {}
@@ -111,6 +136,10 @@ function measure(chunks: ReturnType<typeof chunkQuestions>, all: Artifacts['oneL
   files[toCdnKey('comparisons.json')] = digest(JSON.stringify({ items: comparisons() }))
   for (const id of EXPECTED_FIXTURE_IDS) {
     files[`fixtures/questions/${id}.json`] = digest(`픽스처 ${id}`)
+  }
+  files[toCdnKey(ANATOMY_TOC_KEY)] = digest('목차')
+  for (let page = 1; page <= EXPECTED_ANATOMY_PAGE_COUNT; page++) {
+    files[toCdnKey(anatomyPageKey(page))] = digest(`쪽 ${page}`)
   }
   return files
 }
@@ -126,6 +155,7 @@ function artifacts(): Artifacts {
     oneLiners: items,
     comparisons: comparisons(),
     fixtureIds: [...EXPECTED_FIXTURE_IDS],
+    anatomy: anatomy(),
     actualFiles,
     // manifest에 사본을 넣는다 — 같은 객체를 공유하면 한쪽을 깨뜨려도 차이가 안 난다.
     manifest: buildManifest(structuredClone(actualFiles), {
@@ -217,6 +247,49 @@ const BREAKAGES: Array<[label: string, breaks: (broken: Artifacts) => void]> = [
   ['중요도가 1~3 밖인 비교쌍', (broken) => void (broken.comparisons[0]!.importance = 0)],
 
   ['누락된 골든 픽스처', (broken) => void (broken.fixtureIds = [1, 2, 44, 242, 494])],
+
+  ['해부서 쪽 수 불일치', (broken) => void broken.anatomy!.pageNumbers.pop()],
+  [
+    // 개수는 그대로라 총량으로는 안 잡힌다. `data:anatomy`가 파일 하나를 잘못 쓴 모양.
+    '해부서 쪽 번호가 1..61이 아님',
+    (broken) => void (broken.anatomy!.pageNumbers[0] = 999),
+  ],
+  [
+    // 이름이 어긋난 쪽. 목록에서 빠져 배포되지 않으므로 개수 검사는 61을 그대로 본다.
+    '해부서 디렉터리의 모르는 파일',
+    (broken) => void broken.anatomy!.unknownFiles.push('anatomy/pages/1.webp'),
+  ],
+  [
+    // 이름은 멀쩡한데 내용만 빈 모양. 파일명만 보는 검사 6개는 전부 0을 준다.
+    '내용이 빈 해부서 파일',
+    (broken) => void (broken.actualFiles['anatomy/pages/030.webp'] = { bytes: 0, sha256: 'x' }),
+  ],
+  ['해부서 목차 항목 수 불일치', (broken) => void broken.anatomy!.toc.entries.pop()],
+  [
+    '빈 값이 있는 해부서 목차 항목',
+    (broken) => void (broken.anatomy!.toc.entries[0]!.title = '  '),
+  ],
+  [
+    // `toc.json`은 손으로 쓴다 — 키를 통째로 빠뜨리는 오타가 실제로 가능하다.
+    // `!value.trim()`으로 쓰면 여기서 검사가 잡는 게 아니라 **죽어서** 62항목 표가
+    // 한 줄도 안 찍힌다. 같은 라벨을 두 형태로 겨눈다.
+    '빈 값이 있는 해부서 목차 항목',
+    (broken) =>
+      void (broken.anatomy!.toc.entries[0] = {
+        title: '번호를 빠뜨렸다',
+        page: 2,
+      } as AnatomyToc['entries'][number]),
+  ],
+  [
+    '해부서 목차 id 중복',
+    (broken) => void (broken.anatomy!.toc.entries[1]!.id = broken.anatomy!.toc.entries[0]!.id),
+  ],
+  [
+    // 목차만 손으로 고쳐 실재하지 않는 쪽을 가리키는 모양 — 뷰어가 404를 받는다.
+    '해부서 목차가 없는 쪽을 가리킴',
+    (broken) => void (broken.anatomy!.toc.entries[0]!.page = 62),
+  ],
+  ['해부서 목차의 쪽이 뒤로 감', (broken) => void (broken.anatomy!.toc.entries[5]!.page = 1)],
 
   [
     // 별칭 사전이나 롤업이 무너져 한 카테고리가 전부를 삼킨 모양.
@@ -328,6 +401,27 @@ describe('findArtifactAnomalies', () => {
     expect(anomalies.counts['문항 수 불일치']).toBe(1)
     expect(anomalies.counts['누락된 문항 id']).toBe(EXPECTED_QUESTION_COUNT)
     expect(anomalies.counts['누락된 골든 픽스처']).toBe(EXPECTED_FIXTURE_IDS.length)
+    expect(anomalies.total).toBeGreaterThan(0)
+  })
+
+  it('해부서가 없어도 통과한다 — optional 자산이라 미착수가 위반은 아니다', () => {
+    const anomalies = findArtifactAnomalies({ ...artifacts(), anatomy: undefined })
+
+    for (const [label, count] of Object.entries(anomalies.counts)) {
+      if (label.startsWith('해부서')) expect([label, count]).toEqual([label, 0])
+    }
+    expect(anomalies.total).toBe(0)
+  })
+
+  it('해부서가 있는데 비면 위반이다 — 「없다」와 「비었다」는 다르다', () => {
+    const anomalies = findArtifactAnomalies({
+      ...artifacts(),
+      anatomy: { pageNumbers: [], unknownFiles: [], toc: { entries: [] } },
+    })
+
+    expect(anomalies.counts['해부서 쪽 수 불일치']).toBe(1)
+    expect(anomalies.counts['해부서 쪽 번호가 1..61이 아님']).toBe(EXPECTED_ANATOMY_PAGE_COUNT)
+    expect(anomalies.counts['해부서 목차 항목 수 불일치']).toBe(1)
     expect(anomalies.total).toBeGreaterThan(0)
   })
 })

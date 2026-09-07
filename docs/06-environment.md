@@ -112,6 +112,8 @@ S3_BUCKET=
 
 `pnpm data:extract`는 **`pdftotext`(poppler)를 PATH에서 찾는다.** 없으면 `spawnSync pdftotext ENOENT`로 죽는다. macOS는 `brew install poppler`.
 
+`pnpm data:anatomy`는 **`pdftoppm`(poppler)과 `cwebp`(libwebp)** 를 쓴다. macOS는 `brew install poppler webp`. 이 명령은 1회성이라 새 기기에서 대개 필요 없다 — `data/`는 `data:pull`이 CDN에서 복원하고, 다시 렌더링해야 하는 것은 원본 PDF가 바뀌었을 때뿐이다.
+
 환경변수가 아니라 여기 적는 이유: 값이 아니라 도구라 `.env`로 해결되지 않고, 새 기기에서 `data:extract`가 실패하는 첫 번째 원인이다 (2026-08-28, SJO-6).
 
 ## 검증
