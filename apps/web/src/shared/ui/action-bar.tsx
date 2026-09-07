@@ -12,7 +12,5 @@ import type { ReactNode } from 'react'
  * 되고 `/exam`은 채점 없이 문제 사이를 오간다 (`docs/02-features.md` 「모드별 차이」).
  */
 export function ActionBar({ children }: { children: ReactNode }) {
-  return (
-    <div className="action-bar flex items-center justify-end gap-4 px-screen">{children}</div>
-  )
+  return <div className="action-bar flex items-center justify-end gap-4 px-screen">{children}</div>
 }
