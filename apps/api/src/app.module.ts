@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 
 import { AppController } from './app.controller'
+import { AttemptsModule } from './attempts/attempts.module'
 import { AuthModule } from './auth/auth.module'
 import { CatalogModule } from './catalog/catalog.module'
 import { DbModule } from './db/db.module'
@@ -14,6 +15,7 @@ import { ProgressModule } from './progress/progress.module'
     DbModule,
     AuthModule,
     CatalogModule,
+    AttemptsModule,
     ProgressModule,
   ],
   controllers: [AppController],
