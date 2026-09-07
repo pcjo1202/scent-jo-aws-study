@@ -1,12 +1,7 @@
 import type { ChoiceKey } from '@aws-study/shared'
 import { expect, it } from 'vitest'
 
-import {
-  EXAM_QUESTION_COUNT,
-  grade,
-  hasOnlyExistingChoices,
-  pickExamQuestions,
-} from './grading'
+import { EXAM_QUESTION_COUNT, grade, hasOnlyExistingChoices, pickExamQuestions } from './grading'
 
 /** `08-testing.md` 「2. 채점 로직」의 7케이스. 순서 무관과 부분정답 불인정이 핵심이다. */
 const GRADING_CASES: Array<{ selected: ChoiceKey[]; answer: ChoiceKey[]; expected: boolean }> = [
