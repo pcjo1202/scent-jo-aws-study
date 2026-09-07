@@ -20,6 +20,7 @@ export function Chip({
   return (
     <button
       type="button"
+      aria-pressed={isSelected}
       className={`chip state-layer inline-flex items-center gap-1 rounded-corner-full px-3 text-label-medium ${CHIP_SURFACE[isSelected ? 'selected' : 'default']} ${className ?? ''}`}
       {...props}
     />

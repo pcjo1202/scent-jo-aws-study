@@ -1,0 +1,139 @@
+import type { IndexEntry, QuestionStatesResponse } from '@aws-study/shared'
+
+import { isSingleAnswer } from '@/shared/lib/choice-selection'
+
+/**
+ * 필터 규칙 (`docs/02-features.md` 「필터」). 같은 필터 안은 OR, 필터 간은 AND이고,
+ * 아무것도 고르지 않은 그룹은 통과다.
+ *
+ * 화면이 아니라 여기에 두는 이유는 `choice-selection.ts`와 같다 — `/study`와 `/review`가
+ * 같은 규칙을 통과해야 하는데 각자 구현하면 두 벌이 갈린다.
+ */
+export type AnswerCountKind = 'single' | 'multiple'
+
+export type SolveState = 'unsolved' | 'wrong' | 'correct'
+
+export type QuestionFilter = {
+  categories: string[]
+  services: string[]
+  answerCounts: AnswerCountKind[]
+  solveStates: SolveState[]
+}
+
+export const NO_FILTER: QuestionFilter = {
+  categories: [],
+  services: [],
+  answerCounts: [],
+  solveStates: [],
+}
+
+/**
+ * 화면 문구는 `DESIGN.md` 「Content design」 용어표를 따른다. **타입에서 여기 두는 이유는
+ * 두 곳이 읽기 때문이다** — 필터 패널의 칩과 본문 상단의 적용된 필터 칩이 같은 값을 다른
+ * 자리에 그린다. 복제하면 한쪽만 고쳐도 화면이 멀쩡하다 (`.claude/rules/code-conventions.md`
+ * 「SSOT」).
+ *
+ * `Record`로 못 박아 두면 값이 늘 때 컴파일러가 빠진 라벨을 잡는다.
+ */
+export const ANSWER_COUNT_LABEL: Record<AnswerCountKind, string> = {
+  single: '단일정답',
+  multiple: '복수정답',
+}
+
+export const SOLVE_STATE_LABEL: Record<SolveState, string> = {
+  unsolved: '안 푼 것',
+  wrong: '오답',
+  correct: '정답',
+}
+
+/**
+ * **빈 그룹은 통과다.** 고르지 않은 것과 「전부 고름」은 다르다 — 후자는 그냥 그 값들의
+ * OR이라, 카테고리·서비스가 비어 있는 문항 6개는 11개를 전부 골라도 걸리지 않는다
+ * (`docs/02-features.md` 「필터」).
+ */
+function passesGroup(values: readonly string[], selected: readonly string[]): boolean {
+  if (selected.length === 0) return true
+
+  return values.some((value) => selected.includes(value))
+}
+
+/** 값이 문항당 정확히 하나인 그룹. 여기서는 빈 선택과 전부 선택이 실제로 같아진다. */
+function passesValue<T extends string>(value: T, selected: readonly T[]): boolean {
+  if (selected.length === 0) return true
+
+  return selected.includes(value)
+}
+
+export function toAnswerCountKind(answerCount: number): AnswerCountKind {
+  return isSingleAnswer(answerCount) ? 'single' : 'multiple'
+}
+
+/** 안 푼 문항은 맵에 키가 없다 (`docs/05-database.md` 「GET /me/question-states」). */
+export function toSolveState(
+  questionId: number,
+  states: QuestionStatesResponse['states'],
+): SolveState {
+  return states[questionId] ?? 'unsolved'
+}
+
+export function filterQuestions(
+  entries: readonly IndexEntry[],
+  filter: QuestionFilter,
+  states: QuestionStatesResponse['states'],
+): IndexEntry[] {
+  return entries.filter(
+    (entry) =>
+      passesGroup(entry.categories, filter.categories) &&
+      passesGroup(entry.services, filter.services) &&
+      passesValue(toAnswerCountKind(entry.answer.length), filter.answerCounts) &&
+      passesValue(toSolveState(entry.id, states), filter.solveStates),
+  )
+}
+
+/** 앱바 배지는 **선택된 값의 총 개수**다. 필터 종류 수가 아니다 (`DESIGN.md` 「화면별 우측 액션」). */
+export function activeFilterCount(filter: QuestionFilter): number {
+  return (
+    filter.categories.length +
+    filter.services.length +
+    filter.answerCounts.length +
+    filter.solveStates.length
+  )
+}
+
+export function hasActiveFilter(filter: QuestionFilter): boolean {
+  return activeFilterCount(filter) > 0
+}
+
+function countValues(
+  entries: readonly IndexEntry[],
+  pick: (entry: IndexEntry) => readonly string[],
+): Array<[string, number]> {
+  const counts = new Map<string, number>()
+  for (const entry of entries) {
+    for (const value of pick(entry)) {
+      counts.set(value, (counts.get(value) ?? 0) + 1)
+    }
+  }
+
+  return [...counts.entries()]
+}
+
+/**
+ * **필터 목록은 인덱스에서 도출한다.** 한줄노트의 202개를 쓰면 문항에 안 붙은 66개가
+ * 고르는 즉시 0건이 된다 (`docs/02-features.md` 「필터」).
+ */
+export function toFilterOptions(entries: readonly IndexEntry[]): {
+  categories: string[]
+  services: string[]
+} {
+  return {
+    // 칩 11개를 접지 않고 한 번에 보여주므로 목록 순서가 곧 눈에 걸리는 순서다.
+    categories: countValues(entries, (entry) => entry.categories)
+      .sort(([, a], [, b]) => b - a)
+      .map(([value]) => value),
+    // 서비스는 검색형이라 이름순이다 (`DESIGN.md` 「화면 보조 패널」).
+    services: countValues(entries, (entry) => entry.services)
+      .map(([value]) => value)
+      .sort((a, b) => a.localeCompare(b)),
+  }
+}

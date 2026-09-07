@@ -8,6 +8,13 @@ import type { ChoiceKey } from '@aws-study/shared'
  */
 type SelectionRule = { answerCount: number }
 
+/**
+ * 선택지 키의 순서. **화면이 이 배열을 그리지 않는다** — 문항의 `choices`를 그대로 그린다
+ * (`DESIGN.md` 「선택지 키를 반드시 보여준다」). 쓰는 곳은 청크를 아직 못 받았어도 단축키를
+ * 걸어야 하는 자리이고, 개수는 인덱스의 `choiceCount`가 준다.
+ */
+export const CHOICE_KEYS: readonly ChoiceKey[] = ['A', 'B', 'C', 'D', 'E', 'F']
+
 /** "단일정답이란 무엇인가"를 한 곳에만 둔다 — 화면도 규칙도 이 함수를 부른다. */
 export function isSingleAnswer(answerCount: number): boolean {
   return answerCount === 1
