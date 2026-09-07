@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -11,6 +12,9 @@ import { AttemptsRepository } from './attempts.repository'
 
 import type {
   AttemptResponse,
+  BatchAttemptItem,
+  BatchAttemptResult,
+  CreateAttemptBatchResponse,
   CreateAttemptRequest,
   ExamAttemptResponse,
   IndexEntry,
@@ -56,6 +60,47 @@ export class AttemptsService {
     return { isCorrect, answer: entry.answer }
   }
 
+  /**
+   * 오프라인 큐 재전송. 항목 하나가 4xx여도 나머지는 저장한다 — 큐가 통째로 버려지면
+   * 오프라인에서 푼 기록이 사라진다.
+   *
+   * **5xx는 `rejected`로 접지 않고 그대로 던진다.** 카탈로그 503이나 DB 장애까지
+   * `rejected`가 되면 클라이언트가 「이 항목은 틀렸다」로 읽고 큐에서 버리는데, 실제로는
+   * 잠시 뒤 성공했을 항목이다 (`docs/05` 「batch」 — 재시도는 네트워크 오류만).
+   *
+   * 순차로 도는 이유는 같은 문항이 큐에 두 번 든 경우의 기록 순서를 보존하기 위해서다.
+   */
+  async createAttemptBatch(
+    userId: string,
+    items: BatchAttemptItem[],
+  ): Promise<CreateAttemptBatchResponse> {
+    const results: BatchAttemptResult[] = []
+
+    for (const [index, item] of items.entries()) {
+      results.push(await this.runBatchItem(userId, index, item))
+    }
+
+    return { results }
+  }
+
+  private async runBatchItem(
+    userId: string,
+    index: number,
+    item: BatchAttemptItem,
+  ): Promise<BatchAttemptResult> {
+    try {
+      const response = await this.createAttempt(userId, item)
+
+      if ('isCorrect' in response) return { index, status: 'saved', isCorrect: response.isCorrect }
+
+      return { index, status: 'saved' }
+    } catch (error) {
+      if (!isClientError(error)) throw error
+
+      return { index, status: 'rejected' }
+    }
+  }
+
   private async loadEntry(input: AttemptInput): Promise<IndexEntry> {
     const entry = await this.catalogService.getEntry(input.questionId)
     if (entry === undefined) {
@@ -91,6 +136,17 @@ export class AttemptsService {
 
     return input.sessionId
   }
+}
+
+const CLIENT_ERROR_MIN = 400
+const SERVER_ERROR_MIN = 500
+
+function isClientError(error: unknown): boolean {
+  if (!(error instanceof HttpException)) return false
+
+  const status = error.getStatus()
+
+  return status >= CLIENT_ERROR_MIN && status < SERVER_ERROR_MIN
 }
 
 /** 필터 모드가 `false`를 보낸다. 값이 없으면 순차 진행이므로 기본은 true다 (`docs/05`). */

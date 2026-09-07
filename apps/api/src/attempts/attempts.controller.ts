@@ -2,7 +2,7 @@ import { Body, Controller, Post } from '@nestjs/common'
 
 import { CurrentUser } from '../auth/current-user.decorator'
 import { AttemptsService } from './attempts.service'
-import { CreateAttemptDto } from './dto/create-attempt.dto'
+import { CreateAttemptBatchDto, CreateAttemptDto } from './dto/create-attempt.dto'
 
 import type { AuthUser } from '../auth/supabase-jwt.guard'
 
@@ -13,5 +13,10 @@ export class AttemptsController {
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateAttemptDto) {
     return this.attemptsService.createAttempt(user.id, dto)
+  }
+
+  @Post('batch')
+  createBatch(@CurrentUser() user: AuthUser, @Body() dto: CreateAttemptBatchDto) {
+    return this.attemptsService.createAttemptBatch(user.id, dto.items)
   }
 }
