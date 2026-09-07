@@ -40,7 +40,7 @@ export async function StudyPage() {
         pending={
           <>
             <AppBar title="순차 풀이" backHref="/" />
-            <main className="mx-auto max-w-reading px-screen py-6">
+            <main className="app-bar-gutter-top mx-auto max-w-reading px-screen py-6">
               <StatusBanner kind="loading">불러오는 중…</StatusBanner>
             </main>
           </>

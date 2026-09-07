@@ -99,7 +99,7 @@ export function FilterPanel({
   return (
     <div className={`filter-panel bg-surface-container-low ${isOpen ? '' : 'filter-panel-closed'}`}>
       {/* 시트에만 있는 헤더. 상시 패널에서는 그룹 제목이 이미 구조를 나른다. */}
-      <div className="filter-panel-header flex h-14 items-center gap-2">
+      <div className="filter-panel-header flex h-14 items-center gap-2 expanded:hidden">
         <button
           type="button"
           aria-label="필터 닫기"
@@ -170,10 +170,14 @@ export function FilterPanel({
         />
 
         {/* 시트는 닫는 동작에 개수를 싣고, 상시 패널은 개수만 적는다. */}
-        <Button variant="filled" onClick={onClose} className="filter-panel-apply w-full">
+        <Button
+          variant="filled"
+          onClick={onClose}
+          className="filter-panel-apply w-full expanded:hidden"
+        >
           {matchCount}문제 보기
         </Button>
-        <p className="filter-panel-count text-body-small text-on-surface-variant">
+        <p className="filter-panel-count hidden text-body-small text-on-surface-variant expanded:block">
           {matchCount}문제
         </p>
       </div>

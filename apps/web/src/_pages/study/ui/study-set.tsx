@@ -192,7 +192,7 @@ export function StudySet({
           <>
             {/* 첫 문제에서 「이전」은 비활성이고 숨기지 않는다 — 부재는 「그런 기능이 없다」를
                 말하는데 되돌아가기는 이 앱에 있는 기능이다 (`DESIGN.md` 「하단 액션의 버튼 배치」). */}
-            <Button disabled={cursor === 0} onClick={() => moveTo(cursor - 1)}>
+            <Button variant="tonal" disabled={cursor === 0} onClick={() => moveTo(cursor - 1)}>
               이전
             </Button>
             <Button variant="filled" disabled={!isSubmittable} onClick={() => void handleSubmit()}>

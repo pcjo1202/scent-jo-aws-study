@@ -74,7 +74,9 @@ export function AppBar({
           />
         </div>
       ) : (
-        <div className="h-px bg-outline-variant" />
+        // 진행 바가 없어도 4px 자리는 그대로 쓴다 — 앱바 높이가 화면마다 달라지면
+        // `.app-bar-gutter-top`이 비우는 값이 어긋난다 (`DESIGN.md` 「앱바」).
+        <div className="h-1 border-b border-outline-variant" />
       )}
     </header>
   )

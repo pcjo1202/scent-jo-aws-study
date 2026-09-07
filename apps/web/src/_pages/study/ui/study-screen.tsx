@@ -55,7 +55,9 @@ export function StudyScreen({ apiUrl }: { apiUrl: string }) {
   const badgeCount = activeFilterCount(filter)
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // 앱바가 `fixed`라 흐름에서 빠져 있다. 패널과 본문이 **둘 다** 그 아래에서 시작해야
+    // 하므로 여백을 여기서 한 번에 준다 (`DESIGN.md` 「화면 보조 패널」).
+    <div className="app-bar-gutter-top flex min-h-dvh flex-col">
       <div className="flex flex-1 expanded:flex-row">
         <FilterPanel
           options={options}
