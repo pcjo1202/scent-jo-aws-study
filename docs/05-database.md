@@ -263,6 +263,9 @@ Fluid compute가 인스턴스를 따뜻하게 유지하므로 인덱스를 받�
 // GET /me/question-states
 { states: Record<number, 'correct' | 'wrong'> }   // 안 푼 문항은 키 없음
 
+// GET /me/wrong — 최신 시도가 오답인 문항만, 번호 오름차순
+{ questionIds: number[] }
+
 // POST /attempts
 // 요청
 {
