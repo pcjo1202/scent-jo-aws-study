@@ -17,9 +17,9 @@ import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { submitAttempt } from '@/features/submit-answer/api/submit-attempt'
 
-import { toStartIndex } from '../lib/study-cursor'
+import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
 
-import { QuestionSlot } from './question-slot'
+import { toStartIndex } from '../lib/study-cursor'
 
 const SCREEN_NAME = '순차 풀이'
 
@@ -188,7 +188,10 @@ export function StudySet({
 
       <main className="action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-4 px-screen py-4">
         {appliedChips}
-        {hasSubmitFailed && <StatusBanner kind="error">답안을 저장하지 못했다</StatusBanner>}
+        {/* 라이브 리전은 배너보다 먼저 있어야 낭독된다 (`DESIGN.md` 「상태 배너」). */}
+        <div aria-live="polite" className="contents">
+          {hasSubmitFailed && <StatusBanner kind="error">답안을 저장하지 못했다</StatusBanner>}
+        </div>
 
         <QueryBoundary
           pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}

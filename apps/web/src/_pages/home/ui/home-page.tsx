@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { withRelatedProject } from '@vercel/related-projects'
 
+import { resolveApiUrl } from '@/shared/config/api-url'
 import { getQueryClient } from '@/shared/api/query-client'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
@@ -11,8 +11,6 @@ import { healthQuery } from '../api/health-query'
 import { DataSummary } from './data-summary'
 import { HealthStatus } from './health-status'
 
-const DEFAULT_API_URL = 'http://localhost:3001'
-
 /**
  * SJO-27 대시보드가 오기 전까지 쓰는 **임시 검증 화면**이다. api 왕복과 CDN 3단(manifest →
  * index → chunk)이 실제로 도는지를 눈으로 보는 것이 목적이다.
@@ -22,10 +20,7 @@ const DEFAULT_API_URL = 'http://localhost:3001'
  * 화면 고유의 api 조회(health)와 청크뿐이다.
  */
 export async function HomePage() {
-  const apiUrl = withRelatedProject({
-    projectName: 'aws-study-api',
-    defaultHost: process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL,
-  })
+  const apiUrl = resolveApiUrl()
 
   const queryClient = getQueryClient()
 

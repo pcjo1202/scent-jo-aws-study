@@ -6,12 +6,15 @@ import type { AttemptResponse, ChoiceKey, IndexEntry, Manifest } from '@aws-stud
 
 import { chunkQuery } from '@/shared/api/cdn'
 
-import { QuestionRunner } from '@/widgets/question-runner/ui/question-runner'
+import { QuestionRunner } from './question-runner'
 
 /**
  * 청크는 **부분 실패**다 — 못 받으면 이 문항 자리만 오류가 되고 앱바·진행 바·다른 문항은
  * 그대로다 (`docs/02-features.md` 「정적 데이터(CDN) 실패」). 그래서 청크 조회를 이 컴포넌트로
  * 감싸고 호출부가 여기에 경계를 세운다.
+ *
+ * `/study`·`/review`·`/exam/[id]`가 함께 쓴다 — `_pages` 슬라이스끼리는 서로를 가져올 수
+ * 없으므로 위젯에 둔다 (`apps/web/CLAUDE.md` 「레이어」).
  *
  * 청크 번호를 문항 id로 계산하지 않고 인덱스 엔트리에서 읽는다 — 청크 크기를 바꿔도 안
  * 깨지도록 인덱스가 매핑을 들고 있다 (`docs/04-data-model.md` 「index.json」).
