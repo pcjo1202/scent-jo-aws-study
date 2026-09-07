@@ -15,6 +15,15 @@ export const DEFAULT_VERSION = 'v1'
 const CHUNK_CDN_DIR = 'questions/'
 const CHUNK_LOCAL_DIR = 'chunks/'
 const CHUNK_KEY_PREFIX = `${CHUNK_CDN_DIR}chunk-`
+/**
+ * 해부서만 로컬과 CDN의 경로가 같다 (`03-architecture.md` 「경로 레이아웃」) — 62개를
+ * 평면인 `data/`에 풀면 문항·노트가 그 아래 파묻힌다.
+ *
+ * 형태를 정규식으로 좁히는 이유: 이름이 어긋난 파일은 immutable 경로에 그대로 박혀
+ * 되돌리는 값이 v2 재배포다. 접두사만 보면 `pages/1.webp`가 조용히 통과한다.
+ */
+const ANATOMY_TOC_KEY = 'anatomy/toc.json'
+const ANATOMY_PAGE_KEY = /^anatomy\/pages\/\d{3}\.webp$/
 
 export type FileDigest = { bytes: number; sha256: string }
 
@@ -35,6 +44,7 @@ export function toCdnKey(localPath: string) {
   if (localPath === 'oneliners.json' || localPath === 'comparisons.json') {
     return `notes/${localPath}`
   }
+  if (isAnatomyKey(localPath)) return localPath
   throw new Error(`CDN 경로를 정할 수 없다: ${localPath}`)
 }
 
@@ -54,7 +64,13 @@ export function toLocalPath(cdnKey: string) {
   if (cdnKey === 'notes/oneliners.json' || cdnKey === 'notes/comparisons.json') {
     return `data/${cdnKey.slice('notes/'.length)}`
   }
+  if (isAnatomyKey(cdnKey)) return `data/${cdnKey}`
   throw new Error(`로컬 경로를 정할 수 없다: ${cdnKey}`)
+}
+
+/** `04-data-model.md` 「해부서」 — `toc.json` 하나와 `pages/001..061.webp`뿐이다. */
+export function isAnatomyKey(key: string) {
+  return key === ANATOMY_TOC_KEY || ANATOMY_PAGE_KEY.test(key)
 }
 
 /**
