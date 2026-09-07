@@ -53,6 +53,15 @@ export type IndexEntry = {
 
 export type QuestionIndex = { entries: IndexEntry[] }
 
+/**
+ * `04-data-model.md` 「해부서」. 61쪽 이미지의 목차이고, v1은 이것 말고 구조화하지 않는다.
+ *
+ * `page`는 `anatomy/pages/NNN.webp`의 번호(1~61)다 — 원본에 인쇄된 쪽 번호가 아니다.
+ */
+export type AnatomyToc = { entries: AnatomyTocEntry[] }
+
+export type AnatomyTocEntry = { id: string; title: string; page: number }
+
 /** `04-data-model.md` 「manifest.json」. 모든 데이터 접근의 진입점. */
 export type Manifest = {
   version: string
