@@ -8,7 +8,7 @@ description: Linear 이슈 종료. 이슈를 Done으로 바꾸는 유일한 경�
 인자: 이슈 ID (예: `SJO-2`). 없으면 In Progress인 이슈 중에서 확인한다.
 
 0. **정리** — working tree가 clean한지 확인한다. 미커밋 변경이 있으면 커밋하거나 이유를 밝히고 처리한 뒤 진행한다.
-1. **공통 게이트 + DoD 실검증** — 먼저 **공통 게이트**를 이슈와 무관하게 전부 돌린다: `pnpm format:check` · `pnpm typecheck --force` · `pnpm lint` · `pnpm test`. pre-commit 훅이 format을 커밋 시점에 막지만 `pre-commit`은 `git commit` 경로에만 붙는다 — `--no-verify`·**머지 커밋**·rebase·cherry-pick·revert·훅 미설치는 아예 안 탄다. **이 레포는 merge commit으로 GitHub 서버에서 머지하므로 그 경로의 방어선은 여기뿐이다** (`docs/10-conventions.md` 「Prettier」). 그 다음 이슈의 완료 정의를 실제로 실행한다. 명령이면 돌리고, **실행한 명령과 출력 요약을 증거로 수집**한다. 통과 못 하면 여기서 중단.
+1. **공통 게이트 + DoD 실검증** — 먼저 **공통 게이트**를 이슈와 무관하게 전부 돌린다: `pnpm format:check` · `pnpm typecheck --force` · `pnpm lint` · `pnpm test` · `pnpm tokens:verify`. pre-commit 훅이 format을 커밋 시점에 막지만 `pre-commit`은 `git commit` 경로에만 붙는다 — `--no-verify`·**머지 커밋**·rebase·cherry-pick·revert·훅 미설치는 아예 안 탄다. **이 레포는 merge commit으로 GitHub 서버에서 머지하므로 그 경로의 방어선은 여기뿐이다** (`docs/10-conventions.md` 「Prettier」). 그 다음 이슈의 완료 정의를 실제로 실행한다. 명령이면 돌리고, **실행한 명령과 출력 요약을 증거로 수집**한다. 통과 못 하면 여기서 중단.
 2. **diff 산출** — 이슈 전체 범위: 첫 `(SJO-N)` 커밋의 부모 ~ HEAD. `git log --grep="(SJO-N)" --reverse --format=%H | head -1`의 부모 커밋 기준.
 3. **PR 생성** — `/git:pr`. 본문 첫 줄은 **`Ref SJO-N`** (`Fixes`·`Closes` 금지 — 머지 시 자동 종료가 이 스킬의 게이트를 우회한다), 검증 절에는 1번에서 실제로 실행한 명령과 결과를 적는다. 생성 후 **PR URL을 `save_issue`의 `links`로 이슈에 첨부**한다.
 4. **리뷰** — 그 diff로 `pr-review-toolkit:code-reviewer` 서브에이전트 실행. `apps/web`의 컴포넌트·스타일 변경이 포함되면 `design-reviewer`도 실행. P1은 수정 필수, P2는 수정하거나 보류 사유를 코멘트로 남긴다.
@@ -28,7 +28,7 @@ description: Linear 이슈 종료. 이슈를 Done으로 바꾸는 유일한 경�
 ## gotchas
 
 - 체크박스가 다 찼다는 이유로 닫기 금지 — DoD 실행이 유일한 근거다
-- 공통 게이트는 **출력 전문**을 본다 — `typecheck`는 `--force` 없이 다른 워크트리 캐시를 재사용하고(`cached` 수가 0인지 확인), `exit 0`은 "통과"가 아니라 "오류 없음"이다. `pnpm test --force`는 vitest 직행이라 터지므로 `--force`를 붙이지 않는다
+- 공통 게이트는 **출력 전문**을 본다 — `typecheck`는 `--force` 없이 다른 워크트리 캐시를 재사용하고(`cached` 수가 0인지 확인), `exit 0`은 "통과"가 아니라 "오류 없음"이다. `tokens:verify`는 **검사 건수 줄**을 본다 — 표를 못 읽어도 0건 실패가 나온다. `pnpm test --force`는 vitest 직행이라 터지므로 `--force`를 붙이지 않는다
 - 리뷰 수정 후 재검증(5번) 생략 금지 — 가장 흔하게 새는 단계
 - PR 본문에 `Fixes`·`Closes` 금지 — 머지가 이슈를 자동으로 Done으로 만들어 증거 코멘트 없이 닫힌다
 - `gh pr merge`가 죽어도 머지는 됐을 수 있다 — 실패 메시지가 **어느 단계 것인지** 먼저 본다. 재시도하면 "이미 머지됨"이 나와 원인을 다시 헷갈린다

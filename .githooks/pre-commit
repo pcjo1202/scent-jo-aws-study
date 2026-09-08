@@ -1,4 +1,5 @@
 #!/bin/sh
-# format 게이트 — 근거는 docs/10-conventions.md 「Prettier」
+# format·토큰 게이트 — 근거는 docs/10-conventions.md 「Prettier」·「토큰 검증」
 # 레포 전역을 한 번에 본다. 스테이징된 파일만 고르지 않는 이유는 그 문서에 있다.
-exec pnpm exec prettier --check .
+pnpm exec prettier --check . || exit 1
+exec pnpm tokens:verify

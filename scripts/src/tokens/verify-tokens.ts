@@ -284,31 +284,36 @@ function checkProse(
     contrastRatio(tokens[theme]['surface-container-low']!, tokens[theme]['surface']!)
 
   const claims: Array<{ pattern: RegExp; expected: number; decimals: number }> = [
-    { pattern: /유채 역할 (\d+)개의 전 조합/, expected: CHROMATIC_ROLES.length, decimals: 0 },
-    { pattern: /전 조합 (\d+)쌍을 Light·Dark/, expected: pairs.length, decimals: 0 },
-    { pattern: /\*\*(\d+)쌍 중 JND 미만이/, expected: pairs.length, decimals: 0 },
+    { pattern: /유채 역할 (\d+)개의 전 조합/g, expected: CHROMATIC_ROLES.length, decimals: 0 },
+    { pattern: /전 조합 (\d+)쌍을 Light·Dark/g, expected: pairs.length, decimals: 0 },
+    { pattern: /\*\*(\d+)쌍 중 JND 미만이/g, expected: pairs.length, decimals: 0 },
     {
-      pattern: /쌍 중 JND 미만이 (\d+)건이다/,
+      pattern: /쌍 중 JND 미만이 (\d+)건이다/g,
       expected: pairs.filter((pair) => pair.worst < JND).length,
       decimals: 0,
     },
     {
-      pattern: /테두리를 쓰면 색으로도 갈린다\(색각 최악 ([\d.]+)\)/,
+      pattern: /테두리를 쓰면 색으로도 갈린다\(색각 최악 ([\d.]+)\)/g,
       expected: worstOf('correct', 'secondary-container'),
       decimals: DELTA_E_DECIMALS,
     },
     {
-      pattern: /적록색약 ΔE ([\d.]+)/,
+      pattern: /`correct` 테두리다 \(색각 최악 ΔE ([\d.]+)\)/g,
+      expected: worstOf('correct', 'secondary-container'),
+      decimals: DELTA_E_DECIMALS,
+    },
+    {
+      pattern: /적록색약 ΔE ([\d.]+)/g,
       expected: worstOf('primary', 'error', 'light'),
       decimals: DELTA_E_DECIMALS,
     },
     {
-      pattern: /색각 최악 ([\d.]+)~[\d.]+으로/,
+      pattern: /색각 최악 ([\d.]+)~[\d.]+으로/g,
       expected: worstOf('error-container', 'correct-container'),
       decimals: DELTA_E_DECIMALS,
     },
     {
-      pattern: /색각 최악 [\d.]+~([\d.]+)으로/,
+      pattern: /색각 최악 [\d.]+~([\d.]+)으로/g,
       expected: Math.max(
         ...pairs
           .filter((pair) => pair.a === 'error-container' && pair.b === 'correct-container')
@@ -317,26 +322,31 @@ function checkProse(
       decimals: DELTA_E_DECIMALS,
     },
     {
-      pattern: /`surface-container-low`가 `surface` 대비 ([\d.]+)라/,
+      pattern: /`surface-container-low`가 `surface` 대비 ([\d.]+)라/g,
       expected: surfaceContrast('light'),
       decimals: CONTRAST_DECIMALS,
     },
   ]
 
   const failures: string[] = []
+  let checked = 0
+
   for (const { pattern, expected, decimals } of claims) {
-    const found = pattern.exec(markdown)?.[1]
-    if (found === undefined) {
+    const found = [...markdown.matchAll(pattern)]
+    if (found.length === 0) {
       failures.push(`산문: /${pattern.source}/에 해당하는 문장이 DESIGN.md에 없다`)
       continue
     }
 
     const rounded = round(expected, decimals)
-    if (Number(found) !== rounded) {
-      failures.push(`산문: /${pattern.source}/ 문서 ${found}인데 ${rounded}`)
+    for (const match of found) {
+      checked += 1
+      if (Number(match[1]) !== rounded) {
+        failures.push(`산문: /${pattern.source}/ 문서 ${match[1]}인데 ${rounded}`)
+      }
     }
   }
-  return { failures, checked: claims.length }
+  return { failures, checked }
 }
 
 function round(value: number, decimals: number): number {

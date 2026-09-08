@@ -67,7 +67,7 @@ export function AppBar({
           {/*
             진행률은 계산된 값이라 유틸 클래스로 쓸 수 없다. 막대에 색을 싣지 않는다 —
             `primary`로 칠하면 대시보드에서 카테고리 정답률 막대와 같은 형태로 나란히 서는데
-            `primary`×`error`가 적록색약 식별 한계 아래다 (`DESIGN.md` 「진행 표시」).
+            `primary`×`error`가 적록색약에서 정상 시각의 5분의 1로 눌린다 (`DESIGN.md` 「진행 표시」).
           */}
           <div
             className="h-full bg-on-surface-variant"

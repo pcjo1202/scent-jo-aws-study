@@ -12,6 +12,7 @@ pnpm format:check # pre-commit 훅이 자동으로 돈다 (docs/10 「Prettier�
 pnpm data:anatomy # 해부서 61쪽 → data/anatomy/pages/  (pdftoppm·cwebp 필요)
 pnpm data:extract # 원본 PDF → data/  (SOURCE_PDF_DIR 필요, docs/06)
 pnpm data:verify  # data/ 전수 검증 — 실패하면 exit 1 (배포 차단)
+pnpm tokens:verify # DESIGN.md 색 수치 ↔ tokens.css 대조 — 커밋·`/done` 게이트 (docs/10 「토큰 검증」)
 pnpm data:publish # data/ + tests/fixtures/ → S3  (같은 버전 재배포는 --force)
 pnpm data:pull    # CDN → data/ + tests/fixtures/  (새 기기 복구)
 ```
@@ -68,6 +69,7 @@ pnpm data:pull    # CDN → data/ + tests/fixtures/  (새 기기 복구)
 - **service role key를 `NEXT_PUBLIC_`에 넣지 않는다.** RLS를 켜지 않았으므로 유출 시 DB가 통째로 열린다.
 - **정오를 색으로만 표시하지 않는다.** 아이콘·텍스트를 병기한다.
 - **CDN publish 전 `pnpm data:verify`를 통과해야 한다.** 검증 안 된 데이터가 올라가면 v2 재배포다.
+- **`DESIGN.md`의 색 수치를 손으로 계산해 옮겨 적지 않는다.** 팔레트 hex·대비비·색각 ΔE는 `pnpm tokens:verify`가 `tokens.css`에서 재계산해 판정한다. 세션 밖에서 계산해 값만 옮기면 계산기가 틀렸을 때 되짚을 방법이 없다 — SJO-38이 그렇게 불가능한 값을 발행했다.
 - **동작·정의를 기억으로 단정하지 않는다.** 외부 도구의 설정(Vercel·pnpm·ESLint)이든 레포 안의 스키마·타입이든, 고치기 전에 **원문을 열어 대조한다** — 라이브러리·프레임워크는 context7 MCP, 레포 안이면 그 파일. 관측 몇 건으로 세운 가설은 수정을 적용하기 전에 **반례를 먼저 찾는다**. 우연히 맞는 관측이 확증편향을 굳힌다.
 - **`exit 0`은 "통과"가 아니라 "오류 없음"이다.** 0건 실행과 0건 실패는 똑같이 0을 준다. 검증은 **실행 건수와 출력 전문**을 함께 본다 — 출력을 `tail`로 자르지 않고, 린터·테스트 probe는 레포 안에서 돌린다. 대상이 0건이면 통과가 아니라 **"대상 없음"으로 보고**한다. **부분 집계도 같다** — 1019 중 999처럼 그럴듯하게 조금 모자란 숫자가 0건보다 위험하다. 사실로 보고하기 전에 그 숫자를 만든 도구가 대상 전부에 닿았는지 본다 (애드혹 grep 말고 파이프라인이 쓰는 모듈로).
 - **수치를 발행하기 전에 그 수치를 만든 계산기를 검증한다.** 기지값이 있으면 재현시키고, 없으면 **불변식을 위생 검사로 건다** — "시뮬레이션은 원본보다 차이를 키울 수 없다"류는 정답표 없이도 성립한다. 검증한 계산기와 안 한 계산기를 한 작업에서 섞어 쓰지 않는다. 그리고 **이슈가 지목한 위험은 가설이지 조사 범위가 아니다** — 같은 종류의 대상을 전수로 훑어 지목이 맞았는지부터 본다.
