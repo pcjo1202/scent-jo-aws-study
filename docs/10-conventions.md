@@ -301,7 +301,7 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 **`*.md`는 대상에서 제외한다.** 위 네 옵션은 전부 코드용이라 md에는 걸리는 게 없는데, prettier는 표를 열 폭에 맞춰 재작성한다. 한글 셀의 폭 계산이 실제 표시와 어긋나 정렬이 오히려 깨지고, 명세 문서의 diff에 내용 변경과 포맷 변경이 섞인다. `.claude/settings.local.json`도 제외한다 — Claude Code가 소유·재작성하는 파일이라 포맷이 유지되지 않는다. `apps/web/next-env.d.ts`는 `.gitignore`에 있어 별도 항목이 필요 없다 — `next dev`와 `next build`가 서로 다른 내용으로 생성하므로 애초에 추적하지 않는다.
 
-**게이트는 pre-commit 훅에 건다.** `.githooks/pre-commit`이 `prettier --check .`를 돌리고, 루트 `prepare`가 `git config core.hooksPath .githooks`로 그 훅을 심는다. 새 의존성은 없다 — husky가 하는 일이 정확히 이것이다.
+**게이트는 pre-commit 훅에 건다.** `.githooks/pre-commit`이 `prettier --check .`를 돌리고(SJO-39부터 `tokens:verify`도 같은 훅에 있다 — 「토큰 검증」), 루트 `prepare`가 `git config core.hooksPath .githooks`로 그 훅을 심는다. 새 의존성은 없다 — husky가 하는 일이 정확히 이것이다.
 
 SJO-6이 포맷이 깨진 파일 4개를 머지시킨 원인은 `format:check`를 **부르는 곳이 없었다는 것**이다. `lint`·`typecheck`는 turbo가, `test`는 vitest가 부르는데 format만 사람 손에 남아 있었고, 이 레포에는 CI가 없다.
 
@@ -341,7 +341,7 @@ SJO-6이 포맷이 깨진 파일 4개를 머지시킨 원인은 `format:check`�
 실패 경로 4종을 실측했다 (2026-09-08): `.git` 없음 → 경고 · `.git` **디렉터리**가 읽기 전용 → 잠금 실패 후 경고 · `.git/config`가 깨짐 → 경고 · 정상 → 무음 설치. **`.git/config` 파일만 444로 두는 것은 실패 경로가 아니다** — git이 임시 파일과 rename으로 쓰기 때문에 그대로 성공한다.
 
 ```json
-"prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks || echo 'prepare: format 훅 미설치 — git 없음 또는 config 실패'"
+"prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks || echo 'prepare: 커밋 훅 미설치 — git 없음 또는 config 실패'"
 ```
 
 ## tsconfig
