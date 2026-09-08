@@ -1,6 +1,10 @@
 import { queryOptions } from '@tanstack/react-query'
 
-import type { ProgressResponse, QuestionStatesResponse } from '@aws-study/shared'
+import type {
+  ProgressResponse,
+  QuestionStatesResponse,
+  WrongQuestionsResponse,
+} from '@aws-study/shared'
 
 import { apiFetch } from '@/shared/api/api-client'
 
@@ -19,6 +23,9 @@ export const meKeys = {
   questionStates(apiUrl: string) {
     return [...meKeys.all, apiUrl, 'question-states'] as const
   },
+  wrong(apiUrl: string) {
+    return [...meKeys.all, apiUrl, 'wrong'] as const
+  },
 }
 
 export function progressQuery(apiUrl: string) {
@@ -32,5 +39,17 @@ export function questionStatesQuery(apiUrl: string) {
   return queryOptions({
     queryKey: meKeys.questionStates(apiUrl),
     queryFn: () => apiFetch<QuestionStatesResponse>(apiUrl, '/me/question-states'),
+  })
+}
+
+/**
+ * 오답 문항 id, 번호 오름차순. **`/review`의 세트가 이 응답이다** — 진입 시 고정이므로
+ * 제출 뒤에 다시 받지 않는다. 「다시 풀기」만 이 키를 무효화한다
+ * (`docs/02-features.md` 「`/review` 오답 복습」).
+ */
+export function wrongQuestionsQuery(apiUrl: string) {
+  return queryOptions({
+    queryKey: meKeys.wrong(apiUrl),
+    queryFn: () => apiFetch<WrongQuestionsResponse>(apiUrl, '/me/wrong'),
   })
 }

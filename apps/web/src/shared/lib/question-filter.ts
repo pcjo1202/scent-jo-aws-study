@@ -20,6 +20,18 @@ export type QuestionFilter = {
   solveStates: SolveState[]
 }
 
+/**
+ * 필터 패널이 그릴 수 있는 그룹. 이름을 `QuestionFilter`의 키로 맞춰 뒀다 — 갈리면 그리는
+ * 그룹과 거르는 값이 어긋난다.
+ *
+ * **`/study`는 넷 전부, `/review`는 `categories` 하나다** — 오답 세트는 정의상 전부 오답이라
+ * 「풀이 상태」가 성립하지 않는다 (`docs/02-features.md` 「`/review` 오답 복습」 ·
+ * `DESIGN.md` 「필터 패널」).
+ */
+export const FILTER_GROUPS = ['categories', 'services', 'answerCounts', 'solveStates'] as const
+
+export type FilterGroup = (typeof FILTER_GROUPS)[number]
+
 export const NO_FILTER: QuestionFilter = {
   categories: [],
   services: [],
