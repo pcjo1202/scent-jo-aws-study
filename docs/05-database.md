@@ -169,6 +169,14 @@ where not is_correct
 order by question_id;
 ```
 
+**모의고사 미응답 문항은 이 목록에 들지 않는다.** 이 쿼리가 보는 것은 `attempts` 행뿐이고
+`finish`는 미응답에 행을 만들지 않으므로(「세션 채점」), 미응답 문항은 「풀이 상태 맵」에서도
+「안 푼 것」이다 — 아래 「미응답 → 오답」은 **그 세션의 `score`·`results`에만** 걸리는 규칙이라
+여기까지 오지 않는다. `finish`가 `is_correct = false` 행을 만들게 하는 쪽을 기각한 이유는
+`solvedCount`가 함께 올라 **푼 적 없는 문항이 진도에 들기** 때문이다 — 그 값은 이 맵의 행 수로
+확정돼 있다(「풀이 상태 맵」). 미응답은 `/study`와 「안 푼 문제 우선」이 맡는다
+(2026-09-08 결정, SJO-21 / SJO-30 · `02-features.md` 「`/review` 오답 복습」).
+
 ### 세션 채점
 
 ```sql
@@ -178,7 +186,9 @@ where session_id = $1
 order by question_id, created_at desc, id desc;
 ```
 
-세션의 `question_ids` 65개 중 결과에 없는 문항은 **미응답 → 오답**으로 처리한다.
+세션의 `question_ids` 65개 중 결과에 없는 문항은 **미응답 → 오답**으로 처리한다. **이 처리는
+`score`와 `results`를 조립하는 메모리 안에서만 일어난다** — `attempts`에 행을 만들지 않으므로
+오답 목록·풀이 상태 맵·`solvedCount` 어디에도 새지 않는다 (위 「오답 목록」).
 
 **이 쿼리와 답안 제출은 세션 행을 잠가 직렬화한다.** `POST /attempts`(exam)와 `POST /exams/:id/finish`가 둘 다 트랜잭션 안에서 `select … from exam_sessions where id = $1 and user_id = $2 for update`로 시작하고, 그 트랜잭션 안에서 각각 insert와 「답안 읽기 → `finished_at` 확정」을 끝낸다.
 
