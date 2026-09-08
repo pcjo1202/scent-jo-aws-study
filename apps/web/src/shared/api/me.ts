@@ -76,10 +76,19 @@ export function wrongQuestionsQuery(apiUrl: string) {
  *
  * 문항이 자기 카테고리 전부에 산입되므로 `sum(total)`은 문항 수보다 크고, 카테고리가 0개인
  * 문항은 어느 막대에도 안 든다. 둘 다 정상이라 응답에 합계가 없다.
+ *
+ * **마운트마다 다시 받는다.** 이 응답을 무효화하는 곳이 없기 때문이다 — 제출 지점들은
+ * `meKeys.progress`·`meKeys.wrong`만 겨누고 `meKeys.all`을 쓰지 않는데, 그건 실수가 아니라
+ * `questionStates`를 일부러 고정하기 위해서다 (`study-screen.tsx` 「제출 뒤 두 쿼리를 다르게
+ * 다룬다」). 그래서 무효화를 넓히는 대신 이 쿼리를 신선하게 둔다: 기본 `staleTime` 60초를
+ * 그대로 두면 `/study`에서 몇 문제 풀고 **뒤로가기**로 대시보드에 왔을 때 진도 카드만 갱신되고
+ * 정답률 막대가 직전 값으로 남아 **한 화면이 두 시점을 말한다.**
  */
 export function statsQuery(apiUrl: string) {
   return queryOptions({
     queryKey: meKeys.stats(apiUrl),
     queryFn: () => apiFetch<StatsResponse>(apiUrl, '/stats'),
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
