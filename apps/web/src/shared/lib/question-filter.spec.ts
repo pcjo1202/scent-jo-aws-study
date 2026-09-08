@@ -8,6 +8,7 @@ import {
   hasActiveFilter,
   NO_FILTER,
   toFilterOptions,
+  toInitialFilter,
   type QuestionFilter,
 } from './question-filter'
 
@@ -170,5 +171,43 @@ describe('필터 목록은 인덱스에서 도출한다', () => {
 
   it('문항에 안 붙은 값은 목록에 없다', () => {
     expect(toFilterOptions(ENTRIES).services).not.toContain('Amazon EFS')
+  })
+})
+
+describe('URL이 실어 온 초기 필터', () => {
+  it('service가 있으면 서비스 필터 하나가 걸린다 — hasActiveFilter가 참이어야 한다', () => {
+    const filter = toInitialFilter({ service: 'Amazon EC2' })
+
+    expect(filter).toEqual({ ...NO_FILTER, services: ['Amazon EC2'] })
+    // 이것이 `advancesPointer: false`로 가는 유일한 근거다 (`study-set.tsx`).
+    expect(hasActiveFilter(filter)).toBe(true)
+  })
+
+  it('파라미터가 없으면 필터 없음이고 포인터가 정상 전진한다', () => {
+    expect(toInitialFilter({})).toEqual(NO_FILTER)
+    expect(hasActiveFilter(toInitialFilter({}))).toBe(false)
+  })
+
+  it('빈 값·공백만 있는 값은 필터 없음이다 — 빈 칩이 서지 않는다', () => {
+    expect(toInitialFilter({ service: '' })).toEqual(NO_FILTER)
+    expect(toInitialFilter({ service: '   ' })).toEqual(NO_FILTER)
+  })
+
+  it('다른 파라미터는 무시한다 — URL로 여는 필터는 service 하나다', () => {
+    expect(toInitialFilter({ category: '컴퓨트', solveState: 'wrong' })).toEqual(NO_FILTER)
+  })
+
+  it('같은 키가 여러 번 오면 첫 값만 쓴다', () => {
+    expect(toInitialFilter({ service: ['Amazon EC2', 'Amazon S3'] })).toEqual({
+      ...NO_FILTER,
+      services: ['Amazon EC2'],
+    })
+  })
+
+  it('인덱스에 없는 서비스명도 그대로 건다 — 0건은 화면이 「조건에 맞는 문제 없음」으로 받는다', () => {
+    const filter = toInitialFilter({ service: '있지도 않은 서비스' })
+
+    expect(filter.services).toEqual(['있지도 않은 서비스'])
+    expect(filterQuestions(ENTRIES, filter, {})).toEqual([])
   })
 })
