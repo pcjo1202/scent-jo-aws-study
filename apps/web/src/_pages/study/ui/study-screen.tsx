@@ -36,7 +36,18 @@ import { StudySet } from './study-set'
  *   지금 보이는 세트가 흔들리지 않는다. 안 받으면 필터를 걸었다 해제할 때 `StudySet`이
  *   재마운트되면서 낡은 포인터로 커서를 다시 계산해 **이미 푼 문항을 다시 푼다**
  */
-export function StudyScreen({ apiUrl }: { apiUrl: string }) {
+export function StudyScreen({
+  apiUrl,
+  initialFilter,
+}: {
+  apiUrl: string
+  /**
+   * URL이 실어 온 필터 (`toInitialFilter`). **초기값으로만 읽는다** — 여기서 걸리면
+   * `hasFilter`가 참이 되어 `advancesPointer`가 `false`로 가고, 그것이 「이 경로로 푼
+   * 문항은 전체 진도 포인터를 움직이지 않는다」의 구현이다 (`docs/02` 「한줄노트」).
+   */
+  initialFilter: QuestionFilter
+}) {
   const { data: manifest } = useSuspenseQuery(manifestQuery())
   const { data: index } = useSuspenseQuery(questionIndexQuery(manifest))
   const { data: oneLiners } = useSuspenseQuery(oneLinersQuery(manifest))
@@ -44,7 +55,7 @@ export function StudyScreen({ apiUrl }: { apiUrl: string }) {
   const { data: questionStates } = useSuspenseQuery(questionStatesQuery(apiUrl))
 
   const queryClient = useQueryClient()
-  const [filter, setFilter] = useState<QuestionFilter>(NO_FILTER)
+  const [filter, setFilter] = useState<QuestionFilter>(initialFilter)
   const [isPanelOpen, setPanelOpen] = useState(false)
 
   const options = useMemo(() => toFilterOptions(index.entries), [index])

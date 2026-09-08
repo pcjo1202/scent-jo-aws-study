@@ -209,3 +209,31 @@ export type OneLiner = {
 }
 
 export type OneLiners = { items: OneLiner[] }
+
+/**
+ * `04-data-model.md` 「comparisons.json」. `/notes`만 읽는다.
+ *
+ * **`id`가 없다.** 48개 제목이 서로 유일해 `title`이 그 자리를 대신한다 — 상당수가 한글이라
+ * ASCII 슬러그는 원본에 없는 값을 지어내는 일이 된다 (2026-08-28, SJO-5).
+ */
+export type ComparisonMember = {
+  name: string
+  selectSignals: string
+  rejectSignals: string
+  keyDifference: string
+}
+
+/**
+ * `importance`는 원본 ★ 개수(1~3)이고 PC판에서 온다 — 모바일 판본에는 표기가 없다.
+ *
+ * **`1 | 2 | 3`으로 좁히지 않는다.** CDN 응답은 `as`로 받을 뿐 런타임 검사가 없어 좁히면
+ * 거짓말이 된다. 범위를 실제로 막는 곳은 `pnpm data:verify`이고(`verify-artifacts.ts`),
+ * 추출 파이프라인의 타입도 `number`다.
+ */
+export type Comparison = {
+  title: string
+  importance: number
+  members: ComparisonMember[]
+}
+
+export type Comparisons = { items: Comparison[] }

@@ -10,7 +10,7 @@ import { CatalogGate } from '@/_app/providers/catalog-gate'
 import { AuthGuard } from '@/_app/providers/auth-guard'
 
 /**
- * 로그인 후 화면 8개가 이 그룹에 든다. `/login`은 밖이라 가드가 걸리지 않는다 —
+ * 로그인 후 화면 9개가 이 그룹에 든다. `/login`은 밖이라 가드가 걸리지 않는다 —
  * 가드 안에 두면 로그인 화면이 자기 자신으로 리다이렉트한다 (`docs/02` 「인증」).
  *
  * **manifest·index 경계가 여기 있다.** 화면마다 세우면 같은 경계가 8벌이 되고, 문구도

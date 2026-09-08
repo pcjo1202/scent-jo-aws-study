@@ -1,5 +1,6 @@
 import type { IndexEntry, QuestionStatesResponse } from '@aws-study/shared'
 
+import { STUDY_SERVICE_PARAM } from '@/shared/config/study'
 import { isSingleAnswer } from '@/shared/lib/choice-selection'
 
 /**
@@ -37,6 +38,29 @@ export const NO_FILTER: QuestionFilter = {
   services: [],
   answerCounts: [],
   solveStates: [],
+}
+
+/**
+ * `/study`의 **초기** 필터를 URL에서 읽는다 — `/notes`의 「이 서비스가 나온 문제 보기」가
+ * 그 자리다 (`docs/02-features.md` 「한줄노트」).
+ *
+ * **초기값이지 상태가 아니다.** 화면에 들어온 뒤의 필터는 `useState`가 소유하고 URL을
+ * 되쓰지 않는다 — 「필터 모드를 저장하지 않는다」(`docs/02` 「필터」)와 같은 방향이다.
+ * 딥링크는 여는 문이고 저장소가 아니다.
+ *
+ * **값이 인덱스에 있는지 여기서 보지 않는다.** 없는 서비스명이 오면 세트가 0건이 되고
+ * 「조건에 맞는 문제 없음」 + 「필터 해제」가 받는다 — `/study`가 이미 가진 경로다. 여기서
+ * 걸러 조용히 필터를 지우면 「필터를 걸었는데 안 걸린 화면」이 되어 더 나쁘다.
+ */
+export function toInitialFilter(
+  searchParams: Record<string, string | string[] | undefined>,
+): QuestionFilter {
+  const raw = searchParams[STUDY_SERVICE_PARAM]
+  // 같은 키가 여러 번 오면 Next가 배열을 준다. 첫 값만 쓴다 — 다중 선택을 URL로 열지 않았다.
+  const service = (Array.isArray(raw) ? raw[0] : raw)?.trim()
+  if (!service) return NO_FILTER
+
+  return { ...NO_FILTER, services: [service] }
 }
 
 /**
@@ -131,7 +155,7 @@ function countValues(
 }
 
 /**
- * **필터 목록은 인덱스에서 도출한다.** 한줄노트의 202개를 쓰면 문항에 안 붙은 66개가
+ * **필터 목록은 인덱스에서 도출한다.** 한줄노트의 202개를 쓰면 문항에 안 붙은 73개가
  * 고르는 즉시 0건이 된다 (`docs/02-features.md` 「필터」).
  */
 export function toFilterOptions(entries: readonly IndexEntry[]): {

@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Manifest } from '@aws-study/shared'
 
-import { cdnKeys, chunkPath, chunkQuery, manifestQuery, questionIndexQuery } from './cdn'
+import {
+  cdnKeys,
+  chunkPath,
+  chunkQuery,
+  comparisonsQuery,
+  manifestQuery,
+  oneLinersQuery,
+  questionIndexQuery,
+} from './cdn'
 
 const ROOT = 'https://cdn.example/aws-saa/prefix'
 const MANIFEST: Manifest = {
@@ -76,6 +84,22 @@ describe('경로 조립', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(`${ROOT}/v1/questions/chunk-002.json`, expect.anything())
   })
+
+  it('노트 둘도 manifest.base에서 받는다 — 경로가 서로 다르다', async () => {
+    const oneLinersFetch = stubFetch({ ok: true, status: 200, body: { items: [] } })
+    await runQueryFn(oneLinersQuery(MANIFEST))
+    expect(oneLinersFetch).toHaveBeenCalledWith(
+      `${ROOT}/v1/notes/oneliners.json`,
+      expect.anything(),
+    )
+
+    const comparisonsFetch = stubFetch({ ok: true, status: 200, body: { items: [] } })
+    await runQueryFn(comparisonsQuery(MANIFEST))
+    expect(comparisonsFetch).toHaveBeenCalledWith(
+      `${ROOT}/v1/notes/comparisons.json`,
+      expect.anything(),
+    )
+  })
 })
 
 describe('실패', () => {
@@ -98,5 +122,11 @@ describe('캐시 키', () => {
   it('버전이 다르면 다른 키다 — 옛 버전의 index가 새 버전에 재사용되지 않는다', () => {
     expect(cdnKeys.index('v1')).not.toEqual(cdnKeys.index('v2'))
     expect(cdnKeys.chunk('v1', 3)).not.toEqual(cdnKeys.chunk('v2', 3))
+    expect(cdnKeys.oneLiners('v1')).not.toEqual(cdnKeys.oneLiners('v2'))
+    expect(cdnKeys.comparisons('v1')).not.toEqual(cdnKeys.comparisons('v2'))
+  })
+
+  it('노트 둘은 같은 버전에서도 서로 다른 키다 — 한쪽 응답이 다른 쪽 캐시에 앉지 않는다', () => {
+    expect(cdnKeys.oneLiners('v1')).not.toEqual(cdnKeys.comparisons('v1'))
   })
 })

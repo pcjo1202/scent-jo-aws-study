@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 
-import type { Chunk, Manifest, OneLiners, QuestionIndex } from '@aws-study/shared'
+import type { Chunk, Comparisons, Manifest, OneLiners, QuestionIndex } from '@aws-study/shared'
 
 import { dataBaseUrl } from '@/shared/config/env'
 
@@ -8,9 +8,10 @@ import { dataBaseUrl } from '@/shared/config/env'
 const CHUNK_NUMBER_DIGITS = 3
 const INDEX_PATH = 'questions/index.json'
 const ONE_LINERS_PATH = 'notes/oneliners.json'
+const COMPARISONS_PATH = 'notes/comparisons.json'
 
 /**
- * 세 쿼리 모두 **페이지 세션 동안 고정**이다. 재조회하지 않으며 새 버전은 새로고침에서만
+ * 이 파일의 쿼리는 전부 **페이지 세션 동안 고정**이다. 재조회하지 않으며 새 버전은 새로고침에서만
  * 반영된다 — index와 chunk는 같은 버전 안에서만 정합하고, 세션 도중 `base`가 갈리면
  * 풀던 문항이 사라지는 경로까지 설계해야 한다 (`docs/04` 「manifest.json」, SJO-30).
  *
@@ -32,6 +33,9 @@ export const cdnKeys = {
   },
   oneLiners(version: string) {
     return [...cdnKeys.all, version, 'oneliners'] as const
+  },
+  comparisons(version: string) {
+    return [...cdnKeys.all, version, 'comparisons'] as const
   },
 }
 
@@ -90,6 +94,15 @@ export function oneLinersQuery(manifest: Manifest) {
   return queryOptions({
     queryKey: cdnKeys.oneLiners(manifest.version),
     queryFn: ({ signal }) => fetchJson<OneLiners>(`${manifest.base}/${ONE_LINERS_PATH}`, signal),
+    ...SESSION_PINNED,
+  })
+}
+
+/** 위와 달리 `/notes`만 읽는다 — 문제 풀이 화면이 쓰는 것은 한줄노트 쪽이다. */
+export function comparisonsQuery(manifest: Manifest) {
+  return queryOptions({
+    queryKey: cdnKeys.comparisons(manifest.version),
+    queryFn: ({ signal }) => fetchJson<Comparisons>(`${manifest.base}/${COMPARISONS_PATH}`, signal),
     ...SESSION_PINNED,
   })
 }
