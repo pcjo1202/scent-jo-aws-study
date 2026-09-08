@@ -2,10 +2,10 @@
 
 콘솔에서 손으로 한 번 하고 잊어버리는 작업들이다. 6개월 뒤에 왜 이렇게 됐는지 기억하지 못한다.
 
-> **이 문서는 실제로 설정하면서 채운다.** 지금은 뼈대와 결정 사항이고, 콘솔에서 확인한 실제 값(정책 JSON, 정책 ID, ARN)을 그 자리에서 덧붙인다.
+> **이 문서는 실제로 설정하면서 채운다 — 채우는 것은 값과 근거이지 체크 표시가 아니다.** 콘솔에서 확인한 실제 값(정책 JSON, 정책 ID, ARN)과 실측을 그 자리에 덧붙인다.
 > 작업을 마칠 때마다 `MEMORY.md`의 인프라 표를 갱신한다.
 >
-> **미체크 `[ ]`를 「안 했다」로 읽지 마라.** 이미 끝났는데 채우지 않은 칸이 섞여 있다 — 현재 상태의 정본은 `MEMORY.md`다. 전수 대조는 **SJO-52**에서 한다 (2026-09-06 확인).
+> **체크박스는 「이번 셋업에서 밟을 절차」다 — 현재 상태가 아니다.** 그래서 이 문서의 칸은 전부 비어 있고, 비어 있는 것이 정상이다. 무엇이 이미 끝났는지의 정본은 `MEMORY.md`이고 여기에 옮겨 적지 않는다 — 상태를 두 곳에 두면 갈라지고, 실제로 갈라졌다 (2026-09-08 전수 대조, SJO-52). 새 환경에서 밟을 때는 이 파일을 복사해 체크하며 간다.
 
 ## 순서
 
@@ -44,12 +44,12 @@
   postgresql://postgres.<ref>:<pw>@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres
   ```
 
-- [x] **마이그레이션 적용** — 러너 스크립트를 두지 않는다. `apps/api/src/db/migrations/<n>_<이름>.sql`의 **내용을 그대로** Supabase MCP `apply_migration`에 넘긴다(이름은 확장자를 뗀 파일명). 마이그레이션이 드물고 순수 SQL이라 drizzle-kit을 넣지 않았다 (`docs/03` 「데이터베이스 연결」).
+- [ ] **마이그레이션 적용** — 러너 스크립트를 두지 않는다. `apps/api/src/db/migrations/<n>_<이름>.sql`의 **내용을 그대로** Supabase MCP `apply_migration`에 넘긴다(이름은 확장자를 뗀 파일명). 마이그레이션이 드물고 순수 SQL이라 drizzle-kit을 넣지 않았다 (`docs/03` 「데이터베이스 연결」).
 
   적용 후 `list_migrations`의 버전과 레포 파일명을 `MEMORY.md`에 함께 적는다 — 그 대응이 유일한 기록이다. 첫 적용: `0000_init.sql` → `20260903171754_0000_init` (2026-09-04, SJO-13).
 
-- [x] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력) — `/auth/v1/settings` 실측 `external.google: true`, 실제 로그인으로 토큰까지 받았다 (2026-09-06, SJO-50)
-- [x] Auth → **URL Configuration** — Site URL과 Redirect URLs를 함께 본다
+- [ ] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력) — `/auth/v1/settings` 실측 `external.google: true`, 실제 로그인으로 토큰까지 받았다 (2026-09-06, SJO-50)
+- [ ] Auth → **URL Configuration** — Site URL과 Redirect URLs를 함께 본다
 
   **Site URL이 web을 가리켜야 한다.** Supabase는 `redirect_to`가 Redirect URLs에 없으면 **조용히 Site URL로 떨어뜨리므로**, 이 둘이 어긋나면 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. 2026-09-06 실측(SJO-19): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다 — Site URL이 **api 프로젝트**를 가리키고 있었다. **사람이 2026-09-07에 콘솔에서 고쳤는데 2026-09-08에 다시 깨져 있었다** — 기록에 남은 뒤집힘은 이 **1회**다(`MEMORY.md` 커밋 `d861b59`→`0102514`→`4784518`). 2026-09-06의 최초 발견은 언제부터 그랬는지 모르므로 회귀로 세지 않는다. 2026-09-08 수정 뒤의 관찰 시간은 아직 0이다 (SJO-57).
 
@@ -72,7 +72,7 @@
 
   그리고 **재는 칸이 셋이다** — `http://localhost:3000/**` · `https://aws-study-*-smelljo.vercel.app/**` · `https://saa.scent-jo.dev/**`. 한 칸을 재고 「고쳤다」로 적으면 **뒤집힌 것을 늦게 알아챈다** — 2026-09-07 수정이 그랬다. 뒤집힘 자체의 원인과는 다른 이야기이고, 그쪽은 미확정이다. 「N칸 중 M칸 확인」으로 센다 (SJO-57).
 
-- [x] **Vercel↔Supabase 마켓플레이스 통합을 어느 프로젝트에도 연결하지 않는다**
+- [ ] **Vercel↔Supabase 마켓플레이스 통합을 어느 프로젝트에도 연결하지 않는다**
 
   **통합이 Supabase의 URL 설정에 쓴다는 것은 확인하지 못했다.** Supabase 문서가 기술하는 동기화는 **반대 방향뿐이다** — Supabase가 Vercel 프로젝트의 환경변수(`POSTGRES_*`·`SUPABASE_*`)를 채운다. Auth URL Configuration을 통합이 건드린다는 서술은 어느 문서에도 없다(2026-09-08 원문 대조). 끊은 이유는 **메커니즘을 확인해서가 아니라** 자동화 후보 중 유일하게 남았고 끊는 비용이 0이어서다.
 
@@ -87,7 +87,7 @@
 
 **RLS는 켜지 않는다.** 근거는 `05-database.md` 설계 원칙 4. 테이블 생성 시 Supabase가 RLS를 기본 활성화하면, 켜둔 채로 정책 없이 두지 말고 명시적으로 끈다. 켜져 있는데 정책이 없으면 service role이 아닌 모든 접근이 조용히 빈 결과를 반환해 디버깅이 어렵다.
 
-- [x] **Data API(PostgREST) 비활성화** — Settings → API에서 Data API를 끄거나 exposed schema에서 `public`을 제거한다. RLS가 없으므로 이걸 안 끄면 공개된 anon 키만으로 REST 경로가 열린다 (`05-database.md` 설계 원칙 4)
+- [ ] **Data API(PostgREST) 비활성화** — Settings → API에서 Data API를 끄거나 exposed schema에서 `public`을 제거한다. RLS가 없으므로 이걸 안 끄면 공개된 anon 키만으로 REST 경로가 열린다 (`05-database.md` 설계 원칙 4)
 
   **꺼져 있음 — 2026-09-04 실측 확정** (SJO-13). 테이블 0개일 때의 503(PGRST002)은 "노출할 스키마가 없어서"와 구별되지 않아 판정 근거가 아니었다. 세 테이블을 만든 뒤 다시 쟀다: `exam_sessions`·`attempts`·`study_progress` × publishable 키·legacy anon 키 = **읽기 6건 전부 503**, `study_progress` **쓰기 1건도 503**. 테이블이 있는데도 REST가 서빙하지 않으므로 이제는 실측으로 갈린다.
 
@@ -114,15 +114,15 @@
 
 ### S3
 
-- [x] **버킷 버저닝** — 2026-09-04 확인 시점에 이미 `Enabled`였다. 활성화가 아니라 확인이 작업이었다
+- [ ] **버킷 버저닝** — 2026-09-04 확인 시점에 이미 `Enabled`였다. 활성화가 아니라 확인이 작업이었다
 
   추출 데이터가 git에 없으므로 S3가 유일한 원본이다. 버전 경로(`v1`/`v2`)로 덮어쓰기를 구조적으로 막지만, 버저닝은 그 위의 안전망이다. 둘 다 한다. **첫 `data:publish` 전에 확인한다** — `--force` 덮어쓰기 사고의 최후 안전망이다.
 
-- [x] `aws-saa/` 프리픽스 확인
+- [ ] `aws-saa/` 프리픽스 확인
 
   비어 있지 않았다. 2026-08-28에 손으로 올린 4객체가 **랜덤 프리픽스 없이** `aws-saa/v1/`에 직접 들어 있었고(경로 오타 `qusetions/` 포함, 내용은 SJO-7이 폐기한 통합본), 추측 가능한 공개 URL로 저작권 자료가 노출된 상태였다. 삭제했다 (버저닝이 켜져 있어 delete marker만 붙는다).
 
-- [x] 업로드용 IAM 사용자 `aws-saa-data-publisher` 생성. 인라인 정책 `aws-saa-publish`
+- [ ] 업로드용 IAM 사용자 `aws-saa-data-publisher` 생성. 인라인 정책 `aws-saa-publish`
 
   ```json
   {
@@ -155,7 +155,7 @@
 
 **`viewer-response` CloudFront Function이 주입한다.** S3 버킷 CORS가 아닌 이유(캐시 파편화)는 `03-architecture.md` CORS 절이 캐논이다. **Response Headers Policy가 아닌 이유는 이 배포에서 그게 동작하지 않기 때문이다** — 아래.
 
-- [x] 함수 `aws-saa-cors` (`cloudfront-js-2.0`) 생성 → LIVE 게시
+- [ ] 함수 `aws-saa-cors` (`cloudfront-js-2.0`) 생성 → LIVE 게시
 
   ```js
   function handler(event) {
@@ -167,7 +167,7 @@
   }
   ```
 
-- [x] `aws-saa/*` 경로 동작(behavior)을 **신설**하고 함수를 `viewer-response`로 연결
+- [ ] `aws-saa/*` 경로 동작(behavior)을 **신설**하고 함수를 `viewer-response`로 연결
 
   이 배포에는 default behavior 하나뿐이었다(`CacheBehaviors: 0`). 「경로 동작에 정책 연결」은 붙일 자리를 먼저 만드는 일이다. 신설한 behavior는 default를 복제하고 함수만 얹으므로 `aws-saa/*` 밖(예: `blog/`·`robots.txt`)은 그대로다.
 
@@ -191,8 +191,8 @@
 
 ### CloudFront — 캐시
 
-- [x] `aws-saa/<prefix>/v*/**` → `Cache-Control: public, max-age=31536000, immutable`
-- [x] `aws-saa/<prefix>/manifest.json` → `Cache-Control: public, max-age=300`
+- [ ] `aws-saa/<prefix>/v*/**` → `Cache-Control: public, max-age=31536000, immutable`
+- [ ] `aws-saa/<prefix>/manifest.json` → `Cache-Control: public, max-age=300`
 
 헤더는 업로드 시 S3 객체 메타데이터로 설정한다 (`data:publish`가 넣는다). CloudFront는 오리진 헤더를 존중한다.
 
@@ -243,9 +243,9 @@
 
 전부 끝난 뒤 한 번에 확인한다.
 
-- [x] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 `v1/` 전 파일의 개수를 센다** (26/26). curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
-- [x] Google 로그인 → JWT 발급 → `sub` 클레임 확인 — 2026-09-06 실측 (SJO-50). `alg=ES256` · `iss`·`aud`·`email`·`sub` 전부 확인. **Google이 유일한 로그인 수단이라 사람이 직접 로그인해야 토큰이 나온다** — 이메일·익명 프로바이더가 꺼져 있어 임시 계정 경로가 없다
-- [x] Nest가 JWKS로 그 JWT를 검증 → 200 — 2026-09-06, 실제 Supabase JWKS + 실토큰으로 `AuthModule`을 그대로 띄워 **5조건 중 5조건** 일치 (SJO-50): 정상 200 · `issuer` 끝에 슬래시 하나 401 · 옛 `/auth/v1/jwks` 503 · `ALLOWED_EMAIL` 불일치 403 · 토큰 없음 401. **프로덕션에서 같은 것을 재려면 가드가 걸린 라우트가 필요하다** — 지금 라우트는 `@Public()`인 `/health` 하나뿐이라 매칭 안 되는 경로는 가드 이전에 404다
+- [ ] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 `v1/` 전 파일의 개수를 센다** (26/26). curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
+- [ ] Google 로그인 → JWT 발급 → `sub` 클레임 확인 — 2026-09-06 실측 (SJO-50). `alg=ES256` · `iss`·`aud`·`email`·`sub` 전부 확인. **Google이 유일한 로그인 수단이라 사람이 직접 로그인해야 토큰이 나온다** — 이메일·익명 프로바이더가 꺼져 있어 임시 계정 경로가 없다
+- [ ] Nest가 JWKS로 그 JWT를 검증 → 200 — 2026-09-06, 실제 Supabase JWKS + 실토큰으로 `AuthModule`을 그대로 띄워 **5조건 중 5조건** 일치 (SJO-50): 정상 200 · `issuer` 끝에 슬래시 하나 401 · 옛 `/auth/v1/jwks` 503 · `ALLOWED_EMAIL` 불일치 403 · 토큰 없음 401. **프로덕션에서 같은 것을 재려면 가드가 걸린 라우트가 필요하다** — 지금 라우트는 `@Public()`인 `/health` 하나뿐이라 매칭 안 되는 경로는 가드 이전에 404다
 - [ ] Nest가 Postgres에 연결 (`prepare: false` 확인)
 - [ ] web 프리뷰가 api 프리뷰를 가리킴
 - [ ] `MEMORY.md` 인프라 표 갱신
