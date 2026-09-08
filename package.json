@@ -19,7 +19,8 @@
     "data:extract": "pnpm --filter @aws-study/scripts run extract",
     "data:verify": "pnpm --filter @aws-study/scripts run verify",
     "data:publish": "pnpm --filter @aws-study/scripts run publish",
-    "data:pull": "pnpm --filter @aws-study/scripts run pull"
+    "data:pull": "pnpm --filter @aws-study/scripts run pull",
+    "tokens:verify": "pnpm --filter @aws-study/scripts run tokens-verify"
   },
   "devDependencies": {
     "@swc/core": "^1.16.1",
