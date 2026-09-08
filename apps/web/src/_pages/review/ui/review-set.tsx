@@ -72,6 +72,9 @@ export function ReviewSet({
   const answerCount = entry?.answer.length ?? 0
   const isEmpty = entries.length === 0
   const isFinished = !isEmpty && position >= entries.length
+  // **분자와 분모가 같은 세트에서 나온다는 전제가 `entries` 고정에 걸려 있다.** 세트가
+  // 마운트 중에 줄면 사라진 문항의 정답이 계속 세어져 `N`이 `M`을 넘는다 — 고정을 지키는
+  // 것은 `wrongQuestionsQuery`의 재조회 차단과 호출부의 `key`다.
   const correctCount = Object.values(roundResults).filter(Boolean).length
 
   function moveTo(nextPosition: number) {
@@ -107,6 +110,9 @@ export function ReviewSet({
       setRoundResults((current) => ({ ...current, [entry.id]: result.isCorrect }))
       onSubmitted()
     } catch {
+      // 상태 코드로 가르지 않고 배너 하나로 받는 이유는 `/study`의 `StudySet`과 같다 —
+      // 즉시 채점 모드라 낙관적으로 진행할 수 없고(화면에 그릴 정답이 응답에만 있다),
+      // 사용자가 할 일은 어느 실패든 다시 제출하는 것 하나다.
       setSubmitFailed(true)
     } finally {
       setSubmitting(false)
@@ -132,7 +138,7 @@ export function ReviewSet({
         <div className="flex min-h-0 flex-1 flex-col">
           {hasFilter && <div className="px-screen pt-4">{appliedChips}</div>}
           {isEmpty ? (
-            <EmptyDoneState hasFilter={hasFilter} onClearFilter={onClearFilter} />
+            <EmptySetState hasFilter={hasFilter} onClearFilter={onClearFilter} />
           ) : (
             <FinishedState
               total={entries.length}
@@ -215,7 +221,7 @@ export function ReviewSet({
  * 세트가 0건일 때. **두 경우를 가른다** (`docs/02-features.md` 「빈 상태」의 `/review` 두 행).
  * 필터 때문에 0건인데 「복습할 오답이 없다」를 쓰면 오답이 남아 있는데 없다고 말하게 된다.
  */
-function EmptyDoneState({
+function EmptySetState({
   hasFilter,
   onClearFilter,
 }: {

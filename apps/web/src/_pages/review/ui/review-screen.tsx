@@ -16,9 +16,9 @@ import {
   type FilterGroup,
   type QuestionFilter,
 } from '@/shared/lib/question-filter'
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 
 import { FilterPanel } from '@/features/filter-questions/ui/filter-panel'
+import { FilterButton } from '@/features/filter-questions/ui/filter-button'
 import { AppliedFilterChips } from '@/features/filter-questions/ui/applied-filter-chips'
 
 import { ReviewSet } from './review-set'
@@ -72,7 +72,9 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
     () => filterQuestions(wrongEntries, filter, NO_STATES),
     [wrongEntries, filter],
   )
-  // 서비스명이 유일하지 않다 — `/study`와 같은 이유로 뒤엣것이 이긴다 (`study-screen.tsx`).
+  // 서비스명이 유일하지 않다 — 한 서비스가 카테고리를 달리해 두 번 실려 203항목에 고유
+  // 이름은 202다 (`packages/shared`의 `OneLiner`). 뒤엣것이 이기는데, 같은 서비스의 설명이
+  // 둘 다 그 서비스를 설명하므로 어느 쪽이든 화면이 틀리지 않는다.
   const notes = useMemo(
     () => new Map(oneLiners.items.map((item) => [item.service, item.note])),
     [oneLiners],
@@ -105,8 +107,12 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
             appliedChips={<AppliedFilterChips filter={filter} />}
             onClearFilter={() => setFilter(NO_FILTER)}
             onRestart={() => {
-              void queryClient.invalidateQueries({ queryKey: meKeys.wrong(apiUrl) })
-              setRound((current) => current + 1)
+              // **무효화가 끝난 뒤에 회차를 올린다.** 순서가 뒤집히면 새 `key`의 `ReviewSet`이
+              // 옛 세트로 먼저 마운트되고, 1 RTT 뒤 도착한 목록이 `key` 밖에서 세트를 또
+              // 바꾼다 — 그 창에서 제출하면 채점 결과가 다른 문항 위에 남는다.
+              void queryClient
+                .invalidateQueries({ queryKey: meKeys.wrong(apiUrl) })
+                .then(() => setRound((current) => current + 1))
             }}
             onSubmitted={() => {
               // 진도만 무효화한다. **오답 목록은 건드리지 않는다** — 다시 받으면 맞힌 문항이
@@ -114,19 +120,7 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
               void queryClient.invalidateQueries({ queryKey: meKeys.progress(apiUrl) })
             }}
             filterAction={
-              <button
-                type="button"
-                aria-label={badgeCount > 0 ? `필터 ${badgeCount}개 적용` : '필터'}
-                onClick={() => setPanelOpen(true)}
-                className="state-layer relative flex size-12 items-center justify-center rounded-corner-full expanded:hidden"
-              >
-                <MaterialSymbol name="filter_list" />
-                {badgeCount > 0 && (
-                  <span className="absolute right-1 top-1 min-w-4 rounded-corner-full bg-secondary-container px-1 text-center text-label-medium text-on-secondary-container">
-                    {badgeCount}
-                  </span>
-                )}
-              </button>
+              <FilterButton badgeCount={badgeCount} onClick={() => setPanelOpen(true)} />
             }
           />
         </div>

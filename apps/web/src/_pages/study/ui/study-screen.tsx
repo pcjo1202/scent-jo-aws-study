@@ -13,9 +13,9 @@ import {
   toFilterOptions,
   type QuestionFilter,
 } from '@/shared/lib/question-filter'
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 
 import { FilterPanel } from '@/features/filter-questions/ui/filter-panel'
+import { FilterButton } from '@/features/filter-questions/ui/filter-button'
 import { AppliedFilterChips } from '@/features/filter-questions/ui/applied-filter-chips'
 
 import { StudySet } from './study-set'
@@ -93,21 +93,7 @@ export function StudyScreen({ apiUrl }: { apiUrl: string }) {
               void queryClient.invalidateQueries({ queryKey: meKeys.progress(apiUrl) })
             }}
             filterAction={
-              // `expanded`에서는 패널이 이미 열려 있으므로 이 버튼이 사라진다
-              // (`DESIGN.md` 「화면별 우측 액션」). 규칙 하나가 세 화면을 덮는다.
-              <button
-                type="button"
-                aria-label={badgeCount > 0 ? `필터 ${badgeCount}개 적용` : '필터'}
-                onClick={() => setPanelOpen(true)}
-                className="state-layer relative flex size-12 items-center justify-center rounded-corner-full expanded:hidden"
-              >
-                <MaterialSymbol name="filter_list" />
-                {badgeCount > 0 && (
-                  <span className="absolute right-1 top-1 min-w-4 rounded-corner-full bg-secondary-container px-1 text-center text-label-medium text-on-secondary-container">
-                    {badgeCount}
-                  </span>
-                )}
-              </button>
+              <FilterButton badgeCount={badgeCount} onClick={() => setPanelOpen(true)} />
             }
           />
         </div>
