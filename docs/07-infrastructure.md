@@ -51,7 +51,7 @@
 - [x] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력) — `/auth/v1/settings` 실측 `external.google: true`, 실제 로그인으로 토큰까지 받았다 (2026-09-06, SJO-50)
 - [x] Auth → **URL Configuration** — Site URL과 Redirect URLs를 함께 본다
 
-  **Site URL이 web을 가리켜야 한다.** Supabase는 `redirect_to`가 Redirect URLs에 없으면 **조용히 Site URL로 떨어뜨리므로**, 이 둘이 어긋나면 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. 2026-09-06 실측(SJO-19): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다 — Site URL이 **api 프로젝트**를 가리키고 있었다. **같은 회귀가 2026-09-07·2026-09-08에 두 번 더 났다** — 사람이 콘솔에서 고칠 때마다 하루를 못 갔다 (SJO-57).
+  **Site URL이 web을 가리켜야 한다.** Supabase는 `redirect_to`가 Redirect URLs에 없으면 **조용히 Site URL로 떨어뜨리므로**, 이 둘이 어긋나면 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. 2026-09-06 실측(SJO-19): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다 — Site URL이 **api 프로젝트**를 가리키고 있었다. **사람이 2026-09-07에 콘솔에서 고쳤는데 2026-09-08에 다시 깨져 있었다** — 기록에 남은 뒤집힘은 이 **1회**다(`MEMORY.md` 커밋 `d861b59`→`0102514`→`4784518`). 2026-09-06의 최초 발견은 언제부터 그랬는지 모르므로 회귀로 세지 않는다. 2026-09-08 수정 뒤의 관찰 시간은 아직 0이다 (SJO-57).
 
   용의자는 **api 프로젝트에 연결돼 있던 Vercel↔Supabase 마켓플레이스 통합**이고 2026-09-08에 끊었다(아래 「통합」 항목). 다만 **원인 확정은 아니다** — 되돌릴 수 있는 경로를 전수로 훑어 자동화 후보 5개 중 4개를 측정으로 배제했고(`supabase/config.toml` 0건 · CI 워크플로 없음 · Supabase 프리뷰 브랜치 0건 · MCP `features`에 auth 없음) 남은 것이 이 통합이지만, **사람의 수동 실수는 반증할 수 없고** 확증은 끊은 뒤의 관찰뿐이다 (`MEMORY.md`).
 
@@ -62,15 +62,19 @@
 
   프리뷰가 프로젝트명이 아니라 해시 형태인 근거는 `docs/06` 「환경별 차이」.
 
-  **Redirect URLs는 위의 셋뿐이다 — api 오리진을 넣지 않는다.** 허용 목록에 있는 오리진은 Supabase가 토큰을 실어 보내도 되는 곳이라는 뜻이고, api는 그 토큰으로 할 일이 없다(Bearer로 받는다). 2026-09-08 실측에서 목록이 **7개**였다: 규약 3개는 전부 들어 있었고 나머지 **4개가 api 오리진**이었다 (`aws-study-api-smelljo.vercel.app`의 `/`·`/**`, `aws-*-study-api-smelljo.vercel.app`의 없음·`/**`). **누가 넣었는지는 가려지지 않는다** — 통합이 심었을 수도, 404를 쫓던 사람이 손으로 넣었을 수도 있다. 어느 쪽이든 규약에 없으므로 **같은 날 지웠고 목록은 위의 셋뿐이다** (SJO-57).
+  **허용 목록은 api 오리진을 막지 못한다 — 방어선은 Site URL이다.** 2026-09-08 실측에서 목록이 **7개**였고 규약 3개 외의 **4개가 api 오리진**이어서(`aws-study-api-smelljo.vercel.app`의 `/`·`/**`, `aws-*-study-api-smelljo.vercel.app`의 없음·`/**`) 지웠다. **그런데 그 삭제는 실효가 없다.** 남긴 `https://aws-study-*-smelljo.vercel.app/**`가 `aws-study-api-smelljo.vercel.app`을 **그대로 매치한다** — Supabase의 글롭에서 `*`는 separator가 아닌 임의 시퀀스를 매치하고 separator는 `.`과 `/`뿐이라, `api`가 `*`에 걸린다 (2026-09-08 Supabase 문서 원문 대조).
+
+  **좁힐 수도 없다.** web과 api의 프리뷰 호스트명이 **구별 불가능하다** — `vercel ls`로 재 보면 둘 다 `aws-study-<해시>-smelljo.vercel.app`이고 프로젝트명이 들어가지 않는다(2026-09-08 실측). Supabase가 권장하는 패턴(`https://*-<team-slug>.vercel.app/**`)은 이보다 더 넓다.
+
+  그러니 **허용 목록을 방어선으로 세지 마라.** 토큰이 web으로 오는 근거는 두 가지뿐이다 — ① 코드가 항상 `redirectTo: ${window.location.origin}/`를 넘긴다 ② **Site URL이 web을 가리킨다**(허용 목록에 없을 때 떨어지는 곳). 그래서 회귀를 재는 자리도 허용 목록이 아니라 **Site URL과 실제 도착 오리진**이다 (SJO-57).
 
   **`/auth/v1/authorize`의 응답으로는 판정할 수 없다.** 어떤 `redirect_to`를 줘도 302로 Google에 보낸다 — `evil.example`로 음성 대조했다. 검증은 콜백에서 일어나므로 **실제 로그인으로만 확인된다** (2026-09-06, SJO-19).
 
-  그리고 **재는 칸이 셋이다** — `http://localhost:3000/**` · `https://aws-study-*-smelljo.vercel.app/**` · `https://saa.scent-jo.dev/**`. 한 칸을 재고 「고쳤다」로 적은 것이 이 회귀가 두 번 반복된 이유다. 「N칸 중 M칸 확인」으로 센다 (SJO-57).
+  그리고 **재는 칸이 셋이다** — `http://localhost:3000/**` · `https://aws-study-*-smelljo.vercel.app/**` · `https://saa.scent-jo.dev/**`. 한 칸을 재고 「고쳤다」로 적으면 **뒤집힌 것을 늦게 알아챈다** — 2026-09-07 수정이 그랬다. 뒤집힘 자체의 원인과는 다른 이야기이고, 그쪽은 미확정이다. 「N칸 중 M칸 확인」으로 센다 (SJO-57).
 
 - [x] **Vercel↔Supabase 마켓플레이스 통합을 어느 프로젝트에도 연결하지 않는다**
 
-  통합은 연결된 프로젝트의 배포 URL을 Supabase의 URL 설정에 동기화한다. api에 붙어 있으면 web이 받아야 할 토큰이 api 도메인으로 간다.
+  **통합이 Supabase의 URL 설정에 쓴다는 것은 확인하지 못했다.** Supabase 문서가 기술하는 동기화는 **반대 방향뿐이다** — Supabase가 Vercel 프로젝트의 환경변수(`POSTGRES_*`·`SUPABASE_*`)를 채운다. Auth URL Configuration을 통합이 건드린다는 서술은 어느 문서에도 없다(2026-09-08 원문 대조). 끊은 이유는 **메커니즘을 확인해서가 아니라** 자동화 후보 중 유일하게 남았고 끊는 비용이 0이어서다.
 
   **`disconnect`와 `remove`는 다른 명령이다.** 전자는 프로젝트 연결만 풀고 리소스와 Supabase 프로젝트를 건드리지 않으며 `connect`로 되돌아간다. Supabase 프로젝트까지 지우는지 확인할 수 없는 쪽은 **후자**이고, 그건 누르지 않는다.
 
