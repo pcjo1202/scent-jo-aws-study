@@ -25,9 +25,10 @@ const LAB_DELTA = 6 / 29
 /**
  * Machado 2009 severity 1.0 (protan·deutan) + Viénot 1999 deutan. 전부 선형 RGB 공간이다.
  *
- * Viénot deutan은 앞 두 행이 같은 **rank 2** 투영이어야 한다. 널리 인용되는
+ * Viénot deutan은 앞 두 행이 같은 **rank 2** 투영이어야 한다. 널리 도는
  * `[[.625,.375,0],[.70,.30,0],[0,.30,.70]]`은 det = -0.0525로 rank 3이라 이색각
- * 투영이 될 수 없다 — 그 행렬은 두 색을 눌러 합치는 대신 옮긴다.
+ * 투영이 될 수 없다 — 두 색을 눌러 합치는 대신 옮긴다. 그 행렬은 보통 protan으로
+ * 인용되지만 어느 쪽이든 rank 3이면 이 자리에 쓸 수 없다.
  */
 export const CVD_MODELS: Readonly<Record<string, Matrix>> = {
   'machado-protan': [
@@ -101,8 +102,19 @@ export function deltaE76(a: Lab, b: Lab): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 }
 
+/**
+ * 시뮬레이션 결과를 **sRGB 게멋으로 자른다.** 자르지 않으면 안 되는 이유가 있다.
+ *
+ * 이 행렬들은 색역 밖 선형값을 내놓는다 — `primary` `#964900`은 Viénot deutan에서
+ * 파랑이 **-0.0053**이 된다. 표시할 수 없는 색이고, 0 근처는 sRGB 전달함수가 가팔라
+ * 그 음수 하나가 Lab b*의 차이를 통째로 만든다. 화면은 그 채널을 0으로 자르므로
+ * **이색각 사용자가 실제로 보는 차이는 자른 쪽**이다. 자르지 않으면 존재할 수 없는
+ * 색이 만든 ΔE를 발행하게 되고, 그 값은 접근성 판정을 관대한 쪽으로 민다
+ * (2026-09-08 SJO-39 리뷰에서 실제로 그렇게 틀렸다 — `docs/10` 「토큰 검증」).
+ */
 export function simulate(linear: Rgb, model: Matrix): Rgb {
-  return multiply(model, linear)
+  const [r, g, b] = multiply(model, linear)
+  return [clampChannel(r), clampChannel(g), clampChannel(b)]
 }
 
 function multiply(matrix: Matrix, vector: Rgb): Rgb {
@@ -115,6 +127,10 @@ function dot(row: Rgb, vector: Rgb): number {
 
 function channelAt(digits: string, at: number): number {
   return parseInt(digits.slice(at, at + 2), 16) / 255
+}
+
+function clampChannel(channel: number): number {
+  return Math.min(1, Math.max(0, channel))
 }
 
 function decode(channel: number): number {

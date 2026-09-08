@@ -29,14 +29,14 @@ export function parseDesign(markdown: string): DesignTables {
       light: readPalette(markdown, '#### Light', paletteAt),
       dark: readPalette(markdown, '#### Dark', paletteAt),
     },
-    contrast: readTable(markdown, CONTRAST_HEADING).map(toContrastRow),
-    cvd: readTable(markdown, CVD_HEADING).map(toCvdRow),
+    contrast: readTable(markdown, CONTRAST_HEADING, ['조합', 'Light', 'Dark']).map(toContrastRow),
+    cvd: readTable(markdown, CVD_HEADING, ['쌍', '정상', '색각 최악', '보라 시절']).map(toCvdRow),
   }
 }
 
 /** 역할·값이 두 벌씩 놓인 표라 한 행에서 최대 두 쌍을 뽑는다. 남는 칸은 비어 있다. */
 function readPalette(markdown: string, heading: string, from: number): PaletteRow[] {
-  return readTable(markdown, heading, from).flatMap((cells) =>
+  return readTable(markdown, heading, ['역할', '값', '역할', '값'], from).flatMap((cells) =>
     [0, 2]
       .map((at) => ({ role: unquote(cells[at]), hex: unquote(cells[at + 1]).toUpperCase() }))
       .filter((row) => row.role !== '' && row.hex !== ''),
@@ -78,10 +78,13 @@ function indexOfHeading(markdown: string, heading: string): number {
 }
 
 /**
- * 제목 다음에 처음 나오는 표의 **본문 행**을 읽는다. 머리글과 구분선은 버린다.
- * 표를 못 찾으면 던진다 — 0행을 돌려주면 「대상 없음」이 「위반 없음」으로 통과한다.
+ * 제목 다음에 처음 나오는 표의 **본문 행**을 읽는다.
+ *
+ * 머리글을 버리기 전에 **글자로 확인한다.** 첫 `|` 행을 머리글이라고 가정하면, 머리글이
+ * 지워졌을 때 본문 한 줄이 대신 버려지고 검사 대상이 조용히 한 행 줄어든다 — `exit 0`이
+ * "대상 없음"으로 새는 자리이고, 실제로 프로브에서 그렇게 통과했다 (`docs/10` 「토큰 검증」).
  */
-function readTable(markdown: string, heading: string, from = 0): string[][] {
+function readTable(markdown: string, heading: string, header: string[], from = 0): string[][] {
   const at = markdown.indexOf(`\n${heading}\n`, from)
   if (at < 0) throw new Error(`DESIGN.md에 「${heading}」 절이 없다`)
 
@@ -94,6 +97,13 @@ function readTable(markdown: string, heading: string, from = 0): string[][] {
     }
     if (/^\|[\s:|-]+\|$/.test(trimmed)) continue
     rows.push(trimmed.slice(1, -1).split('|'))
+  }
+
+  const found = (rows[0] ?? []).map((cell) => cell.trim())
+  if (found.join(' | ') !== header.join(' | ')) {
+    throw new Error(
+      `「${heading}」 표의 머리글이 «${header.join(' | ')}»가 아니라 «${found.join(' | ')}»다`,
+    )
   }
 
   const body = rows.slice(1)

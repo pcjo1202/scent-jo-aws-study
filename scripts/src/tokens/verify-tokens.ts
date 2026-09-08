@@ -30,10 +30,39 @@ const CHROMATIC_ROLES = [
   'correct-container',
 ]
 
+/**
+ * 무채 역할. 유채와 합치면 `--sys-color-*` 전체가 나와야 한다 — 새 역할이 들어왔는데
+ * 어느 쪽에도 없으면 위생 검사가 그 역할을 **모르는 채로** 통과한다.
+ */
+const ACHROMATIC_ROLES = [
+  'on-primary',
+  'on-primary-container',
+  'on-secondary-container',
+  'on-error',
+  'on-error-container',
+  'on-correct',
+  'on-correct-container',
+  'surface',
+  'on-surface',
+  'surface-variant',
+  'on-surface-variant',
+  'surface-container-lowest',
+  'surface-container-low',
+  'surface-container',
+  'surface-container-high',
+  'surface-container-highest',
+  'outline',
+  'outline-variant',
+]
+
 const THEMES: ThemeName[] = ['light', 'dark']
 const JND = 2.3
 const CONTRAST_DECIMALS = 2
 const DELTA_E_DECIMALS = 1
+const LAB_DECIMALS = 2
+
+/** 「색으로만 갈리지 않는 쌍」 표가 싣는 최악 쌍의 수. 나머지는 `error`×`correct` 계열이다. */
+const LISTED_WORST_COUNT = 4
 
 /**
  * 「시뮬레이션 ΔE ≤ 정상 ΔE」는 CIE76에서 **엄밀하게 참이 아니다.** 올바른 선형공간
@@ -48,6 +77,8 @@ const SIMULATION_EXCESS_TOLERANCE = JND
 
 export type TokenSources = { tokens: Tokens; design: DesignTables; markdown: string }
 
+type Pair = { a: string; b: string; theme: ThemeName; normal: number; worst: number }
+
 export type TokenAnomalies = {
   counts: Record<string, number>
   total: number
@@ -58,6 +89,7 @@ export type TokenAnomalies = {
     contrastCells: number
     cvdCells: number
     sanityChecks: number
+    coverageChecks: number
     proseClaims: number
     pairCount: number
     belowJnd: number
@@ -68,39 +100,43 @@ export type TokenAnomalies = {
 export function findTokenAnomalies({ tokens, design, markdown }: TokenSources): TokenAnomalies {
   const messages: string[] = []
   const counts: Record<string, number> = {}
-  const add = (label: string, failures: string[]) => {
+  function record(label: string, failures: string[]) {
     counts[label] = failures.length
     messages.push(...failures)
   }
 
   const knownValues = checkKnownValues()
-  add('계산기 기지값', knownValues)
+  record('계산기 기지값', knownValues.failures)
 
   const palette = checkPalette(tokens, design)
-  add('팔레트 표', palette.failures)
+  record('팔레트 표', palette.failures)
 
   const contrast = checkContrast(tokens, design)
-  add('대비 표', contrast.failures)
+  record('대비 표', contrast.failures)
 
   const cvd = checkCvd(tokens, design)
-  add('색각 표', cvd.failures)
+  record('색각 표', cvd.failures)
 
   const sanity = checkSanity(tokens)
-  add('색각 위생 검사', sanity.failures)
+  record('색각 위생 검사', sanity.failures)
+
+  const coverage = checkCoverage(tokens, design, sanity.pairs)
+  record('표 완비성', coverage.failures)
 
   const prose = checkProse(markdown, tokens, sanity.pairs)
-  add('산문 수치', prose.failures)
+  record('산문 수치', prose.failures)
 
   return {
     counts,
     total: Object.values(counts).reduce((sum, count) => sum + count, 0),
     messages,
     stats: {
-      knownValues: KNOWN_VALUES.contrast.length + 1,
+      knownValues: knownValues.checked,
       paletteCells: palette.checked,
       contrastCells: contrast.checked,
       cvdCells: cvd.checked,
       sanityChecks: sanity.checked,
+      coverageChecks: coverage.checked,
       proseClaims: prose.checked,
       pairCount: sanity.pairs.length,
       belowJnd: sanity.pairs.filter((pair) => pair.worst < JND).length,
@@ -109,24 +145,32 @@ export function findTokenAnomalies({ tokens, design, markdown }: TokenSources): 
   }
 }
 
-/** 이 검사가 실패하면 나머지 수치는 전부 의미가 없다 — 계산기가 깨진 것이다. */
-function checkKnownValues(): string[] {
+/**
+ * 이 검사가 실패하면 나머지 수치는 전부 의미가 없다 — 계산기가 깨진 것이다.
+ *
+ * 다만 **색각 경로는 덮지 못한다.** 기지값이 전부 대비·Lab이라, 시뮬레이션은
+ * 아래 위생 검사가 유일한 음성 대조다 (`docs/10` 「토큰 검증」).
+ */
+function checkKnownValues() {
   const failures: string[] = []
+  let checked = 0
 
   for (const { foreground, background, expected } of KNOWN_VALUES.contrast) {
+    checked += 1
     const actual = round(contrastRatio(foreground, background), CONTRAST_DECIMALS)
     if (actual !== expected) {
       failures.push(`계산기: ${foreground}+${background} 대비 기지값 ${expected}인데 ${actual}`)
     }
   }
 
-  const lab = labOf(KNOWN_VALUES.lab.hex).map((value) => round(value, CONTRAST_DECIMALS))
+  checked += 1
+  const lab = labOf(KNOWN_VALUES.lab.hex).map((value) => round(value, LAB_DECIMALS))
   if (lab.some((value, at) => value !== KNOWN_VALUES.lab.expected[at])) {
     failures.push(
       `계산기: Lab(${KNOWN_VALUES.lab.hex}) 기지값 ${KNOWN_VALUES.lab.expected.join(', ')}인데 ${lab.join(', ')}`,
     )
   }
-  return failures
+  return { failures, checked }
 }
 
 /** 값 대조만이 아니라 **양쪽 집합이 같은지**도 본다 — 표에서 빠진 역할은 조용히 통과한다. */
@@ -217,7 +261,7 @@ function checkCvd(tokens: Tokens, design: DesignTables) {
  */
 function checkSanity(tokens: Tokens) {
   const failures: string[] = []
-  const pairs: Array<{ a: string; b: string; theme: ThemeName; normal: number; worst: number }> = []
+  const pairs: Pair[] = []
   let checked = 0
   let maxExcess = 0
 
@@ -263,43 +307,108 @@ function measurePair(a: string, b: string) {
 }
 
 /**
+ * **검사 대상이 줄어드는 것**을 검사한다. 값 대조는 표에 있는 행만 보므로, 행이 빠지거나
+ * 역할이 늘면 조용히 통과한다 — 루트 `CLAUDE.md`가 "0건보다 위험하다"고 적은 부분 집계다.
+ */
+function checkCoverage(
+  tokens: Tokens,
+  design: DesignTables,
+  pairs: Pair[],
+): { failures: string[]; checked: number } {
+  const failures: string[] = []
+  let checked = 0
+
+  // ① `--sys-color-*` 역할이 전부 유채/무채 중 하나로 분류돼 있는가
+  const classified = new Set([...CHROMATIC_ROLES, ...ACHROMATIC_ROLES])
+  for (const role of Object.keys(tokens.light)) {
+    checked += 1
+    if (!classified.has(role)) {
+      failures.push(`완비성: \`${role}\`가 유채·무채 어느 쪽으로도 분류돼 있지 않다`)
+    }
+  }
+  for (const role of classified) {
+    checked += 1
+    if (!(role in tokens.light))
+      failures.push(`완비성: 분류 목록의 \`${role}\`가 tokens.css에 없다`)
+  }
+
+  // ② 「대비 검증」이 모든 `on-` 역할을 한 번 이상 재고 있는가
+  const measured = new Set(design.contrast.flatMap((row) => [row.foreground, row.background]))
+  for (const role of Object.keys(tokens.light).filter((name) => name.startsWith('on-'))) {
+    checked += 1
+    if (!measured.has(role)) failures.push(`완비성: \`${role}\`가 「대비 검증」 표에 없다`)
+  }
+
+  // ③ 「색으로만 갈리지 않는 쌍」이 선정 기준대로인가 — 최악 4쌍 + `error`×`correct` 계열
+  const worstFirst = [...pairs].sort((a, b) => a.worst - b.worst)
+  const required = new Set([
+    ...worstFirst.slice(0, LISTED_WORST_COUNT).map(keyOf),
+    ...pairs.filter(isVerdictPair).map(keyOf),
+  ])
+  const listed = new Set(design.cvd.map((row) => keyOf({ a: row.a, b: row.b, theme: row.theme })))
+
+  for (const key of required) {
+    checked += 1
+    if (!listed.has(key)) failures.push(`완비성: 선정 기준상 실려야 할 ${key}가 표에 없다`)
+  }
+  for (const key of listed) {
+    checked += 1
+    if (!required.has(key)) failures.push(`완비성: 선정 기준 밖의 ${key}가 표에 있다`)
+  }
+  return { failures, checked }
+}
+
+/** 정오를 나르는 두 계열. 「색으로만 갈리지 않는 쌍」이 값과 무관하게 항상 싣는 행이다. */
+function isVerdictPair({ a, b }: { a: string; b: string }): boolean {
+  const pair = [a, b].sort().join(' / ')
+  return pair === 'correct / error' || pair === 'correct-container / error-container'
+}
+
+function keyOf({ a, b, theme }: { a: string; b: string; theme: ThemeName }): string {
+  return `\`${[a, b].sort().join('` / `')}\` (${theme})`
+}
+
+/**
  * 표 밖 산문에 박힌 수치. 표만 고치고 산문을 두면 **둘 다 정본으로 읽히므로** 공백보다 나쁘다
  * (루트 `CLAUDE.md` 「규칙을 고치면 그 규칙을 참조하는 곳을 전수로 훑는다」 ②).
  */
-function checkProse(
-  markdown: string,
-  tokens: Tokens,
-  pairs: Array<{ a: string; b: string; theme: ThemeName; worst: number }>,
-) {
-  const worstOf = (a: string, b: string, theme?: ThemeName) => {
+function checkProse(markdown: string, tokens: Tokens, pairs: Pair[]) {
+  function worstOf(a: string, b: string, theme?: ThemeName): number {
     const matched = pairs.filter(
       (pair) =>
         (pair.a === a || pair.b === a) &&
         (pair.a === b || pair.b === b) &&
         (theme === undefined || pair.theme === theme),
     )
+    if (matched.length === 0) throw new Error(`유채 쌍이 아니다: ${a} × ${b}`)
     return Math.min(...matched.map((pair) => pair.worst))
   }
-  const surfaceContrast = (theme: ThemeName) =>
-    contrastRatio(tokens[theme]['surface-container-low']!, tokens[theme]['surface']!)
 
-  const claims: Array<{ pattern: RegExp; expected: number; decimals: number }> = [
+  function roleContrast(foreground: string, background: string, theme: ThemeName): number {
+    const [a, b] = [tokens[theme][foreground], tokens[theme][background]]
+    if (!a || !b) throw new Error(`역할이 없다: ${foreground} / ${background} (${theme})`)
+    return contrastRatio(a, b)
+  }
+
+  const belowJnd = pairs.filter((pair) => pair.worst < JND).length
+  const errorCorrect = pairs.filter(
+    (pair) => pair.a === 'error-container' && pair.b === 'correct-container',
+  )
+
+  const claims: Claim[] = [
     { pattern: /유채 역할 (\d+)개의 전 조합/g, expected: CHROMATIC_ROLES.length, decimals: 0 },
     { pattern: /전 조합 (\d+)쌍을 Light·Dark/g, expected: pairs.length, decimals: 0 },
     { pattern: /\*\*(\d+)쌍 중 JND 미만이/g, expected: pairs.length, decimals: 0 },
+    { pattern: /쌍 중 JND 미만이 (\d+)건이다/g, expected: belowJnd, decimals: 0 },
     {
-      pattern: /쌍 중 JND 미만이 (\d+)건이다/g,
-      expected: pairs.filter((pair) => pair.worst < JND).length,
-      decimals: 0,
-    },
-    {
-      pattern: /테두리를 쓰면 색으로도 갈린다\(색각 최악 ([\d.]+)\)/g,
+      pattern: /`correct` × `secondary-container` 색각 최악 (?:ΔE )?([\d.]+)/g,
       expected: worstOf('correct', 'secondary-container'),
       decimals: DELTA_E_DECIMALS,
+      occurrences: 2,
     },
     {
-      pattern: /`correct` 테두리다 \(색각 최악 ΔE ([\d.]+)\)/g,
-      expected: worstOf('correct', 'secondary-container'),
+      pattern: /이 잠금이 풀리면 위 ([\d.]+)이 바로 문제가 된다/g,
+      expected: worstOf('primary', 'error', 'light'),
       decimals: DELTA_E_DECIMALS,
     },
     {
@@ -314,16 +423,25 @@ function checkProse(
     },
     {
       pattern: /색각 최악 [\d.]+~([\d.]+)으로/g,
-      expected: Math.max(
-        ...pairs
-          .filter((pair) => pair.a === 'error-container' && pair.b === 'correct-container')
-          .map((pair) => pair.worst),
-      ),
+      expected: Math.max(...errorCorrect.map((pair) => pair.worst)),
       decimals: DELTA_E_DECIMALS,
     },
+    // 조사가 「가」·「는」으로 갈리고 역할 이름이 생략된 곳도 있어 값 쪽으로 느슨하게 잡는다.
+    // 루트 `CLAUDE.md` 「검색어는 내가 쓴 표기로만 만들지 않는다」 — 출현 수를 함께 박는다.
     {
-      pattern: /`surface-container-low`가 `surface` 대비 ([\d.]+)라/g,
-      expected: surfaceContrast('light'),
+      pattern: /`surface` 대비 ([\d.]+)라/g,
+      expected: roleContrast('surface-container-low', 'surface', 'light'),
+      decimals: CONTRAST_DECIMALS,
+      occurrences: 3,
+    },
+    {
+      pattern: /`correct-container`는 `surface` 대비 그레이스케일\n([\d.]+):1\(Light\)/g,
+      expected: roleContrast('correct-container', 'surface', 'light'),
+      decimals: CONTRAST_DECIMALS,
+    },
+    {
+      pattern: /`#E68236`은 소스이지 `primary` 값이 아니다\.\*\* 흰 글자 대비 ([\d.]+):1/g,
+      expected: contrastRatio('#E68236', '#FFFFFF'),
       decimals: CONTRAST_DECIMALS,
     },
   ]
@@ -331,11 +449,16 @@ function checkProse(
   const failures: string[] = []
   let checked = 0
 
-  for (const { pattern, expected, decimals } of claims) {
+  for (const { pattern, expected, decimals, occurrences } of claims) {
     const found = [...markdown.matchAll(pattern)]
     if (found.length === 0) {
       failures.push(`산문: /${pattern.source}/에 해당하는 문장이 DESIGN.md에 없다`)
       continue
+    }
+    if (occurrences !== undefined && found.length !== occurrences) {
+      failures.push(
+        `산문: /${pattern.source}/가 ${occurrences}곳에 있어야 하는데 ${found.length}곳이다`,
+      )
     }
 
     const rounded = round(expected, decimals)
@@ -348,6 +471,12 @@ function checkProse(
   }
   return { failures, checked }
 }
+
+/**
+ * `occurrences`는 **패턴이 표기 하나에만 맞는 경우**를 막는다. 같은 값이 조사만 달리해
+ * 여러 절에 흩어져 있으면 좁은 정규식이 한 곳만 짚고 나머지는 갈라진 채 통과한다.
+ */
+type Claim = { pattern: RegExp; expected: number; decimals: number; occurrences?: number }
 
 function round(value: number, decimals: number): number {
   return Number(value.toFixed(decimals))

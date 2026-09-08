@@ -27,7 +27,7 @@ function main() {
     `대상: reference ${tokens.referenceCount}개 · 역할 Light ${Object.keys(tokens.light).length}개 · Dark ${Object.keys(tokens.dark).length}개 · 유채 조합 ${stats.pairCount}쌍`,
   )
   console.log(
-    `검사: 기지값 ${stats.knownValues}건 · 팔레트 ${stats.paletteCells}셀 · 대비 ${stats.contrastCells}셀 · 색각 ${stats.cvdCells}셀 · 위생 ${stats.sanityChecks}건 · 산문 ${stats.proseClaims}건`,
+    `검사: 기지값 ${stats.knownValues}건 · 팔레트 ${stats.paletteCells}셀 · 대비 ${stats.contrastCells}셀 · 색각 ${stats.cvdCells}셀 · 위생 ${stats.sanityChecks}건 · 완비성 ${stats.coverageChecks}건 · 산문 ${stats.proseClaims}건`,
   )
   console.log(
     `색각: JND(2.3) 미만 ${stats.belowJnd}쌍 · 시뮬레이션이 정상보다 큰 최대폭 +${stats.maxExcess.toFixed(2)} ΔE (허용 +2.30)`,
