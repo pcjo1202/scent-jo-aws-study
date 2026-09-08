@@ -209,6 +209,7 @@ RACE_PROBE=1 pnpm vitest run apps/api/src/exams/exam-race.spec.ts   # 레포 루
 ```
 pnpm test          # 위 치명 영역 전부
 pnpm data:verify   # 전수 검증. 배포 게이트
+pnpm tokens:verify # DESIGN.md 색 수치 대조. 커밋·이슈 종료 게이트
 ```
 
 CI는 두지 않는다. 솔로이고 배포 전에 로컬에서 돌린다. 잊어버리기 시작하면 그때 GitHub Actions를 붙인다.

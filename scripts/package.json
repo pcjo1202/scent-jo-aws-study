@@ -9,6 +9,7 @@
     "verify": "node src/verify.ts",
     "publish": "node --env-file-if-exists=.env src/publish.ts",
     "pull": "node --env-file-if-exists=.env src/pull.ts",
+    "tokens-verify": "node src/tokens.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
