@@ -83,7 +83,7 @@ export function GradedChoiceItem({
 
   // `open`을 React 상태로 들지 않는다. 한 번만 주고 그 뒤의 여닫기는 브라우저가 소유한다.
   return (
-    <details className={`graded-choice rounded-corner-medium ${surface}`} open={isDefaultOpen}>
+    <details className={`disclosure rounded-corner-medium ${surface}`} open={isDefaultOpen}>
       <summary className="choice-card state-layer cursor-pointer">{row}</summary>
       <div className="px-4 pb-3">{explanation}</div>
     </details>

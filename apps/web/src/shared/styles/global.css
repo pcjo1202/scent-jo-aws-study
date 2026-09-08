@@ -461,27 +461,30 @@
   }
 
   /*
-   * 채점 후 선택지 카드 (DESIGN.md 「채점 결과 · 선택지 표시」·「해설 블록」). 해설이 카드
-   * 안에서 펼쳐지므로 카드 자체가 details다. 네이티브를 쓰므로 열림 상태와 키보드 조작을
-   * 직접 구현하지 않는다.
+   * 접었다 펴는 블록. UA 마커를 지우고 short4 높이 전환만 얹는다 — 네이티브 details를 쓰므로
+   * 열림 상태와 키보드 조작은 직접 구현하지 않는다.
    *
-   * **펼침 화살표를 두지 않는다.** 미채점 카드의 input 표식과 마찬가지로 그리지 않는다 —
-   * 기본 펼침인 카드는 내용이 이미 보이고, 접힌 카드는 카드 전체가 클릭 영역이다.
-   * 정답이 둘 이상인 문항에서는 펼칠 것이 없는 정답 카드가 생겨 details 자체가 아니다
-   * (DESIGN.md 「② 정답 해설」).
+   * **쓰는 곳이 둘이다.** 채점 후 선택지 카드(DESIGN.md 「채점 결과」·「해설 블록」 — 해설이
+   * 카드 안에서 펼쳐지므로 카드 자체가 details다)와 `/notes`의 비교노트 카드다. SJO-20이
+   * `.graded-choice`로 만든 것을 두 번째 사용처가 생기면서 역할 이름으로 바꿨다.
+   *
+   * **마커는 여기서 정하지 않는다.** 선택지 카드는 화살표를 아예 두지 않고(기본 펼침인 카드는
+   * 내용이 이미 보이고 접힌 카드는 카드 전체가 클릭 영역이다 — DESIGN.md 「② 정답 해설」),
+   * 비교노트는 「④ 등장 서비스」와 같은 회전하는 expand_more를 쓴다. 공통은 UA 삼각형을
+   * 지우는 것까지다.
    *
    * 높이 전환은 ::details-content를 지원하는 브라우저에서만 걸리고, 아니면 즉시 열린다 —
    * 원칙 4와 어긋나지 않는 방향의 퇴화다.
    */
-  .graded-choice summary::-webkit-details-marker {
+  .disclosure summary::-webkit-details-marker {
     display: none;
   }
 
-  .graded-choice summary {
+  .disclosure summary {
     list-style: none;
   }
 
-  .graded-choice::details-content {
+  .disclosure::details-content {
     block-size: 0;
     overflow: hidden;
     transition:
@@ -490,7 +493,7 @@
     interpolate-size: allow-keywords;
   }
 
-  .graded-choice[open]::details-content {
+  .disclosure[open]::details-content {
     block-size: auto;
   }
 
@@ -512,10 +515,10 @@
 @media (prefers-reduced-motion: reduce) {
   /*
    * `::details-content`를 따로 적는다. 아래 `*, *::before, *::after`는 이 의사 요소를
-   * 잡지 못하는데, 하필 이 앱에서 유일하게 살아 있는 레이아웃 전환(채점 후 카드의 해설
-   * 펼침)이 거기 걸려 있다 (DESIGN.md 「Styles · Motion」).
+   * 잡지 못하는데, 하필 이 앱에서 유일하게 살아 있는 레이아웃 전환(`.disclosure`의 펼침 —
+   * 채점 후 해설과 `/notes` 비교노트)이 거기 걸려 있다 (DESIGN.md 「Styles · Motion」).
    */
-  .graded-choice::details-content {
+  .disclosure::details-content {
     transition: none !important;
   }
 
