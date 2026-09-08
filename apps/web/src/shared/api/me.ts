@@ -3,14 +3,17 @@ import { queryOptions } from '@tanstack/react-query'
 import type {
   ProgressResponse,
   QuestionStatesResponse,
+  StatsResponse,
   WrongQuestionsResponse,
 } from '@aws-study/shared'
 
 import { apiFetch } from '@/shared/api/api-client'
 
 /**
- * `/me/*` 조회 (`docs/05-database.md` 「API 계약」). `/study`·`/review`·`/` 대시보드가 같은
- * 데이터를 보므로 슬라이스가 아니라 여기 둔다 — 각자 정의하면 키가 갈려 캐시가 세 벌이 된다.
+ * 로그인한 사용자 자신의 조회 (`docs/05-database.md` 「API 계약」). `/study`·`/review`·`/`
+ * 대시보드가 같은 데이터를 보므로 슬라이스가 아니라 여기 둔다 — 각자 정의하면 키가 갈려
+ * 캐시가 세 벌이 된다. **경로가 `/me/*`가 아닌 것이 하나 있다** — `/stats`도 토큰의 사용자로
+ * 스코프되므로 같은 자리다.
  *
  * `apiUrl`이 키에 드는 이유는 프리뷰마다 짝이 맞는 api가 다르기 때문이다
  * (`docs/03` 「프로젝트 간 URL 연결」).
@@ -25,6 +28,9 @@ export const meKeys = {
   },
   wrong(apiUrl: string) {
     return [...meKeys.all, apiUrl, 'wrong'] as const
+  },
+  stats(apiUrl: string) {
+    return [...meKeys.all, apiUrl, 'stats'] as const
   },
 }
 
@@ -61,5 +67,19 @@ export function wrongQuestionsQuery(apiUrl: string) {
     queryFn: () => apiFetch<WrongQuestionsResponse>(apiUrl, '/me/wrong'),
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+  })
+}
+
+/**
+ * 카테고리별 정답률. 이름순으로 오고, **낮은 순 정렬과 안 푼 카테고리 제외는 화면이 한다**
+ * (`docs/05-database.md` 「카테고리별 정답률」).
+ *
+ * 문항이 자기 카테고리 전부에 산입되므로 `sum(total)`은 문항 수보다 크고, 카테고리가 0개인
+ * 문항은 어느 막대에도 안 든다. 둘 다 정상이라 응답에 합계가 없다.
+ */
+export function statsQuery(apiUrl: string) {
+  return queryOptions({
+    queryKey: meKeys.stats(apiUrl),
+    queryFn: () => apiFetch<StatsResponse>(apiUrl, '/stats'),
   })
 }
