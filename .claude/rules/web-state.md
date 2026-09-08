@@ -25,22 +25,23 @@ paths:
 ## 쿼리 정의는 슬라이스의 `api/`에 한 번만 쓴다
 
 ```ts
-// src/_pages/home/api/health-query.ts
-export const healthKeys = {
-  all: ['health'] as const,
-  byApiUrl(apiUrl: string) {
-    return [...healthKeys.all, apiUrl] as const
+// src/shared/api/exams.ts
+export const examKeys = {
+  all: ['exams'] as const,
+  list(apiUrl: string) {
+    return [...examKeys.all, apiUrl, 'list'] as const
   },
 }
 
-export function healthQuery(apiUrl: string) {
-  return queryOptions({ queryKey: healthKeys.byApiUrl(apiUrl), queryFn: … })
+export function examsQuery(apiUrl: string) {
+  return queryOptions({ queryKey: examKeys.list(apiUrl), queryFn: … })
 }
 ```
 
 - **`queryOptions()`로 감싼다.** `prefetchQuery`·`useSuspenseQuery`·`invalidateQueries`가 같은 객체를 그대로 받는다
-- **키 문자열을 컴포넌트에 흩지 않는다.** 슬라이스당 팩토리 하나가 SSOT다. `useQuery({ queryKey: ['health'] })`처럼 배열 리터럴을 인라인하지 않는다
+- **키 문자열을 컴포넌트에 흩지 않는다.** 슬라이스당 팩토리 하나가 SSOT다. `useQuery({ queryKey: ['exams'] })`처럼 배열 리터럴을 인라인하지 않는다
 - 쿼리 정의를 `ui/` 안에 두지 않는다. 세그먼트는 `api/`다
+- **여러 화면이 보는 조회는 `shared/api/`가 소유한다** — 위 예시가 슬라이스가 아니라 거기 있는 이유다. 진도·오답·정답률은 `me.ts`, 세션은 `exams.ts`, CDN은 `cdn.ts`다. 각 슬라이스가 따로 정의하면 키가 갈려 캐시가 여러 벌이 된다
 
 ## suspense가 기본이다
 
@@ -48,10 +49,10 @@ export function healthQuery(apiUrl: string) {
 
 ```tsx
 // ✅ 화면
-const { data } = useSuspenseQuery(healthQuery(apiUrl))
+const { data } = useSuspenseQuery(examsQuery(apiUrl))
 
 // ❌
-const { data, isLoading, isError } = useQuery(healthQuery(apiUrl))
+const { data, isLoading, isError } = useQuery(examsQuery(apiUrl))
 if (isLoading) return <Spinner />
 ```
 
@@ -60,10 +61,10 @@ if (isLoading) return <Spinner />
 ```tsx
 <QueryBoundary
   pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-  errorMessage="api 상태를 불러오지 못했다"
+  errorMessage="모의고사 목록을 불러오지 못했다"
   canRetry
 >
-  <HealthStatus apiUrl={apiUrl} />
+  <ExamListScreen apiUrl={apiUrl} />
 </QueryBoundary>
 ```
 
@@ -87,7 +88,7 @@ export const dynamic = 'force-dynamic'
 
 // _pages/**/ui/*-page.tsx
 const queryClient = getQueryClient()
-await queryClient.prefetchQuery(healthQuery(apiUrl))
+await queryClient.prefetchQuery(examsQuery(apiUrl))
 
 return (
   <HydrationBoundary state={dehydrate(queryClient)}>

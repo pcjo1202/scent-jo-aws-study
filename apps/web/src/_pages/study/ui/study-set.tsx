@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react'
 import type { AttemptResponse, ChoiceKey, IndexEntry, Manifest } from '@aws-study/shared'
 
 import { canSubmit, CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
+import { toStartIndex } from '@/shared/lib/study-cursor'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
@@ -18,8 +19,6 @@ import { StatusBanner } from '@/shared/ui/status-banner'
 import { submitAttempt } from '@/features/submit-answer/api/submit-attempt'
 
 import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
-
-import { toStartIndex } from '../lib/study-cursor'
 
 const SCREEN_NAME = '순차 풀이'
 
