@@ -49,7 +49,7 @@
   적용 후 `list_migrations`의 버전과 레포 파일명을 `MEMORY.md`에 함께 적는다 — 그 대응이 유일한 기록이다. 첫 적용: `0000_init.sql` → `20260903171754_0000_init` (2026-09-04, SJO-13).
 
 - [x] Auth → Google 프로바이더 활성화 (2번 완료 후 client id/secret 입력) — `/auth/v1/settings` 실측 `external.google: true`, 실제 로그인으로 토큰까지 받았다 (2026-09-06, SJO-50)
-- [ ] Auth → **URL Configuration** — Site URL과 Redirect URLs를 함께 본다
+- [x] Auth → **URL Configuration** — Site URL과 Redirect URLs를 함께 본다
 
   **Site URL이 web을 가리켜야 한다.** Supabase는 `redirect_to`가 Redirect URLs에 없으면 **조용히 Site URL로 떨어뜨리므로**, 이 둘이 어긋나면 로그인이 성공한 채로 엉뚱한 도메인에 토큰을 흘린다. 2026-09-06 실측(SJO-19): `redirectTo=http://localhost:3000/`을 넘겼는데 `https://aws-study-api-smelljo.vercel.app/#access_token=…`으로 떨어져 404였다 — Site URL이 **api 프로젝트**를 가리키고 있었다. **같은 회귀가 2026-09-07·2026-09-08에 두 번 더 났다** — 사람이 콘솔에서 고칠 때마다 하루를 못 갔다 (SJO-57).
 
@@ -62,13 +62,13 @@
 
   프리뷰가 프로젝트명이 아니라 해시 형태인 근거는 `docs/06` 「환경별 차이」.
 
-  **Redirect URLs는 위의 셋뿐이다 — api 오리진을 넣지 않는다.** 허용 목록에 있는 오리진은 Supabase가 토큰을 실어 보내도 되는 곳이라는 뜻이고, api는 그 토큰으로 할 일이 없다(Bearer로 받는다). 2026-09-08 실측에서 목록이 **7개**였다: 규약 3개는 전부 들어 있었고 나머지 **4개가 api 오리진**이었다 (`aws-study-api-smelljo.vercel.app`의 `/`·`/**`, `aws-*-study-api-smelljo.vercel.app`의 없음·`/**`). **누가 넣었는지는 가려지지 않는다** — 통합이 심었을 수도, 404를 쫓던 사람이 손으로 넣었을 수도 있다. 어느 쪽이든 규약에 없으므로 지운다 (SJO-57).
+  **Redirect URLs는 위의 셋뿐이다 — api 오리진을 넣지 않는다.** 허용 목록에 있는 오리진은 Supabase가 토큰을 실어 보내도 되는 곳이라는 뜻이고, api는 그 토큰으로 할 일이 없다(Bearer로 받는다). 2026-09-08 실측에서 목록이 **7개**였다: 규약 3개는 전부 들어 있었고 나머지 **4개가 api 오리진**이었다 (`aws-study-api-smelljo.vercel.app`의 `/`·`/**`, `aws-*-study-api-smelljo.vercel.app`의 없음·`/**`). **누가 넣었는지는 가려지지 않는다** — 통합이 심었을 수도, 404를 쫓던 사람이 손으로 넣었을 수도 있다. 어느 쪽이든 규약에 없으므로 **같은 날 지웠고 목록은 위의 셋뿐이다** (SJO-57).
 
   **`/auth/v1/authorize`의 응답으로는 판정할 수 없다.** 어떤 `redirect_to`를 줘도 302로 Google에 보낸다 — `evil.example`로 음성 대조했다. 검증은 콜백에서 일어나므로 **실제 로그인으로만 확인된다** (2026-09-06, SJO-19).
 
   그리고 **재는 칸이 셋이다** — `http://localhost:3000/**` · `https://aws-study-*-smelljo.vercel.app/**` · `https://saa.scent-jo.dev/**`. 한 칸을 재고 「고쳤다」로 적은 것이 이 회귀가 두 번 반복된 이유다. 「N칸 중 M칸 확인」으로 센다 (SJO-57).
 
-- [ ] **Vercel↔Supabase 마켓플레이스 통합을 어느 프로젝트에도 연결하지 않는다**
+- [x] **Vercel↔Supabase 마켓플레이스 통합을 어느 프로젝트에도 연결하지 않는다**
 
   통합은 연결된 프로젝트의 배포 URL을 Supabase의 URL 설정에 동기화한다. api에 붙어 있으면 web이 받아야 할 토큰이 api 도메인으로 간다.
 
