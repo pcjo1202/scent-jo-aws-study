@@ -9,7 +9,7 @@ import type { ExamSessionSummary } from '@aws-study/shared'
 
 import { ApiError } from '@/shared/api/api-client'
 import { examKeys, examsQuery } from '@/shared/api/exams'
-import { EXAM_QUESTION_COUNT } from '@/shared/config/exam'
+import { EXAM_QUESTION_COUNT, examResultHref, examSessionHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
 import { Button, buttonClassName } from '@/shared/ui/button'
@@ -65,7 +65,7 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
     setFailure(null)
     try {
       const session = await createExam(apiUrl, { preferUnsolved: prefersUnsolved })
-      router.push(`/exam/${session.id}`)
+      router.push(examSessionHref(session.id))
     } catch (error) {
       if (error instanceof ApiError && error.status === CONFLICT) {
         setFailure('conflict')
@@ -96,21 +96,18 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
     setAbandonOpen(false)
     setSubmitting(true)
     setFailure(null)
+    let isAlreadyFinished = false
     try {
       await deleteExam(apiUrl, id)
     } catch (error) {
-      if (error instanceof ApiError && error.status === CONFLICT) {
-        await reloadSessions()
-        router.replace(`/exam/${id}/result`)
-        return
-      }
-
-      setFailure('delete')
+      isAlreadyFinished = error instanceof ApiError && error.status === CONFLICT
+      if (!isAlreadyFinished) setFailure('delete')
     } finally {
+      await reloadSessions()
       setSubmitting(false)
     }
 
-    await reloadSessions()
+    if (isAlreadyFinished) router.replace(examResultHref(id))
   }
 
   const startButton = (
@@ -227,7 +224,7 @@ function ActiveSessionCard({
       <span className="flex-1">
         진행 중인 모의고사 · {formatSessionDate(session.startedAt)} 시작
       </span>
-      <Link href={`/exam/${session.id}`} className={buttonClassName()}>
+      <Link href={examSessionHref(session.id)} className={buttonClassName()}>
         이어풀기
       </Link>
       <Button disabled={isBusy} onClick={onAbandon}>
@@ -241,7 +238,7 @@ function ActiveSessionCard({
 function FinishedSessionRow({ session }: { session: ExamSessionSummary }) {
   return (
     <Link
-      href={`/exam/${session.id}/result`}
+      href={examResultHref(session.id)}
       className="state-layer flex min-h-12 items-center justify-between gap-4 rounded-corner-small px-2 text-body-medium"
     >
       <span className="text-on-surface-variant">{formatSessionDate(session.startedAt)}</span>

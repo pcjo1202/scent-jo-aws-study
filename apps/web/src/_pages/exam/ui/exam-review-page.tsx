@@ -3,6 +3,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { examQuery } from '@/shared/api/exams'
 import { getQueryClient } from '@/shared/api/query-client'
 import { resolveApiUrl } from '@/shared/config/api-url'
+import { examResultHref } from '@/shared/config/exam'
 
 import { ExamReviewScreen } from './exam-review-screen'
 import { ExamSessionBoundary } from './exam-session-boundary'
@@ -29,7 +30,7 @@ export async function ExamReviewPage({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ExamSessionBoundary title="모의고사 결과" backHref={`/exam/${id}/result`}>
+      <ExamSessionBoundary title="결과" backHref={examResultHref(id)}>
         <ExamReviewScreen apiUrl={apiUrl} sessionId={id} position={Number(position)} />
       </ExamSessionBoundary>
     </HydrationBoundary>

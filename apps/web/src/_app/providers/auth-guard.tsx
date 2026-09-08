@@ -7,7 +7,7 @@ import { getSupabaseClient } from '@/shared/api/supabase'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 /**
- * 로그인 후 화면 8개가 이 안에 든다. `/login`은 라우트 그룹 밖이라 걸리지 않는다.
+ * 로그인 후 화면 9개가 이 안에 든다. `/login`은 라우트 그룹 밖이라 걸리지 않는다.
  *
  * **`/login`으로 보내는 조건은 「세션이 없다」 하나다** (`docs/02` 「갱신 실패를 만료와
  * 네트워크로 가르는 기준」). 만료 시각을 따로 계산하지 않고 `navigator.onLine`도 보지 않는다 —

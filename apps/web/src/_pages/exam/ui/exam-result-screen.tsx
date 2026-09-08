@@ -6,11 +6,15 @@ import { useEffect, useMemo } from 'react'
 
 import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examQuery } from '@/shared/api/exams'
+import { examSessionHref } from '@/shared/config/exam'
 import { AppBar } from '@/shared/ui/app-bar'
+import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { ResultGrid } from '@/features/navigate-exam/ui/result-grid'
 
 import { tallyCategories, type CategoryTally } from '../lib/tally-categories'
+
+import { ExamShell } from './exam-shell'
 
 const SCREEN_NAME = '모의고사 결과'
 
@@ -25,8 +29,8 @@ const PERCENT = 100
  * **새 컴포넌트 규격을 만들지 않는다** — 점수 카드는 `DESIGN.md` 「대시보드 요소」의 전체 진도
  * 카드, 막대는 같은 표의 카테고리별 정답률 막대, 65칸은 「문제 이동 그리드」다.
  *
- * `results`가 `null`이면 채점 전이므로 풀던 화면으로 돌려보낸다. 세션 하나는 언제나
- * `/exam/[id]`와 여기 중 정확히 하나에서만 열린다 — 반대 방향은 `ExamSessionScreen`이 맡는다.
+ * 채점 전 세션이면 풀던 화면으로 돌려보낸다. 세션 하나는 언제나 `/exam/[id]`와 여기 중 정확히
+ * 하나에서만 열린다 — 반대 방향은 `ExamSessionScreen`이 맡는다.
  */
 export function ExamResultScreen({ apiUrl, sessionId }: { apiUrl: string; sessionId: string }) {
   const router = useRouter()
@@ -48,13 +52,30 @@ export function ExamResultScreen({ apiUrl, sessionId }: { apiUrl: string; sessio
     [results, index],
   )
 
-  const isUngraded = results === null
+  /**
+   * **판정 필드를 `ExamSessionScreen`과 같은 것으로 맞춘다.** 두 화면이 각각 `finishedAt`과
+   * `results`를 보면 왕복을 막는 근거가 서버 불변식(`finishedAt !== null ⟺ results !== null`)
+   * 하나뿐인데, 그것이 깨지는 순간 두 라우트가 서로를 무한히 밀어낸다. 같은 필드를 보면 그
+   * 결합이 사라진다.
+   */
+  const isUnfinished = session.finishedAt === null
 
   useEffect(() => {
-    if (isUngraded) router.replace(`/exam/${sessionId}`)
-  }, [isUngraded, router, sessionId])
+    if (isUnfinished) router.replace(examSessionHref(sessionId))
+  }, [isUnfinished, router, sessionId])
 
-  if (results === null) return null
+  if (isUnfinished) {
+    return (
+      <ExamShell title={SCREEN_NAME} backHref="/exam">
+        <StatusBanner kind="loading">진행 중인 모의고사를 여는 중…</StatusBanner>
+      </ExamShell>
+    )
+  }
+
+  // 종료됐는데 `results`가 없으면 계약 위반이다 — 리다이렉트로 감추지 않고 오류 경계로 보낸다.
+  if (results === null) {
+    throw new Error(`종료된 세션 ${sessionId}에 results가 없다`)
+  }
 
   return (
     <>

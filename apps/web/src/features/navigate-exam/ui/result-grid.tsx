@@ -2,6 +2,8 @@ import Link from 'next/link'
 
 import type { ExamResult } from '@aws-study/shared'
 
+import { examReviewHref } from '@/shared/config/exam'
+
 /**
  * 칸의 세 상태 (`DESIGN.md` 「문제 이동 그리드」의 결과 표). **진행 중 그리드와 반대로
  * `correct`·`error`를 쓴다** — 그쪽이 그 둘을 금지한 근거는 「진행 중에는 정오를 표시하지
@@ -53,17 +55,18 @@ export function ResultGrid({ results, sessionId }: { results: ExamResult[]; sess
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-title-small">문항별 리뷰</h2>
+      <h2 className="text-title-small">문제별 리뷰</h2>
 
       <ul className="question-grid grid gap-2">
         {results.map((result, index) => {
-          const state = states[index] ?? 'unanswered'
+          // `states`는 같은 배열의 `map` 결과라 길이가 같다.
+          const state = states[index] as CellState
           const position = index + 1
 
           return (
             <li key={result.questionId}>
               <Link
-                href={`/exam/${sessionId}/result/${String(position)}`}
+                href={examReviewHref(sessionId, position)}
                 aria-label={`${String(position)}번 문제 ${CELL_LABEL[state]}`}
                 className={`state-layer flex min-h-12 w-full items-center justify-center rounded-corner-small text-label-medium ${CELL_CLASS[state]}`}
               >

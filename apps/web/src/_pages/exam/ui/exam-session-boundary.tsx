@@ -6,9 +6,10 @@ import { Suspense, type ReactNode } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 
 import { ApiError } from '@/shared/api/api-client'
-import { AppBar } from '@/shared/ui/app-bar'
 import { Button, buttonClassName } from '@/shared/ui/button'
 import { StatusBanner } from '@/shared/ui/status-banner'
+
+import { ExamShell } from './exam-shell'
 
 const NOT_FOUND = 404
 
@@ -45,7 +46,7 @@ export function ExamSessionBoundary({
           <ErrorBoundary
             onReset={reset}
             fallbackRender={({ error, resetErrorBoundary }) => (
-              <Shell title={title} backHref={backHref}>
+              <ExamShell title={title} backHref={backHref}>
                 {error instanceof ApiError && error.status === NOT_FOUND ? (
                   <StatusBanner
                     kind="error"
@@ -65,14 +66,14 @@ export function ExamSessionBoundary({
                     모의고사를 불러오지 못했다
                   </StatusBanner>
                 )}
-              </Shell>
+              </ExamShell>
             )}
           >
             <Suspense
               fallback={
-                <Shell title={title} backHref={backHref}>
+                <ExamShell title={title} backHref={backHref}>
                   <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-                </Shell>
+                </ExamShell>
               }
             >
               <div aria-live="off">{children}</div>
@@ -81,24 +82,5 @@ export function ExamSessionBoundary({
         </div>
       )}
     </QueryErrorResetBoundary>
-  )
-}
-
-function Shell({
-  title,
-  backHref,
-  children,
-}: {
-  title: string
-  backHref: string
-  children: ReactNode
-}) {
-  return (
-    <>
-      <AppBar title={title} backHref={backHref} />
-      <div className="app-bar-gutter-top">
-        <main className="mx-auto max-w-reading px-screen py-6">{children}</main>
-      </div>
-    </>
   )
 }
