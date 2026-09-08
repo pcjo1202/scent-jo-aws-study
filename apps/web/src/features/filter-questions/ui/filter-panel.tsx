@@ -4,10 +4,12 @@ import { useState } from 'react'
 
 import {
   ANSWER_COUNT_LABEL,
+  FILTER_GROUPS,
   hasActiveFilter,
   NO_FILTER,
   SOLVE_STATE_LABEL,
   type AnswerCountKind,
+  type FilterGroup,
   type QuestionFilter,
   type SolveState,
 } from '@/shared/lib/question-filter'
@@ -71,6 +73,7 @@ export function FilterPanel({
   isOpen,
   onChange,
   onClose,
+  shownGroups = FILTER_GROUPS,
 }: {
   options: { categories: string[]; services: string[] }
   filter: QuestionFilter
@@ -78,6 +81,8 @@ export function FilterPanel({
   isOpen: boolean
   onChange: (filter: QuestionFilter) => void
   onClose: () => void
+  /** 기본은 넷 전부(`/study`). `/review`는 `['categories']`를 준다. */
+  shownGroups?: readonly FilterGroup[]
 }) {
   const [serviceSearch, setServiceSearch] = useState('')
 
@@ -94,61 +99,69 @@ export function FilterPanel({
 
   return (
     <SidePanel label="필터" isOpen={isOpen} onClose={onClose} headerAction={clearButton}>
-      <ChipGroup
-        title="카테고리"
-        values={options.categories}
-        labelOf={(category) => category}
-        selected={filter.categories}
-        onToggle={(category) =>
-          onChange({ ...filter, categories: toggleValue(filter.categories, category) })
-        }
-      />
-
-      <section>
-        <h3>서비스</h3>
-        <input
-          type="search"
-          value={serviceSearch}
-          onChange={(event) => setServiceSearch(event.target.value)}
-          placeholder="서비스 이름"
-          aria-label="서비스 검색"
-          className="mt-2 h-12 w-full rounded-corner-extra-small border border-outline bg-surface px-4 text-body-large"
+      {shownGroups.includes('categories') && (
+        <ChipGroup
+          title="카테고리"
+          values={options.categories}
+          labelOf={(category) => category}
+          selected={filter.categories}
+          onToggle={(category) =>
+            onChange({ ...filter, categories: toggleValue(filter.categories, category) })
+          }
         />
-        <ul className="mt-2 flex flex-wrap gap-2">
-          {shownServices.map((service) => (
-            <li key={service}>
-              <Chip
-                isSelected={filter.services.includes(service)}
-                onClick={() =>
-                  onChange({ ...filter, services: toggleValue(filter.services, service) })
-                }
-              >
-                {service}
-              </Chip>
-            </li>
-          ))}
-        </ul>
-      </section>
+      )}
 
-      <ChipGroup
-        title="정답 개수"
-        values={ANSWER_COUNT_VALUES}
-        labelOf={(kind) => ANSWER_COUNT_LABEL[kind]}
-        selected={filter.answerCounts}
-        onToggle={(kind) =>
-          onChange({ ...filter, answerCounts: toggleValue(filter.answerCounts, kind) })
-        }
-      />
+      {shownGroups.includes('services') && (
+        <section>
+          <h3>서비스</h3>
+          <input
+            type="search"
+            value={serviceSearch}
+            onChange={(event) => setServiceSearch(event.target.value)}
+            placeholder="서비스 이름"
+            aria-label="서비스 검색"
+            className="mt-2 h-12 w-full rounded-corner-extra-small border border-outline bg-surface px-4 text-body-large"
+          />
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {shownServices.map((service) => (
+              <li key={service}>
+                <Chip
+                  isSelected={filter.services.includes(service)}
+                  onClick={() =>
+                    onChange({ ...filter, services: toggleValue(filter.services, service) })
+                  }
+                >
+                  {service}
+                </Chip>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-      <ChipGroup
-        title="풀이 상태"
-        values={SOLVE_STATE_VALUES}
-        labelOf={(state) => SOLVE_STATE_LABEL[state]}
-        selected={filter.solveStates}
-        onToggle={(state) =>
-          onChange({ ...filter, solveStates: toggleValue(filter.solveStates, state) })
-        }
-      />
+      {shownGroups.includes('answerCounts') && (
+        <ChipGroup
+          title="정답 개수"
+          values={ANSWER_COUNT_VALUES}
+          labelOf={(kind) => ANSWER_COUNT_LABEL[kind]}
+          selected={filter.answerCounts}
+          onToggle={(kind) =>
+            onChange({ ...filter, answerCounts: toggleValue(filter.answerCounts, kind) })
+          }
+        />
+      )}
+
+      {shownGroups.includes('solveStates') && (
+        <ChipGroup
+          title="풀이 상태"
+          values={SOLVE_STATE_VALUES}
+          labelOf={(state) => SOLVE_STATE_LABEL[state]}
+          selected={filter.solveStates}
+          onToggle={(state) =>
+            onChange({ ...filter, solveStates: toggleValue(filter.solveStates, state) })
+          }
+        />
+      )}
 
       <Button variant="filled" onClick={onClose} className="w-full expanded:hidden">
         {matchCount}문제 보기
