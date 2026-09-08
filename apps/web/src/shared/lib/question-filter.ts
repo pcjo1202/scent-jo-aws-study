@@ -155,7 +155,7 @@ function countValues(
 }
 
 /**
- * **필터 목록은 인덱스에서 도출한다.** 한줄노트의 202개를 쓰면 문항에 안 붙은 66개가
+ * **필터 목록은 인덱스에서 도출한다.** 한줄노트의 202개를 쓰면 문항에 안 붙은 73개가
  * 고르는 즉시 0건이 된다 (`docs/02-features.md` 「필터」).
  */
 export function toFilterOptions(entries: readonly IndexEntry[]): {
