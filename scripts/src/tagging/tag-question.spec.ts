@@ -49,7 +49,11 @@ describe('tagQuestion', () => {
   })
 
   it('지문과 정답 선택지를 함께 스캔한다', () => {
-    const target = question('S3 Standard에 저장된 로그가 있다', ['AWS Glue로 카탈로그를 만든다'], ['A'])
+    const target = question(
+      'S3 Standard에 저장된 로그가 있다',
+      ['AWS Glue로 카탈로그를 만든다'],
+      ['A'],
+    )
 
     expect(tagQuestion(target, ALIASES).services).toEqual(
       expect.arrayContaining(['S3 Standard', 'AWS Glue']),
@@ -83,7 +87,11 @@ describe('tagQuestion', () => {
   })
 
   it('카테고리는 3개를 넘지 않는다', () => {
-    const target = question('Amazon EC2와 S3 Standard와 Amazon Redshift와 AWS Glue를 쓴다', ['그렇게 한다'], ['A'])
+    const target = question(
+      'Amazon EC2와 S3 Standard와 Amazon Redshift와 AWS Glue를 쓴다',
+      ['그렇게 한다'],
+      ['A'],
+    )
 
     expect(tagQuestion(target, ALIASES).categories.length).toBeLessThanOrEqual(3)
   })

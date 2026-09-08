@@ -236,6 +236,49 @@ Biome이 단일 도구·고속이라 더 게으르지만, 이 스택에서 잃�
 
 **`*.md`는 대상에서 제외한다.** 위 네 옵션은 전부 코드용이라 md에는 걸리는 게 없는데, prettier는 표를 열 폭에 맞춰 재작성한다. 한글 셀의 폭 계산이 실제 표시와 어긋나 정렬이 오히려 깨지고, 명세 문서의 diff에 내용 변경과 포맷 변경이 섞인다. `.claude/settings.local.json`도 제외한다 — Claude Code가 소유·재작성하는 파일이라 포맷이 유지되지 않는다. `apps/web/next-env.d.ts`는 `.gitignore`에 있어 별도 항목이 필요 없다 — `next dev`와 `next build`가 서로 다른 내용으로 생성하므로 애초에 추적하지 않는다.
 
+**게이트는 pre-commit 훅에 건다.** `.githooks/pre-commit`이 `prettier --check .`를 돌리고, 루트 `prepare`가 `git config core.hooksPath .githooks`로 그 훅을 심는다. 새 의존성은 없다 — husky가 하는 일이 정확히 이것이다.
+
+SJO-6이 포맷이 깨진 파일 4개를 머지시킨 원인은 `format:check`를 **부르는 곳이 없었다는 것**이다. `lint`·`typecheck`는 turbo가, `test`는 vitest가 부르는데 format만 사람 손에 남아 있었고, 이 레포에는 CI가 없다.
+
+| 기각한 대안 | 대가 |
+|---|---|
+| `/done`의 DoD에만 둔다 | 프롬프트 층이다 — 스킬을 안 따르거나 `/done`을 안 부르면 뚫린다. SJO-6이 샌 층위와 같다 |
+| 훅만 두고 `/done`은 안 건드린다 | 방어선이 하나뿐이라 `--no-verify` 하나로 통째로 뚫린다 |
+| GitHub Actions | 레포에 CI 축이 아예 없어 이 결정보다 크다. 브랜치 보호와 묶으면 **유일하게 우회 불가**라 나중에 다시 볼 값이 있다 |
+
+그래서 훅(커밋 시점)과 `/done` 1단계의 공통 게이트(이슈 종료 시점)를 **둘 다** 건다. **훅만으로는 부족하다** — `pre-commit`은 `git commit` 경로에만 붙어서 무음으로 새는 자리가 넓다.
+
+| 새는 자리 | 왜 |
+|---|---|
+| `git commit --no-verify` (`-n`) | git이 주는 탈출구라 막을 수 없다 |
+| **`git merge`로 만든 머지 커밋** | `pre-commit`이 아예 안 불린다. **이 레포의 유일한 머지 전략이 merge commit이고**, 실제 머지는 `gh pr merge`로 **GitHub 서버**에서 일어나 훅이 존재하지도 않는다 |
+| `git rebase` · `git cherry-pick` · `git revert` | 같은 이유로 안 불린다. 워크트리를 여럿 굴리는 이 레포에서 드물지 않다 |
+| `pnpm install`을 한 번도 안 돌린 clone | `core.hooksPath`가 안 걸려 훅이 조용히 건너뛰어진다 |
+| `pnpm install --ignore-scripts` | 돌려도 `prepare`가 안 뛴다 — **「install을 돌렸으니 훅이 걸렸다」가 성립하지 않는다** |
+| `.githooks/`가 없는 커밋에 있는 워크트리 | `core.hooksPath`는 **공유 `.git/config`** 에 저장돼 워크트리 전부에 걸리지만, 디렉터리가 없으면 git이 무음으로 건너뛴다. 당사자는 자기가 무보호인 줄 모른다 |
+
+실제로 막히는 것은 `git commit`(일반) · `git commit --amend` · squash 머지 후의 `git commit` **셋뿐이다** (2026-09-08 격리 레포 실측 — 훅을 `exit 1`로 두고 조작별로 셌다).
+
+**머지 경로가 훅을 아예 안 타므로 `/done`의 공통 게이트가 그 경로의 유일한 방어선이다.** 훅을 「최종 방어선」으로 세지 마라.
+
+우회 경로 7개를 이 레포에서 실제 커밋으로 재서 7개 전부가 기대와 일치했다 (막힘 2 · 통과 5, 오탐 0). 열거는 이렇다.
+
+① 깨진 `.ts` 스테이징 후 커밋 → **막힘** ② 깨진 `.ts` 미스테이징 + 다른 커밋 → **막힘** ③ 깨끗한 트리에서 커밋 → 통과 ④ `--no-verify` → 통과 ⑤ `core.hooksPath` 미설정 → 통과 ⑥ `.prettierignore` 대상(`*.md`) 깨짐 → 통과 ⑦ `.gitignore` 대상(`data/`) 깨짐 → 통과.
+
+⑤가 음성 대조다 — 훅을 끄면 같은 파일이 통과하므로 ①②의 「막힘」이 훅 때문임이 보인다. **다만 이 7개는 전수가 아니었다** — 머지·rebase·cherry-pick·revert·`--ignore-scripts`가 빠져 있었고 위 표는 그것을 뒤늦게 채운 것이다. 숫자만 남기고 열거를 안 적으면 다음 사람이 그 누락을 발견할 수 없다.
+
+**스테이징된 파일만 고르지 않는다.** `--check .`로 레포 전역을 본다. 부분 스테이징일 때 인덱스가 아니라 워킹트리를 검사하게 되는 부정확함이 없고, 2.4초라 골라낼 값이 없다. 대가는 커밋과 무관한 파일이 깨져 있어도 막힌다는 것인데, 커밋 단위가 「verify를 통과한 태스크」라 그 시점에 트리가 깨져 있을 이유가 없다.
+
+**`prepare`는 실패해도 `pnpm install`을 죽이지 않는다.** `.git`이 없는 환경에서 `git config`가 실패하면 install이 통째로 죽는데, Vercel은 소스를 tarball로 받으므로 가드가 없으면 배포가 깨진다.
+
+가드를 `|| true` 하나로 두지 않는 이유는 **그것이 모든 실패를 구분 없이 삼키기 때문**이다. 훅이 안 걸리는데 install은 성공을 보고한다 — `exit 0`은 "통과"가 아니라 "오류 없음"이다. 그래서 `.git`의 유무를 먼저 보고, 그래도 실패하면 **훅이 안 걸렸다는 사실을 한 줄로 남긴다.**
+
+실패 경로 4종을 실측했다 (2026-09-08): `.git` 없음 → 경고 · `.git` **디렉터리**가 읽기 전용 → 잠금 실패 후 경고 · `.git/config`가 깨짐 → 경고 · 정상 → 무음 설치. **`.git/config` 파일만 444로 두는 것은 실패 경로가 아니다** — git이 임시 파일과 rename으로 쓰기 때문에 그대로 성공한다.
+
+```json
+"prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks || echo 'prepare: format 훅 미설치 — git 없음 또는 config 실패'"
+```
+
 ## tsconfig
 
 루트 `tsconfig.base.json`에 **strict 계열만** 두고 각 패키지가 상대경로로 extends한다. 별도 `packages/tsconfig` 패키지는 만들지 않는다 — 파일 하나를 위해 워크스페이스 항목을 늘릴 이유가 없다.

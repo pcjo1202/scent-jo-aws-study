@@ -92,7 +92,9 @@ describe('findTaggingAnomalies', () => {
       index === 0 ? topics(['스토리지'], []) : topics(['스토리지']),
     )
 
-    expect(findTaggingAnomalies(questions, KNOWN).anomalyCounts['서비스가 없는데 카테고리가 붙은 문항']).toBe(1)
+    expect(
+      findTaggingAnomalies(questions, KNOWN).anomalyCounts['서비스가 없는데 카테고리가 붙은 문항'],
+    ).toBe(1)
   })
 
   it('미태깅이 상한을 넘으면 잡는다 — 아무것도 안 붙으면 편중 상한은 발동하지 않는다', () => {

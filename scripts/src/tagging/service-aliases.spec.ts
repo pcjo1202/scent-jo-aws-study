@@ -16,9 +16,15 @@ function aliasesOf(items: OneLiner[], service: string, supplements = NO_SUPPLEME
 
 describe('buildServiceAliases', () => {
   it('노트의 모든 서비스가 사전에 들어간다', () => {
-    const items = [note('Amazon EC2', '컴퓨트'), note('Amazon SQS', '메시징'), note('AWS WAF', '보안')]
+    const items = [
+      note('Amazon EC2', '컴퓨트'),
+      note('Amazon SQS', '메시징'),
+      note('AWS WAF', '보안'),
+    ]
 
-    const services = new Set(buildServiceAliases(items, NO_SUPPLEMENTS).map((entry) => entry.service))
+    const services = new Set(
+      buildServiceAliases(items, NO_SUPPLEMENTS).map((entry) => entry.service),
+    )
 
     expect(services.size).toBe(3)
   })
@@ -68,7 +74,9 @@ describe('buildServiceAliases', () => {
     const service = 'Amazon Managed Service for Apache Flink'
     const items = [note(service, '메시징'), note(service, '분석')]
 
-    const entry = buildServiceAliases(items, NO_SUPPLEMENTS).find((entry) => entry.alias === service)
+    const entry = buildServiceAliases(items, NO_SUPPLEMENTS).find(
+      (entry) => entry.alias === service,
+    )
 
     expect(entry?.categories).toEqual(expect.arrayContaining(['메시징', '분석']))
     expect(entry?.categories).toHaveLength(2)
@@ -153,7 +161,11 @@ describe('buildServiceAliases', () => {
   })
 
   it('길이가 같은 별칭은 이름순으로 갈라 순서를 노트 입력 순서에서 떼어 놓는다', () => {
-    const items = [note('AWS WAF', '보안'), note('Amazon EMR', '분석'), note('Amazon ECS', '컴퓨트')]
+    const items = [
+      note('AWS WAF', '보안'),
+      note('Amazon EMR', '분석'),
+      note('Amazon ECS', '컴퓨트'),
+    ]
 
     const threeLetter = buildServiceAliases(items, NO_SUPPLEMENTS)
       .filter((entry) => entry.alias.length === 3)

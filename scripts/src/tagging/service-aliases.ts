@@ -162,7 +162,9 @@ function categoriesOfRoot(root: string, derived: ServiceAlias[]): string[] {
   const ranked = [...tally].sort(([nameA, a], [nameB, b]) => b - a || nameA.localeCompare(nameB))
   const top = ranked[0]
   if (top === undefined) {
-    throw new Error(`루트 «${root}»으로 시작하는 별칭을 가진 서비스가 없다 — 카테고리를 정할 수 없다`)
+    throw new Error(
+      `루트 «${root}»으로 시작하는 별칭을 가진 서비스가 없다 — 카테고리를 정할 수 없다`,
+    )
   }
 
   return [top[0]]
