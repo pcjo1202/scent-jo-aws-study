@@ -5,8 +5,10 @@
 ```bash
 pnpm dev          # web + api 동시 실행 (turbo)
 pnpm build        # 전체 빌드
-pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증
+pnpm typecheck    # 전체 타입체크 — 커밋 전 최소 검증 (다른 워크트리 캐시를 재사용하므로 --force)
 pnpm test         # 치명 영역 테스트 (파서 픽스처·채점·가드)
+pnpm format       # prettier --write . — 레포 전역
+pnpm format:check # pre-commit 훅이 자동으로 돈다 (docs/10 「Prettier」)
 pnpm data:anatomy # 해부서 61쪽 → data/anatomy/pages/  (pdftoppm·cwebp 필요)
 pnpm data:extract # 원본 PDF → data/  (SOURCE_PDF_DIR 필요, docs/06)
 pnpm data:verify  # data/ 전수 검증 — 실패하면 exit 1 (배포 차단)
