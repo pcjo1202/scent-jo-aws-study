@@ -49,7 +49,7 @@ function serviceWhereRepositoryScopesByOwner() {
     ),
   )
 
-  const updateCursor = vi.fn(() => Promise.resolve())
+  const updateCursor = vi.fn(() => Promise.resolve(true))
   const finishSession = vi.fn(() => Promise.resolve(true))
   const deleteSessionMock = vi.fn(() => Promise.resolve(true))
 
@@ -190,22 +190,24 @@ describe('경합 가드 — for update', () => {
   })
 })
 
-describe('경합 가드 — finished_at is null', () => {
-  it('finishSessionQuery가 진행 중 세션만 갱신한다', () => {
-    expect(finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql).toContain(
-      '"finished_at" is null',
-    )
-  })
+/**
+ * `:id`를 받는 **쓰기 셋 전부**가 진행 중 세션만 건드린다 (`docs/05` 「오류 응답」이 셋 다
+ * 409로 정한 자리다). 목록으로 두는 이유는 하나만 세면 나머지가 무방비인데도 초록이기
+ * 때문이다 — `updateCursorQuery`가 실제로 그 상태로 남아 있었다 (SJO-55).
+ */
+const STATE_GUARDED_QUERIES: Array<[string, () => string]> = [
+  ['finishSessionQuery', () => finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql],
+  ['deleteSessionQuery', () => deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql],
+  ['updateCursorQuery', () => updateCursorQuery(db(), SESSION_ID, OWNER_ID, 3).toSQL().sql],
+]
 
-  it('deleteSessionQuery가 진행 중 세션만 지운다', () => {
-    expect(deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql).toContain(
-      '"finished_at" is null',
-    )
+describe('경합 가드 — finished_at is null', () => {
+  it.each(STATE_GUARDED_QUERIES)('%s가 진행 중 세션만 건드린다', (_name, build) => {
+    expect(build()).toContain('"finished_at" is null')
   })
 
   /** 0행을 서비스가 409로 옮길 수 있어야 한다 — returning이 없으면 구분이 불가능하다. */
-  it('둘 다 갱신·삭제된 행을 돌려준다', () => {
-    expect(finishSessionQuery(db(), SESSION_ID, OWNER_ID, 40).toSQL().sql).toContain('returning')
-    expect(deleteSessionQuery(db(), SESSION_ID, OWNER_ID).toSQL().sql).toContain('returning')
+  it.each(STATE_GUARDED_QUERIES)('%s가 건드린 행을 돌려준다', (_name, build) => {
+    expect(build()).toContain('returning')
   })
 })
