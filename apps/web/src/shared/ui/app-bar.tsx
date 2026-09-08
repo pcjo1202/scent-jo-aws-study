@@ -6,7 +6,7 @@ import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 const PERCENT = 100
 
 /**
- * 로그인 후 8화면이 물려받는 골격 (`DESIGN.md` 「공통 헤더·네비게이션」).
+ * 로그인 후 9화면이 물려받는 골격 (`DESIGN.md` 「공통 헤더·네비게이션」).
  *
  * **뒤로가기는 히스토리가 아니라 라우트가 정하는 고정 링크다.** 이 앱은 웹뷰에서도 열리는데
  * 거기엔 주소창도 브라우저 뒤로가기도 없어 이 자리가 유일한 이탈 경로다 — 진입 경로에 따라

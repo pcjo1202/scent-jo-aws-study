@@ -9,7 +9,7 @@ import type { ExamSessionSummary } from '@aws-study/shared'
 
 import { ApiError } from '@/shared/api/api-client'
 import { examKeys, examsQuery } from '@/shared/api/exams'
-import { EXAM_QUESTION_COUNT } from '@/shared/config/exam'
+import { EXAM_QUESTION_COUNT, examResultHref, examSessionHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
 import { Button, buttonClassName } from '@/shared/ui/button'
@@ -65,7 +65,7 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
     setFailure(null)
     try {
       const session = await createExam(apiUrl, { preferUnsolved: prefersUnsolved })
-      router.push(`/exam/${session.id}`)
+      router.push(examSessionHref(session.id))
     } catch (error) {
       if (error instanceof ApiError && error.status === CONFLICT) {
         setFailure('conflict')
@@ -80,24 +80,34 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
   }
 
   /**
-   * 포기하면 세션과 답안이 사라진다. **409(그 사이 다른 기기가 종료함)도 목록을 다시 읽는 것으로
-   * 끝낸다** — 그 세션을 결과 화면으로 보내는 것은 SJO-24 소관이다 (`docs/02` 「API 오류의 화면
-   * 표현」의 `DELETE` 409 행).
+   * 포기하면 세션과 답안이 사라진다.
+   *
+   * **409는 그 사이 다른 기기가 종료했다는 뜻이라 결과 화면으로 보낸다** (`docs/02` 「API 오류의
+   * 화면 표현」의 `DELETE` 409 행). 실패로 표시하지 않는다 — 사용자가 없애려던 「진행 중 세션」은
+   * 실제로 없어졌고, 남은 것은 그 세션의 결과다.
+   *
+   * 목록 재조회는 이동 여부와 무관하게 한다. 결과 화면으로 가더라도 뒤로 나오면 이 목록이고,
+   * 거기 진행 중 카드가 남아 있으면 방금 없어진 것을 다시 권한다.
    */
   async function handleAbandon() {
     if (!activeSession || isSubmitting) return
 
+    const { id } = activeSession
     setAbandonOpen(false)
     setSubmitting(true)
     setFailure(null)
+    let isAlreadyFinished = false
     try {
-      await deleteExam(apiUrl, activeSession.id)
+      await deleteExam(apiUrl, id)
     } catch (error) {
-      if (!(error instanceof ApiError && error.status === CONFLICT)) setFailure('delete')
+      isAlreadyFinished = error instanceof ApiError && error.status === CONFLICT
+      if (!isAlreadyFinished) setFailure('delete')
     } finally {
       await reloadSessions()
       setSubmitting(false)
     }
+
+    if (isAlreadyFinished) router.replace(examResultHref(id))
   }
 
   const startButton = (
@@ -214,7 +224,7 @@ function ActiveSessionCard({
       <span className="flex-1">
         진행 중인 모의고사 · {formatSessionDate(session.startedAt)} 시작
       </span>
-      <Link href={`/exam/${session.id}`} className={buttonClassName()}>
+      <Link href={examSessionHref(session.id)} className={buttonClassName()}>
         이어풀기
       </Link>
       <Button disabled={isBusy} onClick={onAbandon}>
@@ -228,7 +238,7 @@ function ActiveSessionCard({
 function FinishedSessionRow({ session }: { session: ExamSessionSummary }) {
   return (
     <Link
-      href={`/exam/${session.id}/result`}
+      href={examResultHref(session.id)}
       className="state-layer flex min-h-12 items-center justify-between gap-4 rounded-corner-small px-2 text-body-medium"
     >
       <span className="text-on-surface-variant">{formatSessionDate(session.startedAt)}</span>

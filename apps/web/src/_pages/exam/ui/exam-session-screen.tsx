@@ -1,27 +1,27 @@
 'use client'
 
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
 import { ApiError } from '@/shared/api/api-client'
 import { manifestQuery, oneLinersQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examKeys, examQuery } from '@/shared/api/exams'
+import { examResultHref } from '@/shared/config/exam'
 import { CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
-import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
+import { deleteExam } from '@/features/manage-exam/api/delete-exam'
 import { finishExam } from '@/features/manage-exam/api/finish-exam'
 import { saveCursor } from '@/features/navigate-exam/api/save-cursor'
 import { QuestionGrid } from '@/features/navigate-exam/ui/question-grid'
@@ -31,6 +31,8 @@ import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
 
 import { createSaveQueue } from '../lib/save-queue'
 
+import { ExamShell } from './exam-shell'
+
 const SCREEN_NAME = '모의고사'
 
 const CONFLICT = 409
@@ -38,6 +40,7 @@ const CONFLICT = 409
 const FAILURE_MESSAGE = {
   cursor: '진행 위치를 저장하지 못했다',
   finish: '모의고사를 종료하지 못했다',
+  abandon: '모의고사를 포기하지 못했다',
 } as const
 
 type Failure = keyof typeof FAILURE_MESSAGE
@@ -46,7 +49,7 @@ type Failure = keyof typeof FAILURE_MESSAGE
  * 65문항을 **정오를 모른 채** 푼다 (`docs/02-features.md` 「진행」).
  *
  * 정오를 숨기는 것은 새 부품이 아니라 `graded`에 `null`을 계속 넘기는 것이다 — 같은
- * `QuestionRunner`를 세 화면이 쓰고 채점 시점만 다르다 (「공통: 문제 풀이 컴포넌트」).
+ * `QuestionRunner`를 네 화면이 쓰고 채점 시점만 다르다 (「공통: 문제 풀이 컴포넌트」).
  *
  * **위치도 답도 서버가 원본이다.** 화면에 들어올 때 서버 값으로 시작하고, 옮길 때마다 `PATCH`로
  * 위치를, 고를 때마다 `POST /attempts`로 답을 보낸다. 그래야 PC에서 시작한 세션을 폰이 그대로
@@ -79,6 +82,7 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
   const [unsavedIds, setUnsavedIds] = useState<number[]>([])
   const [failure, setFailure] = useState<Failure | null>(null)
   const [isFinishOpen, setFinishOpen] = useState(false)
+  const [isStaleContentOpen, setStaleContentOpen] = useState(false)
   const [isFinishing, setFinishing] = useState(false)
   const [isHelpOpen, setHelpOpen] = useState(false)
   const [isGridOpen, setGridOpen] = useState(false)
@@ -159,6 +163,10 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
    *
    * `try`는 `finishExam` 한 줄만 감싼다 — 캐시 무효화나 이동이 던졌다고 「종료하지 못했다」를
    * 띄우면, 이미 끝난 세션에 재시도를 유도해 영영 409를 받게 된다.
+   *
+   * **409는 두 가지인데 오류에는 `status`뿐이다** — 「이미 종료된 세션」과 「`content_version`
+   * 불일치」다 (`docs/05` 「오류 응답」). 예외 메시지 문자열로 가르지 않고 **서버 상태를 다시
+   * 읽어** `finishedAt`으로 판정한다 (`docs/02` 「API 오류의 화면 표현」).
    */
   async function handleFinish() {
     setFinishOpen(false)
@@ -168,14 +176,74 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
 
     try {
       await finishExam(apiUrl, sessionId)
+    } catch (error) {
+      if (!isConflict(error)) {
+        setFailure('finish')
+        setFinishing(false)
+        return
+      }
+
+      const state = await fetchFinishState()
+      if (state !== 'finished') {
+        // `unknown`을 `unfinished`로 접지 않는다 — 아래 함수 주석.
+        if (state === 'unfinished') setStaleContentOpen(true)
+        else setFailure('finish')
+
+        setFinishing(false)
+        return
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: examKeys.all })
+    router.replace(examResultHref(sessionId))
+  }
+
+  /**
+   * 409를 받은 뒤 서버가 이 세션을 무엇으로 보는지 다시 읽는다.
+   *
+   * **`unknown`을 따로 두는 것이 이 함수의 요점이다.** 「종료 아님」과 「못 읽었다」를 같은 값으로
+   * 접으면 재조회가 네트워크로 실패한 순간 화면이 `content_version` 다이얼로그를 띄우는데, 그것은
+   * **셋 중 가장 파괴적인 갈래**다 — 실제로는 다른 기기가 정상 채점을 마쳤는데 「채점할 수 없다」를
+   * 보이고 유일한 액션으로 「포기」를 주며, 그 포기마저 종료된 세션이라 409로 거절된다. 모를 때는
+   * 되돌릴 수 있는 쪽(재시도 배너)으로 간다.
+   */
+  async function fetchFinishState() {
+    try {
+      const latest = await queryClient.fetchQuery(examQuery(apiUrl, sessionId))
+
+      return latest.finishedAt === null ? 'unfinished' : 'finished'
     } catch {
-      setFailure('finish')
-      setFinishing(false)
+      return 'unknown'
+    }
+  }
+
+  /**
+   * 포기하면 세션과 답안이 사라진다. 채점할 수 없는 세션에 남은 경로는 이것뿐이다.
+   *
+   * **409는 여기서도 「그 사이 종료됐다」이므로 결과 화면으로 보낸다** — `docs/02` 「API 오류의
+   * 화면 표현」의 `DELETE` 409 행이고, `/exam` 목록의 「포기」와 같은 결론이어야 한다. 같은 응답에
+   * 화면 둘이 다른 답을 내면 그 표가 정본이 아니게 된다.
+   */
+  async function handleAbandonStale() {
+    if (isFinishing) return
+
+    setStaleContentOpen(false)
+    setFinishing(true)
+    try {
+      await deleteExam(apiUrl, sessionId)
+    } catch (error) {
+      if (!isConflict(error)) {
+        setFailure('abandon')
+        setFinishing(false)
+        return
+      }
+
+      await queryClient.invalidateQueries({ queryKey: examKeys.all })
+      router.replace(examResultHref(sessionId))
       return
     }
 
     await queryClient.invalidateQueries({ queryKey: examKeys.all })
-    // SJO-24가 `/exam/${sessionId}/result`로 바꾼다. 그 화면이 아직 없어 목록으로 돌려보낸다.
     router.replace('/exam')
   }
 
@@ -190,24 +258,25 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
   })
 
   /**
-   * 종료된 세션을 이 경로로 열면 풀 것이 없다. **결과 화면으로 보내는 것은 SJO-24 소관**이라
-   * 지금은 목록으로 되돌린다 (`docs/02` 「종료 / 결과」).
+   * 종료된 세션을 이 경로로 열면 풀 것이 없다 — 결과 화면으로 보낸다. 세션 하나는 언제나
+   * 여기와 `/exam/[id]/result` 중 정확히 하나에서만 열리고, 반대 방향은 `ExamResultScreen`이
+   * 맡는다 (`docs/02` 「결과 화면의 구성」).
+   *
+   * **이 분기가 다른 기기의 종료를 받는 자리이기도 하다** — `handleConflict`가 세션을 다시 읽고
+   * 그 결과 `finishedAt`이 채워지면 여기로 온다 (SJO-53 이후 답안 제출 409가 확정적이다).
    */
-  if (session.finishedAt !== null) {
+  const isFinished = session.finishedAt !== null
+
+  useEffect(() => {
+    if (isFinished) router.replace(examResultHref(sessionId))
+  }, [isFinished, router, sessionId])
+
+  // 이동이 도착할 때까지 앱바 없는 백지를 남기지 않는다 (`ExamShell` 주석).
+  if (isFinished) {
     return (
-      <>
-        <AppBar title={SCREEN_NAME} backHref="/exam" />
-        <div className="app-bar-gutter-top flex min-h-dvh flex-col">
-          <EmptyState
-            message="이미 종료된 모의고사다"
-            actions={
-              <Link href="/exam" className={buttonClassName('filled')}>
-                모의고사 목록
-              </Link>
-            }
-          />
-        </div>
-      </>
+      <ExamShell title={SCREEN_NAME} backHref="/exam">
+        <StatusBanner kind="loading">결과를 여는 중…</StatusBanner>
+      </ExamShell>
     )
   }
 
@@ -310,6 +379,21 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         confirmLabel="종료"
         onConfirm={() => void handleFinish()}
         onCancel={() => setFinishOpen(false)}
+      />
+
+      {/*
+        `content_version` 409. **채점하지 않고 포기만 제공한다** (`docs/02` 「API 오류의 화면
+        표현」) — 이 세션의 정답표가 더는 존재하지 않아 어떤 점수를 내도 근거가 없다.
+        65문항을 통째로 잃는 유일한 경로이고, v1은 데이터를 새 버전으로 올리기 전에 진행 중
+        세션이 없는지 확인해 운영으로 회피한다.
+      */}
+      <ConfirmDialog
+        isOpen={isStaleContentOpen}
+        title="이 모의고사는 채점할 수 없다"
+        description="문제 데이터가 갱신되어 이 세션의 정답을 확인할 수 없다. 포기하면 세션과 지금까지 고른 답이 사라진다."
+        confirmLabel="포기"
+        onConfirm={() => void handleAbandonStale()}
+        onCancel={() => setStaleContentOpen(false)}
       />
       <ShortcutHelp isOpen={isHelpOpen} onClose={() => setHelpOpen(false)} />
     </>
