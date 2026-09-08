@@ -93,7 +93,9 @@ export class ExamsService {
     const session = await this.requireSession(userId, sessionId)
     if (session.finishedAt !== null) throw new ConflictException('이미 종료된 세션이다')
 
-    await this.repository.updateCursor(sessionId, userId, cursor)
+    // 선조회와 이 문장 사이에 A가 finish하면 0행이다 — 종료된 세션의 cursor를 바꾸지 않는다.
+    const updated = await this.repository.updateCursor(sessionId, userId, cursor)
+    if (!updated) throw new ConflictException('이미 종료된 세션이다')
 
     return { cursor }
   }

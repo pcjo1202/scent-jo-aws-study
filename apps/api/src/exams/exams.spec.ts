@@ -40,11 +40,12 @@ type Overrides = {
   insertSession?: (row: InsertedSession) => Promise<string>
   finishSession?: () => Promise<boolean>
   deleteSession?: () => Promise<boolean>
+  updateCursor?: () => Promise<boolean>
   sessions?: ExamSessionListRow[]
 }
 
 function harness(overrides: Overrides = {}) {
-  const updateCursor = vi.fn(() => Promise.resolve())
+  const updateCursor = vi.fn(overrides.updateCursor ?? (() => Promise.resolve(true)))
   const deleteSession = vi.fn(overrides.deleteSession ?? (() => Promise.resolve(true)))
   const finishSession = vi.fn(overrides.finishSession ?? (() => Promise.resolve(true)))
   const insertSession = vi.fn<(row: InsertedSession) => Promise<string>>(
@@ -247,6 +248,21 @@ describe('PATCH /exams/:id — 진행 위치', () => {
       ConflictException,
     )
     expect(updateCursor).not.toHaveBeenCalled()
+  })
+
+  /**
+   * 선조회와 UPDATE 사이에 A가 finish하면 SQL이 0행을 준다 — `DELETE`의 같은 자리와 같은
+   * 모양이다 (SJO-55). 선조회는 잠금이 아니라 그 창을 못 막는다.
+   */
+  it('경합에서 0행이 갱신되면 409다', async () => {
+    const { service } = harness({
+      session: session(),
+      updateCursor: () => Promise.resolve(false),
+    })
+
+    await expect(service.updateExam(USER_ID, SESSION_ID, 3)).rejects.toBeInstanceOf(
+      ConflictException,
+    )
   })
 })
 

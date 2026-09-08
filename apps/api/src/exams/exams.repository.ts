@@ -127,17 +127,22 @@ export function listSessionsQuery(db: Db, userId: string) {
 }
 
 /**
- * **셋 중 이것만 상태 가드가 없다.** 아래 둘은 `finished_at is null`을 달았는데 여기엔 없어서,
- * `updateExam`의 선조회를 통과한 `PATCH`가 그 사이에 끝난 세션의 `cursor`를 바꾸고 200을
- * 준다 — `docs/05` 「오류 응답」이 409로 정한 자리다. **SJO-53이 그 창을 넓혔다**: `finish`가
- * 이제 왕복 세 번 동안 행을 쥐므로 대기했다가 적용된다.
+ * **`PATCH` 경로는 세션을 잠그지 않으므로 `finished_at is null`이 여기서는 진짜 방어선이다**
+ * — `deleteSessionQuery`와 같은 등급이다. 지우면 하네스 조건 ⑥이 3회 중 3회 실패한다
+ * (2026-09-08 실측, SJO-55): `updateExam`의 선조회를 통과한 `PATCH`의 `UPDATE`가 잠금 대기에서
+ * 풀려 적용돼, 종료된 세션의 `cursor`가 바뀌고 200이 나간다 — `docs/05` 「오류 응답」이 409로
+ * 정한 자리다. SJO-53이 그 창을 넓혀 두기도 했다: `finish`가 왕복 세 번 동안 행을 쥔다.
  *
- * 이 이슈에서 닫지 않은 이유는 종료된 세션의 `cursor`를 읽는 화면이 없어 증상이 없기
- * 때문이다(SJO-55로 뺐다). **세 쿼리가 대칭이라고 읽지 마라** — 빠진 것이지 필요 없어서
- * 없는 것이 아니다.
+ * **선조회의 `finishedAt` 검사는 반대로 잉여다** — 그것만 지워도 ⑥이 3회 중 3회 통과한다
+ * (같은 실측). 잠금이 아니라서 창을 못 막고, 막는 것은 이 절이다. 그래도 두는 이유는
+ * `finishSessionQuery`의 잉여 절과 같다. 0행이면 서비스가 409로 옮긴다.
  */
 export function updateCursorQuery(db: Db, sessionId: string, userId: string, cursor: number) {
-  return db.update(examSessions).set({ cursor }).where(ownedSession(sessionId, userId))
+  return db
+    .update(examSessions)
+    .set({ cursor })
+    .where(and(ownedSession(sessionId, userId), isNull(examSessions.finishedAt)))
+    .returning({ id: examSessions.id })
 }
 
 /** 진행 중 세션만 지운다 — 종료된 세션이 답안째 사라지는 경합을 SQL에서 막는다. */
@@ -156,8 +161,8 @@ export function deleteSessionQuery(db: Db, sessionId: string, userId: string) {
  * `lockSession`이 커밋된 행을 다시 읽어 먼저 409를 내기 때문이다.
  *
  * 그래도 지우지 않는다 — 잠금 **밖에서** 이 문장을 부르는 호출자가 생기면 그때는 이것뿐이고,
- * 그 호출자는 자기가 마지막 방어선을 지나간 줄 모른다. `deleteSessionQuery`의 같은 절은
- * 잉여가 아니다: 삭제 경로는 잠그지 않는다.
+ * 그 호출자는 자기가 마지막 방어선을 지나간 줄 모른다. `deleteSessionQuery`·`updateCursorQuery`의
+ * 같은 절은 잉여가 아니다: 삭제도 커서 저장도 세션을 잠그지 않는다.
  */
 export function finishSessionQuery(db: DbOrTx, sessionId: string, userId: string, score: number) {
   return db
@@ -226,16 +231,19 @@ export class ExamsRepository {
     return rows[0]
   }
 
-  async updateCursor(sessionId: string, userId: string, cursor: number): Promise<void> {
-    await updateCursorQuery(this.db, sessionId, userId, cursor)
+  async updateCursor(sessionId: string, userId: string, cursor: number): Promise<boolean> {
+    const updated = await updateCursorQuery(this.db, sessionId, userId, cursor)
+
+    return updated.length > 0
   }
 
   /**
    * `attempts.session_id`가 `on delete cascade`라 답안도 함께 사라진다 (`docs/05`).
    *
    * **삭제 경로는 세션을 잠그지 않으므로 `finished_at is null`이 여기서는 진짜 방어선이다** —
-   * 지우면 하네스 조건 ⑤가 3회 중 3회 실패한다(2026-09-08 실측). `finishSession`의 같은
-   * 절은 반대로 잉여다(`finishSessionQuery` 주석) — 같은 SQL 조각이지만 등급이 다르다. 서비스의
+   * 지우면 하네스 조건 ⑤가 3회 중 3회 실패한다(2026-09-08 실측). `updateCursorQuery`도 잠그지 않는 경로라
+   * 같은 등급이고, 셋 중 `finishSession`의 절만 잉여다(`finishSessionQuery` 주석) — 같은 SQL
+   * 조각이 셋인데 등급은 둘로 갈린다. 서비스의
    * 선조회와 이 문장 사이가 열려 있어, A가 `finish`하는 동안 B가 `DELETE`를 보내면 B의
    * 선조회는 `finishedAt = null`을 보고 통과한다. 그러면 **점수까지 확정된 세션이 답안째
    * 사라진다.** 0행이면 서비스가 409로 옮긴다.
