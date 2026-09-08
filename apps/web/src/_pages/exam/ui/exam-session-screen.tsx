@@ -1,9 +1,8 @@
 'use client'
 
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
@@ -14,14 +13,14 @@ import { CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
-import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
+import { deleteExam } from '@/features/manage-exam/api/delete-exam'
 import { finishExam } from '@/features/manage-exam/api/finish-exam'
 import { saveCursor } from '@/features/navigate-exam/api/save-cursor'
 import { QuestionGrid } from '@/features/navigate-exam/ui/question-grid'
@@ -38,6 +37,7 @@ const CONFLICT = 409
 const FAILURE_MESSAGE = {
   cursor: '진행 위치를 저장하지 못했다',
   finish: '모의고사를 종료하지 못했다',
+  abandon: '모의고사를 포기하지 못했다',
 } as const
 
 type Failure = keyof typeof FAILURE_MESSAGE
@@ -79,6 +79,7 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
   const [unsavedIds, setUnsavedIds] = useState<number[]>([])
   const [failure, setFailure] = useState<Failure | null>(null)
   const [isFinishOpen, setFinishOpen] = useState(false)
+  const [isStaleContentOpen, setStaleContentOpen] = useState(false)
   const [isFinishing, setFinishing] = useState(false)
   const [isHelpOpen, setHelpOpen] = useState(false)
   const [isGridOpen, setGridOpen] = useState(false)
@@ -159,6 +160,12 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
    *
    * `try`는 `finishExam` 한 줄만 감싼다 — 캐시 무효화나 이동이 던졌다고 「종료하지 못했다」를
    * 띄우면, 이미 끝난 세션에 재시도를 유도해 영영 409를 받게 된다.
+   *
+   * **409는 두 가지인데 오류에는 `status`뿐이다** — 「이미 종료된 세션」과 「`content_version`
+   * 불일치」다 (`docs/05` 「오류 응답」). 예외 메시지 문자열로 가르지 않고 **서버 상태를 다시
+   * 읽어** `finishedAt`으로 판정한다: 채워져 있으면 다른 기기가 먼저 끝낸 것이라 결과 화면으로
+   * 가고, 비어 있으면 채점 자체가 거절된 것이라 포기만 남는다
+   * (`docs/02` 「API 오류의 화면 표현」).
    */
   async function handleFinish() {
     setFinishOpen(false)
@@ -168,14 +175,50 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
 
     try {
       await finishExam(apiUrl, sessionId)
+    } catch (error) {
+      if (!isConflict(error)) {
+        setFailure('finish')
+        setFinishing(false)
+        return
+      }
+
+      if (!(await isFinishedOnServer())) {
+        setStaleContentOpen(true)
+        setFinishing(false)
+        return
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: examKeys.all })
+    router.replace(`/exam/${sessionId}/result`)
+  }
+
+  /**
+   * 409를 받은 뒤 서버가 이 세션을 종료로 보는지 다시 읽는다. **재조회가 실패하면 종료로 치지
+   * 않는다** — 못 읽은 것을 「끝났다」로 읽으면 채점되지 않은 세션을 결과 화면으로 보내고,
+   * 그 화면은 `results`가 없어 다시 여기로 되돌린다.
+   */
+  async function isFinishedOnServer() {
+    try {
+      const latest = await queryClient.fetchQuery(examQuery(apiUrl, sessionId))
+
+      return latest.finishedAt !== null
     } catch {
-      setFailure('finish')
-      setFinishing(false)
+      return false
+    }
+  }
+
+  /** 포기하면 세션과 답안이 사라진다. 채점할 수 없는 세션에 남은 경로는 이것뿐이다. */
+  async function handleAbandonStale() {
+    setStaleContentOpen(false)
+    try {
+      await deleteExam(apiUrl, sessionId)
+    } catch {
+      setFailure('abandon')
       return
     }
 
     await queryClient.invalidateQueries({ queryKey: examKeys.all })
-    // SJO-24가 `/exam/${sessionId}/result`로 바꾼다. 그 화면이 아직 없어 목록으로 돌려보낸다.
     router.replace('/exam')
   }
 
@@ -190,26 +233,20 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
   })
 
   /**
-   * 종료된 세션을 이 경로로 열면 풀 것이 없다. **결과 화면으로 보내는 것은 SJO-24 소관**이라
-   * 지금은 목록으로 되돌린다 (`docs/02` 「종료 / 결과」).
+   * 종료된 세션을 이 경로로 열면 풀 것이 없다 — 결과 화면으로 보낸다. 세션 하나는 언제나
+   * 여기와 `/exam/[id]/result` 중 정확히 하나에서만 열리고, 반대 방향은 `ExamResultScreen`이
+   * 맡는다 (`docs/02` 「결과 화면의 구성」).
+   *
+   * **이 분기가 다른 기기의 종료를 받는 자리이기도 하다** — `handleConflict`가 세션을 다시 읽고
+   * 그 결과 `finishedAt`이 채워지면 여기로 온다 (SJO-53 이후 답안 제출 409가 확정적이다).
    */
-  if (session.finishedAt !== null) {
-    return (
-      <>
-        <AppBar title={SCREEN_NAME} backHref="/exam" />
-        <div className="app-bar-gutter-top flex min-h-dvh flex-col">
-          <EmptyState
-            message="이미 종료된 모의고사다"
-            actions={
-              <Link href="/exam" className={buttonClassName('filled')}>
-                모의고사 목록
-              </Link>
-            }
-          />
-        </div>
-      </>
-    )
-  }
+  const isFinished = session.finishedAt !== null
+
+  useEffect(() => {
+    if (isFinished) router.replace(`/exam/${sessionId}/result`)
+  }, [isFinished, router, sessionId])
+
+  if (isFinished) return null
 
   if (!entry) {
     throw new Error(`인덱스에 문항 ${String(questionId)}이 없다`)
@@ -310,6 +347,21 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         confirmLabel="종료"
         onConfirm={() => void handleFinish()}
         onCancel={() => setFinishOpen(false)}
+      />
+
+      {/*
+        `content_version` 409. **채점하지 않고 포기만 제공한다** (`docs/02` 「API 오류의 화면
+        표현」) — 이 세션의 정답표가 더는 존재하지 않아 어떤 점수를 내도 근거가 없다.
+        65문항을 통째로 잃는 유일한 경로이고, v1은 데이터를 새 버전으로 올리기 전에 진행 중
+        세션이 없는지 확인해 운영으로 회피한다.
+      */}
+      <ConfirmDialog
+        isOpen={isStaleContentOpen}
+        title="이 모의고사는 채점할 수 없다"
+        description="문제 데이터가 갱신되어 이 세션의 정답을 확인할 수 없다. 포기하면 세션과 지금까지 고른 답이 사라진다."
+        confirmLabel="포기"
+        onConfirm={() => void handleAbandonStale()}
+        onCancel={() => setStaleContentOpen(false)}
       />
       <ShortcutHelp isOpen={isHelpOpen} onClose={() => setHelpOpen(false)} />
     </>

@@ -26,7 +26,7 @@ export async function ExamSessionPage({ params }: { params: Promise<{ id: string
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ExamSessionBoundary>
+      <ExamSessionBoundary title="모의고사" backHref="/exam">
         <ExamSessionScreen apiUrl={apiUrl} sessionId={id} />
       </ExamSessionBoundary>
     </HydrationBoundary>

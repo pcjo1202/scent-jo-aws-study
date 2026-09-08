@@ -23,8 +23,21 @@ const NOT_FOUND = 404
  * 세션을 못 받은 상태의 앱바에는 진행 숫자도 진행 바도 없다. 가리킬 대상이 없기 때문이고,
  * 그것이 `DESIGN.md` 「빈 상태·완주에서 골격은 어떻게 되나」의 규칙이다. 라이브 리전은 배너보다
  * 먼저 있어야 하므로 바깥 컨테이너를 항상 그린다.
+ *
+ * **앱바 문구를 인자로 받는 이유는 뒤로가기가 라우트마다 다르기 때문이다** — `/exam/[id]`와
+ * `/exam/[id]/result`는 `/exam`으로, `/exam/[id]/result/[N]`은 그 요약으로 간다
+ * (`DESIGN.md` 「네비게이션은 허브-스포크다」의 표). **404 문구와 목록 링크는 셋이 같다**:
+ * 세션을 못 찾은 것이라 부모가 어디든 갈 곳은 목록뿐이다.
  */
-export function ExamSessionBoundary({ children }: { children: ReactNode }) {
+export function ExamSessionBoundary({
+  title,
+  backHref,
+  children,
+}: {
+  title: string
+  backHref: string
+  children: ReactNode
+}) {
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
@@ -32,7 +45,7 @@ export function ExamSessionBoundary({ children }: { children: ReactNode }) {
           <ErrorBoundary
             onReset={reset}
             fallbackRender={({ error, resetErrorBoundary }) => (
-              <Shell>
+              <Shell title={title} backHref={backHref}>
                 {error instanceof ApiError && error.status === NOT_FOUND ? (
                   <StatusBanner
                     kind="error"
@@ -57,7 +70,7 @@ export function ExamSessionBoundary({ children }: { children: ReactNode }) {
           >
             <Suspense
               fallback={
-                <Shell>
+                <Shell title={title} backHref={backHref}>
                   <StatusBanner kind="loading">불러오는 중…</StatusBanner>
                 </Shell>
               }
@@ -71,10 +84,18 @@ export function ExamSessionBoundary({ children }: { children: ReactNode }) {
   )
 }
 
-function Shell({ children }: { children: ReactNode }) {
+function Shell({
+  title,
+  backHref,
+  children,
+}: {
+  title: string
+  backHref: string
+  children: ReactNode
+}) {
   return (
     <>
-      <AppBar title="모의고사" backHref="/exam" />
+      <AppBar title={title} backHref={backHref} />
       <div className="app-bar-gutter-top">
         <main className="mx-auto max-w-reading px-screen py-6">{children}</main>
       </div>

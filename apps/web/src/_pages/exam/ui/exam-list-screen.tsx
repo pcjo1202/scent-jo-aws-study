@@ -80,24 +80,37 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
   }
 
   /**
-   * 포기하면 세션과 답안이 사라진다. **409(그 사이 다른 기기가 종료함)도 목록을 다시 읽는 것으로
-   * 끝낸다** — 그 세션을 결과 화면으로 보내는 것은 SJO-24 소관이다 (`docs/02` 「API 오류의 화면
-   * 표현」의 `DELETE` 409 행).
+   * 포기하면 세션과 답안이 사라진다.
+   *
+   * **409는 그 사이 다른 기기가 종료했다는 뜻이라 결과 화면으로 보낸다** (`docs/02` 「API 오류의
+   * 화면 표현」의 `DELETE` 409 행). 실패로 표시하지 않는다 — 사용자가 없애려던 「진행 중 세션」은
+   * 실제로 없어졌고, 남은 것은 그 세션의 결과다.
+   *
+   * 목록 재조회는 이동 여부와 무관하게 한다. 결과 화면으로 가더라도 뒤로 나오면 이 목록이고,
+   * 거기 진행 중 카드가 남아 있으면 방금 없어진 것을 다시 권한다.
    */
   async function handleAbandon() {
     if (!activeSession || isSubmitting) return
 
+    const { id } = activeSession
     setAbandonOpen(false)
     setSubmitting(true)
     setFailure(null)
     try {
-      await deleteExam(apiUrl, activeSession.id)
+      await deleteExam(apiUrl, id)
     } catch (error) {
-      if (!(error instanceof ApiError && error.status === CONFLICT)) setFailure('delete')
+      if (error instanceof ApiError && error.status === CONFLICT) {
+        await reloadSessions()
+        router.replace(`/exam/${id}/result`)
+        return
+      }
+
+      setFailure('delete')
     } finally {
-      await reloadSessions()
       setSubmitting(false)
     }
+
+    await reloadSessions()
   }
 
   const startButton = (
