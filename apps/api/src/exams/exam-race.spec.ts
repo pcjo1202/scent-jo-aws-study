@@ -1,5 +1,7 @@
 /**
- * `POST /attempts`와 `POST /exams/:id/finish`의 경합 하네스 (SJO-53).
+ * `POST /exams/:id/finish`와, 같은 세션에 동시에 들어오는 **`:id` 쓰기 경로 전부**의 경합
+ * 하네스 (SJO-53·SJO-55). 상대는 답안 제출(`POST /attempts`)·삭제(`DELETE`)·진행 위치
+ * 저장(`PATCH`)이다.
  *
  * **실제 DB를 쓴다.** 기본은 건너뛰고 `RACE_PROBE=1`에서만 돈다 — `pnpm test`는 네트워크도
  * 자격증명도 없이 도는 것이 계약이다 (`docs/08`). 실행:
@@ -9,8 +11,8 @@
  * ```
  *
  * 판정의 원칙은 하나다 — **DB에 남은 상태를 본다.** 회차마다 보는 값이 다르다: ①~④는 `score`가
- * 나중에 읽는 `results`의 정답 수와 같은가, ⑤는 확정된 세션이 살아남았는가, ⑥은 종료된 세션의
- * `cursor`가 그대로인가. `finish` 자신의 응답은 어느 쪽이든 정합하므로 응답을 보면 안 된다.
+ * 나중에 읽는 `results`의 정답 수와 같은가(④는 거기에 **이긴 쪽이 하나인가**를 더한다), ⑤는
+ * 확정된 세션이 살아남았는가, ⑥은 종료된 세션의 `cursor`가 그대로인가. `finish` 자신의 응답은 어느 쪽이든 정합하므로 응답을 보면 안 된다.
  *
  * 중간에 죽인 실행이 열린 트랜잭션을 남기면 다음 실행이 잠금을 기다리다 엉뚱하게 실패한다.
  * 그때는 코드가 아니라 좀비 커넥션이 원인이므로 다시 돌린다.
@@ -92,7 +94,7 @@ class SlowAttemptRepository extends AttemptsRepository {
 
 type Round = { score: number | null; correctInResults: number; note: string }
 
-describe.skipIf(process.env.RACE_PROBE !== '1')('SJO-53 경합 — 실제 DB', () => {
+describe.skipIf(process.env.RACE_PROBE !== '1')('finish 경합 — 실제 DB', () => {
   let db: Db
 
   beforeAll(() => {
@@ -231,6 +233,9 @@ describe.skipIf(process.env.RACE_PROBE !== '1')('SJO-53 경합 — 실제 DB', (
     return {
       cursor: row?.cursor ?? null,
       finished: row?.finishedAt != null,
+      // `swallowConflict`는 **모든** 오류를 문자열로 바꾼다 — 404든 연결 오류든 `cursor`는 0이라
+      // 「가드가 막았다」와 「PATCH가 애초에 못 갔다」가 구분되지 않는다. 409를 함께 센다.
+      rejected: notes.includes('ConflictException'),
       note: notes.join(' | '),
     }
   }
@@ -325,15 +330,28 @@ describe.skipIf(process.env.RACE_PROBE !== '1')('SJO-53 경합 — 실제 DB', (
     )
   })
 
+  /**
+   * 마진은 「`WINDOW_MS / 4` 대 왕복 한 번」이다 — `PATCH`는 선조회 한 왕복 뒤 100ms에 `UPDATE`를
+   * 던지고, 그 전에 `finish`의 잠금이 잡혀 있어야 대기가 생긴다. 풀러 RTT가 그보다 커지면
+   * `PATCH`가 먼저 커밋해 이 회차만 빨개지는데 **그건 프로덕션의 정상 동작이다** — 회귀로
+   * 읽지 말고 `WINDOW_MS`를 키운다.
+   */
   it('⑥ finish 도중의 PATCH — 종료된 세션의 cursor가 안 바뀐다', { timeout: 120_000 }, async () => {
     const rounds = 3
     const outcomes = []
     for (let index = 0; index < rounds; index += 1) {
       const outcome = await patchDuringFinishRound()
-      outcomes.push({ cursor: outcome.cursor, finished: outcome.finished })
+      outcomes.push({
+        cursor: outcome.cursor,
+        finished: outcome.finished,
+        rejected: outcome.rejected,
+      })
     }
 
-    // `finished: true`를 함께 세는 이유는 세션이 종료되지 않은 회차는 경합을 잰 것이 아니기 때문이다.
-    expect(outcomes).toEqual(Array.from({ length: rounds }, () => ({ cursor: 0, finished: true })))
+    // 셋을 함께 센다 — 종료되지 않은 회차는 경합을 잰 것이 아니고, 409가 없으면 「막았다」가
+    // 아니라 「PATCH가 못 갔다」일 수 있다.
+    expect(outcomes).toEqual(
+      Array.from({ length: rounds }, () => ({ cursor: 0, finished: true, rejected: true })),
+    )
   })
 })

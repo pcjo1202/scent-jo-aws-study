@@ -175,15 +175,17 @@ JWKS는 스텁으로 대체하고 **EC(ES256) 테스트 키쌍**으로 서명한
 | 지운 가드 | 경합 하네스 | `.toSQL()` 스펙 |
 |---|---|---|
 | `attempts`의 `for update` | ①②③ 실패 | 실패 |
-| `exams`의 `for update` | ①②③ 실패 | 실패 |
+| `exams`의 `for update` | ①②③**⑤⑥** 실패 (6조건 중 ④만 통과) | 실패 |
 | `deleteSessionQuery`의 `finished_at is null` | ⑤ 3회 중 3회 실패 | 실패 |
 | `updateCursorQuery`의 `finished_at is null` | ⑥ 3회 중 3회 실패 | 실패 |
 | `finishSessionQuery`의 `finished_at is null` | **6조건 전부 통과** | 실패 |
-| `updateExam`의 선조회 `finishedAt !== null` | **6조건 전부 통과** | 해당 없음 — 쿼리가 아니라 스텁 스펙(`exams.spec.ts`)이 잡는다 |
+| `updateExam`·`deleteExam`의 선조회 `finishedAt !== null` | **6조건 전부 통과** (각각 따로 지워 셌다) | 해당 없음 — 쿼리가 아니라 스텁 스펙(`exams.spec.ts`)이 잡는다 |
 
 `finishSessionQuery` **행이 이 표를 적는 이유다.** 잠금이 들어온 뒤 그 조건은 **`finish` 경로에서 잉여다** — 진 쪽의 잠금 조회가 커밋된 행을 다시 읽어 먼저 409를 낸다. 지우지 않지만 **잉여라는 사실을 적어 둔다**: 「스펙이 잡는다」와 「지워도 아무 일 없다」는 다른 문장이고, 앞엣것만 적어 두면 다음 사람이 그 조건을 방어선으로 세게 된다. `updateExam`의 선조회 행도 같은 등급이다 — 잠금이 아니라 창을 못 막고, 실제로 막는 것은 같은 경로의 SQL 절이다.
 
 `deleteSessionQuery`·`updateCursorQuery` **두 행이 그 대비다.** **같은 모양의 절인데 이쪽은 잉여가 아니다** — 삭제도 커서 저장도 세션을 잠그지 않아 그 조건뿐이고, 지우면 점수까지 확정된 세션이 답안째 사라지거나(cascade) 종료된 세션의 `cursor`가 바뀐 채 200이 나간다. **같은 SQL 조각이 셋인데 등급은 둘로 갈리므로, 「같은 절이니 같은 등급」으로 읽지 않는다.** 이 대비는 처음에 추론으로 적었다가 조건 ⑤를 만들어 측정으로 바꾼 것이고(2026-09-08 리뷰 지적), ⑥이 같은 방식으로 세 번째 절까지 재게 했다 (SJO-55).
+
+**한 회차를 한 가드에 배정하지 마라.** `exams`의 `for update` 행이 그것을 보여 준다 — ⑤와 ⑥은 잠금이 상대를 대기시킨 **뒤에야** `finished_at is null`이 판정할 것이 생기므로, **두 가드의 곱**이 지킨다. 표를 「⑥은 `updateCursorQuery`의 절이 지킨다」로 읽으면 잠금을 뺐을 때 무엇이 무너지는지 못 본다. ⑤·⑥ 칸이 두 행에 동시에 있는 것이 그 뜻이다.
 
 ## 안 쓰는 것
 
