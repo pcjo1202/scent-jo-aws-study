@@ -12,7 +12,7 @@ import {
 import { AppBar } from '@/shared/ui/app-bar'
 import { EmptyState } from '@/shared/ui/empty-state'
 
-import { groupByCategory, searchOneLiners, sortByImportance } from '@/_pages/notes/lib/notes-index'
+import { groupByCategory, searchOneLiners, sortByImportance } from '../lib/notes-index'
 
 import { ComparisonList } from './comparison-list'
 import { OneLinerList } from './one-liner-list'
@@ -71,7 +71,9 @@ export function NotesScreen() {
               렌더한다 (`DESIGN.md` 「상태 배너」). 목록 자체를 감싸지 않는 이유는 203개가
               글자 하나마다 통째로 다시 낭독되기 때문이다.
             */}
-            <div aria-live="polite" className="mt-4">
+            {/* 위쪽 간격을 여기서 주지 않는다 — `EmptyState`가 자기 `py-6`(24px)을 갖고 있어
+                더하면 40px이 되고, 그건 「간격」이 열거한 값 밖이다. */}
+            <div aria-live="polite">
               {groups.length === 0 && <EmptyState message="검색 결과 없음" />}
             </div>
 

@@ -4,7 +4,7 @@ import type { OneLiner } from '@aws-study/shared'
 
 import { studyServiceHref } from '@/shared/config/study'
 
-import type { OneLinerGroup } from '@/_pages/notes/lib/notes-index'
+import type { OneLinerGroup } from '../lib/notes-index'
 
 /**
  * 한줄노트 — 카테고리 그룹 안에 서비스명·설명·문제 링크가 선다
