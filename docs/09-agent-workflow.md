@@ -41,9 +41,11 @@ working tree 정리 → **공통 게이트**(`format:check`·`typecheck --force`
 
 ### 훅 (1)
 
-`.githooks/pre-commit`이 `prettier --check .`를 돌린다. 루트 `prepare`가 `core.hooksPath`를 걸어 `pnpm install`만으로 심어진다. `--no-verify`와 훅 미설치 clone으로 뚫리므로 `/done`의 공통 게이트가 같은 검사를 한 번 더 한다 — 근거와 우회 경로 실측은 `10-conventions.md` 「Prettier」.
+`.githooks/pre-commit`이 `prettier --check .`를 돌린다. 루트 `prepare`가 `core.hooksPath`를 걸어 `pnpm install`만으로 심어진다.
 
-**에이전트 리뷰를 훅으로 내리지는 않는다.** 훅에 두는 것은 판정이 결정적이고 2.4초 안에 끝나는 검사뿐이다.
+**훅을 최종 방어선으로 세지 마라.** `pre-commit`은 `git commit` 경로에만 붙어서 `--no-verify`·머지 커밋·rebase·cherry-pick·revert·`--ignore-scripts` 설치·훅 미설치 clone으로 샌다. **이 레포는 merge commit으로 GitHub 서버에서 머지하므로 머지 경로는 훅을 아예 안 탄다** — 그 경로의 방어선은 `/done`의 공통 게이트뿐이다. 새는 자리 전수와 실측은 `10-conventions.md` 「Prettier」.
+
+**에이전트 리뷰를 훅으로 내리지는 않는다.** 훅에 두는 것은 판정이 결정적이고 몇 초 안에 끝나는 검사뿐이다.
 
 ### 그래프(Workflow) 투입 지점 (2)
 
