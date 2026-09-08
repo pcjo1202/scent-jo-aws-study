@@ -9,7 +9,7 @@
 ```
 src/
 ├─ _app/       프로바이더 · 테마 · 전역 스타일 주입
-├─ _pages/     화면 9개. 데이터 로드와 widget 조합만
+├─ _pages/     화면 10개. 데이터 로드와 widget 조합만
 ├─ widgets/    자족적인 큰 블록 (question-runner 등)
 ├─ features/   사용자 상호작용 (submit-answer · filter-questions …)
 └─ shared/     ui · api · lib · config · styles
