@@ -5,7 +5,9 @@
 > **이 문서는 실제로 설정하면서 채운다 — 채우는 것은 값과 근거이지 체크 표시가 아니다.** 콘솔에서 확인한 실제 값(정책 JSON, 정책 ID, ARN)과 실측을 그 자리에 덧붙인다.
 > 작업을 마칠 때마다 `MEMORY.md`의 인프라 표를 갱신한다.
 >
-> **체크박스는 「이번 셋업에서 밟을 절차」다 — 현재 상태가 아니다.** 그래서 이 문서의 칸은 전부 비어 있고, 비어 있는 것이 정상이다. 무엇이 이미 끝났는지의 정본은 `MEMORY.md`이고 여기에 옮겨 적지 않는다 — 상태를 두 곳에 두면 갈라지고, 실제로 갈라졌다 (2026-09-08 전수 대조, SJO-52). 새 환경에서 밟을 때는 이 파일을 복사해 체크하며 간다.
+> **체크박스는 「이번 셋업에서 밟을 절차」다 — 「이미 끝났다」는 표시가 아니다.** 그래서 이 문서에서는 칸을 채우지 않는다. 무엇이 이미 끝났는지는 `MEMORY.md`의 인프라 표에서 본다 — 같은 상태를 두 곳에서 판정하면 갈라지고, 실제로 갈라졌다 (2026-09-08 전수 대조, SJO-52).
+>
+> 그러니 **각 항목에 붙은 실측은 「그때 그렇게 나왔다」는 근거이지 지금의 판정이 아니다.** 빈 칸 옆에 통과 기록이 있어도 이번 셋업에서는 다시 밟는다.
 
 ## 순서
 
@@ -114,7 +116,7 @@
 
 ### S3
 
-- [ ] **버킷 버저닝** — 2026-09-04 확인 시점에 이미 `Enabled`였다. 활성화가 아니라 확인이 작업이었다
+- [ ] **버킷 버저닝을 켠다** — 이미 켜져 있으면 확인으로 끝난다. 이 버킷은 2026-09-04 확인 시점에 `Enabled`였다
 
   추출 데이터가 git에 없으므로 S3가 유일한 원본이다. 버전 경로(`v1`/`v2`)로 덮어쓰기를 구조적으로 막지만, 버저닝은 그 위의 안전망이다. 둘 다 한다. **첫 `data:publish` 전에 확인한다** — `--force` 덮어쓰기 사고의 최후 안전망이다.
 
@@ -186,15 +188,15 @@
 
 **그래서 검증은 반드시 브라우저로 한다.** 확인 방법은 두 가지를 함께 쓴다.
 
-- 브라우저에서 `v1/` **전 파일**을 교차출처로 받아 개수를 센다 (26/26). `Access-Control-Allow-Origin`은 CORS-safelisted 응답 헤더가 **아니라서 JS로 읽으면 항상 `null`이다** — 헤더 값이 아니라 **fetch 성공 여부**로 판정한다. `Cache-Control`은 safelist에 있어 읽힌다
+- 브라우저에서 **그 버전의 전 파일**을 교차출처로 받아 개수를 센다 — 기준 개수는 그 버전의 `manifest.json`이 준다 (2026-09-04에는 v1의 26/26이었다). `Access-Control-Allow-Origin`은 CORS-safelisted 응답 헤더가 **아니라서 JS로 읽으면 항상 `null`이다** — 헤더 값이 아니라 **fetch 성공 여부**로 판정한다. `Cache-Control`은 safelist에 있어 읽힌다
 - curl로는 **알려지지 않은 헤더를 일부러 붙여** 친다. 안 붙이면 위 결함을 못 잡는다
 
 ### CloudFront — 캐시
 
-- [ ] `aws-saa/<prefix>/v*/**` → `Cache-Control: public, max-age=31536000, immutable`
-- [ ] `aws-saa/<prefix>/manifest.json` → `Cache-Control: public, max-age=300`
+**콘솔에서 밟을 것이 없다** — 헤더는 업로드 시 S3 객체 메타데이터로 들어가고 `data:publish`가 넣는다. 값의 정본은 `scripts/src/artifacts/upload-plan.ts`의 `IMMUTABLE_CACHE`·`MANIFEST_CACHE`이지 이 목록이 아니다. CloudFront는 오리진 헤더를 존중한다.
 
-헤더는 업로드 시 S3 객체 메타데이터로 설정한다 (`data:publish`가 넣는다). CloudFront는 오리진 헤더를 존중한다.
+- `aws-saa/<prefix>/v*/**` → `Cache-Control: public, max-age=31536000, immutable`
+- `aws-saa/<prefix>/manifest.json` → `Cache-Control: public, max-age=300`
 
 **버전 경로를 쓰므로 invalidation은 정상 흐름에 없다.** `manifest.json`만 5분 뒤 자연 만료된다. 급할 때만 manifest 하나를 invalidate 한다.
 
@@ -243,7 +245,7 @@
 
 전부 끝난 뒤 한 번에 확인한다.
 
-- [ ] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 `v1/` 전 파일의 개수를 센다** (26/26). curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
+- [ ] 브라우저에서 CDN JSON을 fetch — CORS 통과. **한 파일이 아니라 현행 배포 버전의 전 파일을 받아 개수를 센다** — 기준 개수는 그 버전의 `manifest.json`이 준다. curl은 이 결함을 못 잡는다 (위 「Response Headers Policy를 쓰지 않는 이유」)
 - [ ] Google 로그인 → JWT 발급 → `sub` 클레임 확인 — 2026-09-06 실측 (SJO-50). `alg=ES256` · `iss`·`aud`·`email`·`sub` 전부 확인. **Google이 유일한 로그인 수단이라 사람이 직접 로그인해야 토큰이 나온다** — 이메일·익명 프로바이더가 꺼져 있어 임시 계정 경로가 없다
 - [ ] Nest가 JWKS로 그 JWT를 검증 → 200 — 2026-09-06, 실제 Supabase JWKS + 실토큰으로 `AuthModule`을 그대로 띄워 **5조건 중 5조건** 일치 (SJO-50): 정상 200 · `issuer` 끝에 슬래시 하나 401 · 옛 `/auth/v1/jwks` 503 · `ALLOWED_EMAIL` 불일치 403 · 토큰 없음 401. **프로덕션에서 같은 것을 재려면 가드가 걸린 라우트가 필요하다** — 지금 라우트는 `@Public()`인 `/health` 하나뿐이라 매칭 안 되는 경로는 가드 이전에 404다
 - [ ] Nest가 Postgres에 연결 (`prepare: false` 확인)
