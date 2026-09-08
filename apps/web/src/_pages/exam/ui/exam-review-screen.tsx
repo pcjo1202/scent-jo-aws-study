@@ -52,8 +52,9 @@ export function ExamReviewScreen({
   )
 
   const results = session.results
-  const cursor = position - 1
-  const result = results?.[cursor]
+  // 세션의 `cursor`가 아니라 URL이 준 위치다. 이름을 나눠 둔다 — 종료된 세션의 `cursor`는
+  // 아무도 읽지 않아야 하고(SJO-55), 같은 이름을 쓰면 다음 사람이 그 둘을 같은 것으로 읽는다.
+  const result = results?.[position - 1]
 
   /**
    * 채점 전이거나 범위 밖 위치면 요약으로 보낸다. 요약은 채점 전 세션을 다시 `/exam/[id]`로
