@@ -38,3 +38,7 @@ dist/
 
 # playwright MCP가 QA 중에 남기는 스냅샷·콘솔 로그. 세션 산출물이라 커밋하지 않는다.
 .playwright-mcp/
+
+# harness 플러그인의 작업 문서와 폴백 워크트리. 로컬 세션 산출물이라 커밋하지 않는다.
+.temp/
+.claude/worktrees/
