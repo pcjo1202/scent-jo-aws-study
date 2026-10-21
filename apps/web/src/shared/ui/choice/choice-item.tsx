@@ -3,15 +3,14 @@
 import type { ChoiceKey } from '@aws-study/shared'
 
 import { isSingleAnswer } from '@/shared/lib/choice-selection'
+import { CHOICE_CARD_CLASS } from '@/shared/ui/choice/choice-card'
 
 /**
  * 선택지 하나. 카드 전체가 클릭 영역이라 `label`이 카드이고 그 안에 네이티브 `input`이 있다
  * (`DESIGN.md` 「선택지」). 표식을 직접 그리지 않는 이유는 `radio`가 원형, `checkbox`가
  * 사각이라 모양이 이미 맞고 키보드·스크린리더 노출이 공짜로 따라오기 때문이다.
  *
- * 선택 여부는 **배경**이 나른다. 테두리는 선택과 무관하게 `outline`이다 —
- * `surface-container-low`가 `surface` 대비 1.05라 카드 경계가 그 선 하나에 걸려 있다
- * (`DESIGN.md` 「대비 검증」 § 각주).
+ * 선택 여부는 **면색**이 나른다. 정오 색이 아니라 brand다 (`DESIGN.md` 「선택지 · 상태」).
  *
  * `whitespace-pre-wrap`이 필요하다. IAM 정책 JSON이 든 문항 7개의 선택지에 줄바꿈이 살아 있고
  * 한 줄로 접으면 읽을 수 없다 (`docs/04-data-model.md` 「파서가 복원할 수 없는 것」).
@@ -35,14 +34,12 @@ export function ChoiceItem({
   isDisabled: boolean
   onToggle: (key: ChoiceKey) => void
 }) {
-  const surfaceClass = isSelected
-    ? 'bg-secondary-container text-on-secondary-container'
-    : 'bg-surface-container-low text-on-surface'
-
   return (
     <label
       aria-disabled={isDisabled}
-      className={`choice-card state-layer cursor-pointer border border-outline ${surfaceClass}`}
+      // 안 고른 카드에 면색 유틸을 주지 않는다. `sj-pressed-overlay`의 눌림 배경은 DS components 층이라
+      // utilities 층의 `bg-*`가 있으면 그려지지 않는다 — 선택된 카드는 그 대가로 눌림 배경이 없다.
+      className={`${CHOICE_CARD_CLASS} sj-pressed-overlay cursor-pointer border border-default aria-disabled:cursor-default aria-disabled:text-secondary ${isSelected ? 'bg-brand-weak' : ''}`}
     >
       <input
         type={isSingleAnswer(answerCount) ? 'radio' : 'checkbox'}
@@ -51,11 +48,15 @@ export function ChoiceItem({
         checked={isSelected}
         disabled={isDisabled}
         onChange={() => onToggle(choiceKey)}
-        className="mt-1 accent-primary"
+        className="mt-1.5"
+        // DS Tailwind 색 네임스페이스에 semantic `accent-*`가 없어(팔레트만 있다) 변수로 칠한다.
+        style={{ accentColor: 'var(--sj-color-bg-brand)' }}
       />
       <span>{choiceKey}</span>
-      <span className="flex-1 whitespace-pre-wrap">{text}</span>
-      <span className="key-hint text-label-medium text-on-surface-variant">{order}</span>
+      <span className="min-w-0 flex-1 whitespace-pre-wrap">{text}</span>
+      {/* 키 힌트는 폭과 포인터 두 조건이다 — 넓은 터치 태블릿에 단축키를 보여줄 이유가 없다
+          (`DESIGN.md` 「선택지 · 키보드」). */}
+      <span className="hidden text-t7 text-secondary lg:[@media(hover:hover)]:inline">{order}</span>
     </label>
   )
 }

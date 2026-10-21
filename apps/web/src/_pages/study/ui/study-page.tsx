@@ -1,11 +1,9 @@
-import { ReadingColumn } from '@scent-jo/react'
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 
 import { resolveApiUrl } from '@/shared/config/api-url'
 import { getQueryClient } from '@/shared/api/query-client'
 import { progressQuery, questionStatesQuery } from '@/shared/api/me'
 import { toInitialFilter } from '@/shared/lib/question-filter'
-import { ScreenShell } from '@/shared/ui/screen-shell'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -42,13 +40,8 @@ export async function StudyPage({
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <QueryBoundary
-        pending={
-          <ScreenShell title="순차 풀이" backHref="/">
-            <ReadingColumn className="py-6">
-              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-            </ReadingColumn>
-          </ScreenShell>
-        }
+        pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+        frame={{ title: '순차 풀이', backHref: '/' }}
         errorMessage="진도를 불러오지 못했다"
         canRetry
       >

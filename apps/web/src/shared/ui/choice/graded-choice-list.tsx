@@ -35,9 +35,7 @@ export function GradedChoiceList({
   return (
     <div>
       {!isSingleAnswer(answer.length) && (
-        <p className="mb-2 text-body-medium text-on-surface-variant">
-          정답 {answer.length}개를 고르세요
-        </p>
+        <p className="mb-2 text-t6 text-secondary">정답 {answer.length}개를 고르세요</p>
       )}
 
       <ul className="flex flex-col gap-2">
@@ -57,7 +55,7 @@ export function GradedChoiceList({
                   ) : (
                     // ③ 오답 해설. 제목을 달지 않는다 — 헤더는 선택지 카드 자체다
                     // (`DESIGN.md` 「③ 오답 해설」). 면색도 없다. 카드가 이미 면을 깔고 있다.
-                    rebuttal && <p className="whitespace-pre-wrap text-body-medium">{rebuttal}</p>
+                    rebuttal && <p className="whitespace-pre-wrap text-t6">{rebuttal}</p>
                   )
                 }
                 // 내가 고른 오답과 정답만 기본 펼침이다. 오답 해설 넷이 한꺼번에 펼쳐지면

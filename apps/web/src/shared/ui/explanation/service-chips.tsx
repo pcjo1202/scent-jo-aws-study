@@ -3,7 +3,7 @@
 import { useId, useState } from 'react'
 import { Icon } from '@scent-jo/react'
 
-import { Chip } from '@/shared/ui/chip'
+import { Chip, ChipLabel } from '@/shared/ui/chip'
 
 /**
  * 해설 블록 ④ — **이것이 이 앱의 핵심 가치다.** 문제를 풀다 "EFS가 뭐였지"에서 흐름이
@@ -13,9 +13,8 @@ import { Chip } from '@/shared/ui/chip'
  * 한 번에 하나만 펼친다. 여럿이 동시에 열리면 해설 아래가 다시 길어져서 ③에서 아코디언을
  * 쓴 이유가 무너진다.
  *
- * 펼침을 색으로 표시하지 않는다. `secondary-container`는 **선택된 선택지와 선택된 필터
- * 칩에만** 배정돼 있고 (`DESIGN.md` 「Color · 역할 목록」), 이 칩은 필터가 아니라 노트
- * 토글이다. 상태는 마커 회전과 `aria-expanded`가 나른다.
+ * 펼침을 선택 면색으로 표시하지 않는다. 선택 상태는 켜고 끄는 칩의 것이고 (`DESIGN.md` 「칩」),
+ * 이 칩은 노트를 펼친다. 상태는 마커 회전과 `aria-expanded`가 나른다 — `aria-pressed`는 뗀다.
  *
  * **노트가 없는 서비스가 7개 있다** — `S3`·`IAM` 같은 루트 이름은 태깅을 위해 보완한 것이고
  * 노트는 기능 단위(`S3 Standard`)로만 싣는다 (`docs/04-data-model.md` 「노트가 빠뜨린 이름」).
@@ -36,12 +35,13 @@ export function ServiceChips({
 
   return (
     <section>
-      <h3>등장 서비스</h3>
+      <h3 className="mb-2 text-t6 font-semibold">등장 서비스</h3>
       <ul className="flex flex-wrap gap-2">
         {services.map((service) => (
           <li key={service.name}>
             {service.note ? (
               <Chip
+                aria-pressed={undefined}
                 aria-expanded={service.name === openName}
                 aria-controls={noteId}
                 onClick={() => setOpenName(service.name === openName ? null : service.name)}
@@ -54,9 +54,7 @@ export function ServiceChips({
                 />
               </Chip>
             ) : (
-              <span className="chip inline-flex items-center rounded-corner-full bg-surface-container-high px-3 text-label-medium text-on-surface-variant">
-                {service.name}
-              </span>
+              <ChipLabel>{service.name}</ChipLabel>
             )}
           </li>
         ))}
@@ -67,9 +65,7 @@ export function ServiceChips({
       <p
         id={noteId}
         className={
-          openService
-            ? 'mt-2 rounded-corner-medium border border-outline bg-surface-container-low px-4 py-3 text-body-medium'
-            : ''
+          openService ? 'mt-2 rounded-3 border border-default bg-default px-4 py-3 text-t6' : ''
         }
       >
         {openService?.note}

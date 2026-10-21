@@ -1,6 +1,6 @@
 'use client'
 
-import { BottomSheet, TextButton } from '@scent-jo/react'
+import { BottomSheet, SearchField, TextButton } from '@scent-jo/react'
 import { useState, type ReactNode } from 'react'
 
 import {
@@ -41,7 +41,7 @@ function ChipGroup<T extends string>({
 }) {
   return (
     <section>
-      <h3>{title}</h3>
+      <h3 className="text-t6 font-semibold">{title}</h3>
       <ul className="mt-2 flex flex-wrap gap-2">
         {values.map((value) => (
           <li key={value}>
@@ -62,8 +62,8 @@ function ChipGroup<T extends string>({
  * 닫는 동작에 개수를 실어 주고(「N문제 보기」, 그 위에 「모두 해제」), 사이드바는 바로 반영되므로
  * 하단 개수 줄에 개수만 적고 우측에 「모두 해제」를 둔다. 적용 버튼은 그 밖에 두지 않는다.
  *
- * 서비스는 검색 입력이 컨트롤이다. 136개를 칩으로 늘어놓을 수 없고, 입력 글자는
- * **`body-large`(16px)여야 한다** — 그 미만이면 iOS Safari가 포커스에서 화면을 확대한다.
+ * 서비스는 검색 입력이 컨트롤이다. 136개를 칩으로 늘어놓을 수 없다. 입력은 DS `SearchField`를
+ * 그대로 쓴다 — 글자가 작으면 iOS Safari가 포커스에서 화면을 확대한다 (`DESIGN.md` 「화면 보조 패널」).
  */
 export function FilterPanel({
   options,
@@ -111,16 +111,16 @@ export function FilterPanel({
 
       {shownGroups.includes('services') && (
         <section>
-          <h3>서비스</h3>
-          <input
-            type="search"
+          <h3 className="text-t6 font-semibold">서비스</h3>
+          <SearchField
             value={serviceSearch}
             onChange={(event) => setServiceSearch(event.target.value)}
             placeholder="서비스 이름"
             aria-label="서비스 검색"
-            className="mt-2 h-12 w-full rounded-corner-extra-small border border-outline bg-surface px-4 text-body-large"
+            // 바 여백은 화면 상단 고정용이다. 패널 안에서는 그룹 칩과 같은 선에 맞춘다 (DS 공개 변수).
+            className="mt-2 [--sj-search-field-padding:0]"
           />
-          <ul className="mt-2 flex flex-wrap gap-2">
+          <ul className="flex flex-wrap gap-2">
             {shownServices.map((service) => (
               <li key={service}>
                 <Chip
@@ -187,7 +187,11 @@ export function FilterPanel({
         </BottomSheet.CTA>
       }
     >
-      {groups}
+      {/* 시트 면은 `bg-float`라 SearchField 바·페이드의 기본 배경(`bg-default`)과 다크에서 갈린다.
+          사이드바는 본문 면 위라 그대로 둔다 (DS 공개 변수). */}
+      <div className="contents [--sj-search-field-background:var(--sj-color-bg-float)]">
+        {groups}
+      </div>
     </PanelSheet>
   )
 }

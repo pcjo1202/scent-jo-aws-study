@@ -27,7 +27,7 @@ export type QuestionFilter = {
  *
  * **`/study`는 넷 전부, `/review`는 `categories` 하나다** — 오답 세트는 정의상 전부 오답이라
  * 「풀이 상태」가 성립하지 않는다 (`docs/02-features.md` 「`/review` 오답 복습」 ·
- * `DESIGN.md` 「필터 패널」).
+ * `DESIGN.md` 「화면 보조 패널」).
  */
 export const FILTER_GROUPS = ['categories', 'services', 'answerCounts', 'solveStates'] as const
 

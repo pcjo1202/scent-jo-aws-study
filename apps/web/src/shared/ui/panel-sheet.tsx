@@ -19,9 +19,9 @@ export type PanelContainer =
  * `lg` 이상의 그릇은 AppShell 사이드바이고 내용은 같다. `/study`·`/review`의 필터와
  * `/exam/[id]`의 문제 이동 그리드가 이것을 나눠 쓴다.
  *
- * **시트는 `showModal()`로 뜬 `dialog`다(DS).** `useQuestionShortcuts`가 모달 여부를
- * `closest('dialog[open]')` 하나로 판정하므로, 시트 안 컨트롤에 포커스가 있을 때 `←`·`→`가
- * 뒤 문항의 커서를 옮기지 않는다.
+ * **시트는 `showModal()`로 뜬 `dialog`다(DS).** `useQuestionShortcuts`가 문서에 열린 모달이
+ * 있는지(`dialog:modal`)로 판정하므로, 시트가 열려 있는 동안 `←`·`→`가 뒤 문항의 커서를 옮기지
+ * 않는다 — 포커스가 시트 밖으로 빠져도 같다.
  *
  * **`lg`로 넓어지면 닫는다.** 모달은 top layer에 올라가 폭이 바뀌어도 모달인 채로 남는다 —
  * 사이드바가 이미 같은 내용을 보여 주는데 그 위에 시트가 덮인 채로 선다.
