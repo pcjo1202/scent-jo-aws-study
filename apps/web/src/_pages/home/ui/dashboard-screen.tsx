@@ -194,6 +194,7 @@ function StudyStatus({ apiUrl }: { apiUrl: string }) {
         <section>
           <ListHeader
             size="small"
+            verticalPadding="small"
             horizontalPadding="small"
             title={<ListHeader.TitleParagraph>최근 모의고사</ListHeader.TitleParagraph>}
           />
@@ -220,7 +221,7 @@ function EntryRow({ href, label, trailing }: { href: string; label: string; trai
     <LinkListRow
       href={href}
       contents={<ListRow.Texts type="1RowTypeA" top={label} />}
-      right={trailing && <ListRow.Texts type="Right1RowTypeC" top={trailing} />}
+      right={trailing ? <ListRow.Texts type="Right1RowTypeC" top={trailing} /> : undefined}
     />
   )
 }

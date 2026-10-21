@@ -21,9 +21,9 @@ export type CategoryBar = {
  * 넓히지 않는다.
  *
  * DS `BarChart`가 아니라 `ProgressBar`인 이유: `BarChart`는 세로 막대 아래 X축 라벨을 다는
- * 차트라 「라벨 · 막대 · 값」 한 줄을 그리지 못한다. **막대는 낭독에서 뺀다** — `ProgressBar`의
- * `aria-valuetext`는 백분율로 고정이라 결과 화면의 `4 / 6`과 다른 말을 하고, 값은 옆 글자가
- * 이미 나른다. 누를 수 없는 행이라 `ListRow`가 아니다.
+ * 차트라 「라벨 · 막대 · 값」 한 줄을 그리지 못한다. **막대는 낭독에서 뺀다** — 정답률은 진행이
+ * 아닌데 `ProgressBar`는 `role="progressbar"`로 낭독되고, 값은 옆 글자가 이미 나른다(결과
+ * 화면의 `4 / 6`은 막대가 백분율로 한 번 더 읽힌다). 누를 수 없는 행이라 `ListRow`가 아니다.
  */
 export function CategoryBars({ title, bars }: { title: string; bars: CategoryBar[] }) {
   if (bars.length === 0) return null
@@ -32,6 +32,7 @@ export function CategoryBars({ title, bars }: { title: string; bars: CategoryBar
     <section>
       <ListHeader
         size="small"
+        verticalPadding="small"
         horizontalPadding="small"
         title={<ListHeader.TitleParagraph>{title}</ListHeader.TitleParagraph>}
       />
