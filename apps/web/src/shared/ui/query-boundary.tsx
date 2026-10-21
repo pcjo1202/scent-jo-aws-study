@@ -3,8 +3,8 @@
 import { QueryErrorResetBoundary } from '@tanstack/react-query'
 import { Suspense, type ReactNode } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
+import { TextButton } from '@scent-jo/react'
 
-import { Button } from '@/shared/ui/button'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 /**
@@ -58,7 +58,11 @@ export function QueryBoundary({
                 action={
                   <>
                     {errorAction}
-                    {canRetry && <Button onClick={resetErrorBoundary}>다시 시도</Button>}
+                    {canRetry && (
+                      <TextButton size="medium" onClick={resetErrorBoundary}>
+                        다시 시도
+                      </TextButton>
+                    )}
                   </>
                 }
               >

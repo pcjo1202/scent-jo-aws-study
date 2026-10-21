@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
+import type { IconName } from '@scent-jo/css'
+import { Icon } from '@scent-jo/react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
 import type { ChoiceResult } from '@/shared/lib/choice-result'
-import { MaterialSymbol, type MaterialSymbolName } from '@/shared/ui/icon/material-symbol'
 
 /**
  * `DESIGN.md` 「채점 결과 · 선택지 표시」의 네 행. **면(채움 / 테두리 / 없음) × 아이콘(체크 /
@@ -15,21 +16,21 @@ import { MaterialSymbol, type MaterialSymbolName } from '@/shared/ui/icon/materi
  */
 const RESULT_STYLE: Record<
   ChoiceResult,
-  { surface: string; icon: MaterialSymbolName | null; label: string | null }
+  { surface: string; icon: IconName | null; label: string | null }
 > = {
   'chosen-correct': {
     surface: 'border border-transparent bg-correct-container text-on-correct-container',
-    icon: 'check_circle',
+    icon: 'check',
     label: '정답',
   },
   'chosen-wrong': {
     surface: 'border border-transparent bg-error-container text-on-error-container',
-    icon: 'cancel',
+    icon: 'close',
     label: '내 선택',
   },
   'missed-correct': {
     surface: 'border-2 border-correct bg-surface-container-low text-on-surface',
-    icon: 'check_circle',
+    icon: 'check',
     label: '정답',
   },
   'unchosen-wrong': {
@@ -72,7 +73,7 @@ export function GradedChoiceItem({
     <>
       <span>{choiceKey}</span>
       <span className="flex-1 whitespace-pre-wrap">{text}</span>
-      {icon && <MaterialSymbol name={icon} />}
+      {icon && <Icon name={icon} />}
       {label && <span className="sr-only">{label}</span>}
     </>
   )

@@ -1,6 +1,6 @@
-import type { Comparison, ComparisonMember } from '@aws-study/shared'
+import { Icon } from '@scent-jo/react'
 
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
+import type { Comparison, ComparisonMember } from '@aws-study/shared'
 
 const SIGNAL_LABEL = {
   selectSignals: '선택 신호',
@@ -36,7 +36,7 @@ function ComparisonCard({ comparison }: { comparison: Comparison }) {
       <summary className="state-layer flex min-h-12 cursor-pointer items-center gap-3 rounded-corner-medium px-4 py-3">
         <span className="flex-1 text-title-small">{comparison.title}</span>
         <Importance value={comparison.importance} />
-        <MaterialSymbol name="expand_more" className="size-6 shrink-0 group-open:rotate-180" />
+        <Icon name="chevron-down" className="shrink-0 group-open:rotate-180" />
       </summary>
 
       <ul className="flex flex-col gap-4 px-4 pb-3">

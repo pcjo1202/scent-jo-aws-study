@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
+import { Button, TextButton } from '@scent-jo/react'
 
 import type { AttemptResponse, ChoiceKey, IndexEntry, Manifest } from '@aws-study/shared'
 
@@ -10,7 +10,7 @@ import { toStartIndex } from '@/shared/lib/study-cursor'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
@@ -155,11 +155,7 @@ export function StudySet({
           {isEmpty ? (
             <EmptyState
               message="조건에 맞는 문제 없음"
-              actions={
-                <Button variant="filled" onClick={onClearFilter}>
-                  필터 해제
-                </Button>
-              }
+              actions={<Button onClick={onClearFilter}>필터 해제</Button>}
             />
           ) : (
             <FinishedState
@@ -213,25 +209,20 @@ export function StudySet({
 
       <ActionBar>
         {graded ? (
-          <Button variant="filled" onClick={() => moveTo(cursor + 1)}>
-            다음
-          </Button>
+          <Button onClick={() => moveTo(cursor + 1)}>다음</Button>
         ) : (
           <>
             {/* 첫 문제에서 「이전」은 비활성이고 숨기지 않는다 — 부재는 「그런 기능이 없다」를
                 말하는데 되돌아가기는 이 앱에 있는 기능이다 (`DESIGN.md` 「하단 액션의 버튼 배치」). */}
             <Button
-              variant="tonal"
+              color="dark"
+              variant="weak"
               disabled={cursor === 0 || isSubmitting}
               onClick={() => moveTo(cursor - 1)}
             >
               이전
             </Button>
-            <Button
-              variant="filled"
-              disabled={!isSubmittable || isSubmitting}
-              onClick={() => void handleSubmit()}
-            >
+            <Button disabled={!isSubmittable || isSubmitting} onClick={() => void handleSubmit()}>
               제출
             </Button>
           </>
@@ -264,10 +255,10 @@ function FinishedState({
         message={`조건에 맞는 ${total}문제를 다 풀었다`}
         actions={
           <>
-            <Button variant="filled" onClick={onClearFilter}>
-              필터 해제
-            </Button>
-            <Button onClick={onRestart}>다시 풀기</Button>
+            <Button onClick={onClearFilter}>필터 해제</Button>
+            <TextButton size="medium" onClick={onRestart}>
+              다시 풀기
+            </TextButton>
           </>
         }
       />
@@ -279,12 +270,10 @@ function FinishedState({
       message="전체 완주"
       actions={
         <>
-          <Link href="/review" className={buttonClassName('filled')}>
-            오답 복습
-          </Link>
-          <Link href="/exam" className={buttonClassName()}>
+          <LinkButton href="/review">오답 복습</LinkButton>
+          <LinkTextButton size="medium" href="/exam">
             모의고사
-          </Link>
+          </LinkTextButton>
         </>
       }
     />

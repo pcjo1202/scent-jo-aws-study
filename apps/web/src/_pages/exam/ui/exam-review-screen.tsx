@@ -3,13 +3,13 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
+import { Button } from '@scent-jo/react'
 
 import { manifestQuery, oneLinersQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examQuery } from '@/shared/api/exams'
 import { examResultHref, examReviewHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button } from '@/shared/ui/button'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -123,14 +123,14 @@ export function ExamReviewScreen({
       */}
       <ActionBar>
         <Button
-          variant="tonal"
+          color="dark"
+          variant="weak"
           disabled={position <= 1}
           onClick={() => router.push(examReviewHref(sessionId, position - 1))}
         >
           이전
         </Button>
         <Button
-          variant="filled"
           disabled={position >= total}
           onClick={() => router.push(examReviewHref(sessionId, position + 1))}
         >

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button, TextButton } from '@scent-jo/react'
 
 import {
   ANSWER_COUNT_LABEL,
@@ -13,7 +14,6 @@ import {
   type QuestionFilter,
   type SolveState,
 } from '@/shared/lib/question-filter'
-import { Button } from '@/shared/ui/button'
 import { Chip } from '@/shared/ui/chip'
 import { SidePanel } from '@/shared/ui/side-panel'
 
@@ -94,7 +94,9 @@ export function FilterPanel({
     : filter.services
 
   const clearButton = hasActiveFilter(filter) ? (
-    <Button onClick={() => onChange(NO_FILTER)}>모두 해제</Button>
+    <TextButton size="medium" onClick={() => onChange(NO_FILTER)}>
+      모두 해제
+    </TextButton>
   ) : null
 
   return (
@@ -163,7 +165,7 @@ export function FilterPanel({
         />
       )}
 
-      <Button variant="filled" onClick={onClose} className="w-full expanded:hidden">
+      <Button onClick={onClose} className="w-full expanded:hidden">
         {matchCount}문제 보기
       </Button>
 

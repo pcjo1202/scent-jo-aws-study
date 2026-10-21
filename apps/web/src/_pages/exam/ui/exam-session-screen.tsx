@@ -3,6 +3,7 @@
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button } from '@scent-jo/react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
@@ -14,10 +15,8 @@ import { CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -291,14 +290,16 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         backHref="/exam"
         progress={{ current: cursor + 1, total }}
         action={
-          <button
-            type="button"
-            aria-label="문제 이동"
+          // DS에 그리드 아이콘이 없어 글자 버튼이다. `lg`에서는 사이드바가 이미 열려 있다.
+          <Button
+            color="dark"
+            variant="weak"
+            size="small"
             onClick={() => setGridOpen(true)}
-            className="state-layer flex size-12 items-center justify-center rounded-corner-full expanded:hidden"
+            className="lg:hidden"
           >
-            <MaterialSymbol name="grid_view" />
-          </button>
+            문제 이동
+          </Button>
         }
       />
 
@@ -349,22 +350,30 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         {/* 마지막 문항에서는 주 버튼이 「종료」가 되므로 보조 「종료」를 뺀다 —
             같은 라벨을 한 바에 둘 두지 않는다 (`DESIGN.md` 「하단 액션의 버튼 배치」). */}
         {!isLast && (
-          <Button variant="tonal" disabled={isFinishing} onClick={() => setFinishOpen(true)}>
+          <Button
+            color="dark"
+            variant="weak"
+            disabled={isFinishing}
+            onClick={() => setFinishOpen(true)}
+          >
             종료
           </Button>
         )}
-        <Button variant="tonal" disabled={cursor === 0} onClick={() => moveTo(cursor - 1)}>
+        <Button
+          color="dark"
+          variant="weak"
+          disabled={cursor === 0}
+          onClick={() => moveTo(cursor - 1)}
+        >
           이전
         </Button>
         {isLast ? (
-          <Button variant="filled" disabled={isFinishing} onClick={() => setFinishOpen(true)}>
+          <Button disabled={isFinishing} onClick={() => setFinishOpen(true)}>
             종료
           </Button>
         ) : (
           // 답을 고르지 않아도 넘어간다 — 미응답이 허용되고 건너뛴 뒤 돌아올 수 있어야 한다.
-          <Button variant="filled" onClick={() => moveTo(cursor + 1)}>
-            다음
-          </Button>
+          <Button onClick={() => moveTo(cursor + 1)}>다음</Button>
         )}
       </ActionBar>
 

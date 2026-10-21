@@ -1,9 +1,9 @@
 'use client'
 
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Button, TextButton } from '@scent-jo/react'
 
 import { ApiError } from '@/shared/api/api-client'
 import { examKeys, examsQuery } from '@/shared/api/exams'
@@ -11,7 +11,7 @@ import { examResultHref, examSessionHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { LinkTextButton } from '@/shared/ui/link-button'
 import { Chip } from '@/shared/ui/chip'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { EmptyState } from '@/shared/ui/empty-state'
@@ -109,7 +109,7 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
   }
 
   const startButton = (
-    <Button variant="filled" disabled={isSubmitting} onClick={() => void handleStart()}>
+    <Button disabled={isSubmitting} onClick={() => void handleStart()}>
       새 모의고사 시작
     </Button>
   )
@@ -173,12 +173,16 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
           {/* 이 화면에서만 액션이 둘이다 — 대시보드에는 「포기」 경로가 없다. */}
           {activeSession && (
             <ActiveSessionCard startedAt={activeSession.startedAt}>
-              <Link href={examSessionHref(activeSession.id)} className={buttonClassName()}>
+              <LinkTextButton size="medium" href={examSessionHref(activeSession.id)}>
                 이어풀기
-              </Link>
-              <Button disabled={isSubmitting} onClick={() => setAbandonOpen(true)}>
+              </LinkTextButton>
+              <TextButton
+                size="medium"
+                disabled={isSubmitting}
+                onClick={() => setAbandonOpen(true)}
+              >
                 포기
-              </Button>
+              </TextButton>
             </ActiveSessionCard>
           )}
 

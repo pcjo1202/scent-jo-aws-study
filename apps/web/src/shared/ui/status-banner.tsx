@@ -1,17 +1,7 @@
 import type { ReactNode } from 'react'
 
-import { MaterialSymbol, type MaterialSymbolName } from '@/shared/ui/icon/material-symbol'
-
 /** `DESIGN.md` 「Components · 상태 배너」의 세 행. `unsaved`가 "저장 대기 N건"이다. */
 type StatusKind = 'loading' | 'error' | 'unsaved'
-
-// 로딩에 아이콘이 없는 이유는 「Styles · Icons」에 있다 — 회전하지 않는 스피너 글리프는
-// 아무것도 나르지 않는다.
-const KIND_ICON: Record<StatusKind, MaterialSymbolName | null> = {
-  loading: null,
-  error: 'error',
-  unsaved: 'cloud_off',
-}
 
 /**
  * 로딩·오류·저장 대기를 한 줄로 알린다. 채점 결과의 `ResultBanner`와 다른 컴포넌트다.
@@ -35,11 +25,8 @@ export function StatusBanner({
   children: ReactNode
   action?: ReactNode
 }) {
-  const icon = KIND_ICON[kind]
-
   return (
     <div className="flex min-h-12 items-center gap-3 rounded-corner-medium bg-surface-container px-4 py-3 text-body-medium text-on-surface-variant">
-      {icon && <MaterialSymbol name={icon} />}
       <span className="flex-1">{children}</span>
       {action}
     </div>

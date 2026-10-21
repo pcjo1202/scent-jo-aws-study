@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type ReactNode } from 'react'
-
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
+import { Icon } from '@scent-jo/react'
 
 /** `expanded` 상시 패널은 시트가 아니므로 `dialog`로 열지 않는다. 값은 `DESIGN.md` 「Layout」. */
 const EXPANDED_BREAKPOINT = '(width >= 840px)'
@@ -76,7 +75,7 @@ export function SidePanel({
           onClick={onClose}
           className="state-layer flex size-12 shrink-0 items-center justify-center rounded-corner-full"
         >
-          <MaterialSymbol name="arrow_back" />
+          <Icon name="arrow-left" />
         </button>
         <h2 className="flex-1 truncate text-label-large">{label}</h2>
         {headerAction}

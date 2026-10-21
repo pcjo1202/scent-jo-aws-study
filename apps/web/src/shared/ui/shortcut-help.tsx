@@ -1,10 +1,10 @@
 'use client'
 
 import { useId } from 'react'
+import { TextButton } from '@scent-jo/react'
 
 import { useModalDialog } from '@/shared/lib/use-modal-dialog'
 import { QUESTION_SHORTCUT_HELP } from '@/shared/lib/use-question-shortcuts'
-import { Button } from '@/shared/ui/button'
 
 /**
  * `?`가 여는 단축키 도움말. `DESIGN.md` 「다이얼로그」가 명시한 **예외 하나**다 — 확인이
@@ -34,7 +34,9 @@ export function ShortcutHelp({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         ))}
       </dl>
       <div className="mt-6 flex justify-end">
-        <Button onClick={onClose}>닫기</Button>
+        <TextButton size="medium" onClick={onClose}>
+          닫기
+        </TextButton>
       </div>
     </dialog>
   )

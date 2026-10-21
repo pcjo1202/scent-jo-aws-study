@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
+import { Button } from '@scent-jo/react'
 
 import type { AttemptResponse, ChoiceKey, IndexEntry, Manifest } from '@aws-study/shared'
 
@@ -9,7 +9,7 @@ import { canSubmit, CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-select
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { AppBar } from '@/shared/ui/app-bar'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
@@ -189,23 +189,18 @@ export function ReviewSet({
 
       <ActionBar>
         {graded ? (
-          <Button variant="filled" onClick={() => moveTo(position + 1)}>
-            다음
-          </Button>
+          <Button onClick={() => moveTo(position + 1)}>다음</Button>
         ) : (
           <>
             <Button
-              variant="tonal"
+              color="dark"
+              variant="weak"
               disabled={position === 0 || isSubmitting}
               onClick={() => moveTo(position - 1)}
             >
               이전
             </Button>
-            <Button
-              variant="filled"
-              disabled={!isSubmittable || isSubmitting}
-              onClick={() => void handleSubmit()}
-            >
+            <Button disabled={!isSubmittable || isSubmitting} onClick={() => void handleSubmit()}>
               제출
             </Button>
           </>
@@ -232,11 +227,7 @@ function EmptySetState({
     return (
       <EmptyState
         message="조건에 맞는 문제 없음"
-        actions={
-          <Button variant="filled" onClick={onClearFilter}>
-            필터 해제
-          </Button>
-        }
+        actions={<Button onClick={onClearFilter}>필터 해제</Button>}
       />
     )
   }
@@ -249,11 +240,7 @@ function NoWrongState() {
   return (
     <EmptyState
       message="복습할 오답이 없다"
-      actions={
-        <Link href="/study" className={buttonClassName('filled')}>
-          순차 풀이
-        </Link>
-      }
+      actions={<LinkButton href="/study">순차 풀이</LinkButton>}
     />
   )
 }
@@ -284,12 +271,10 @@ function FinishedState({
       message={`${total}문제 중 ${correctCount}문제 정답`}
       actions={
         <>
-          <Button variant="filled" onClick={onRestart}>
-            다시 풀기
-          </Button>
-          <Link href="/study" className={buttonClassName()}>
+          <Button onClick={onRestart}>다시 풀기</Button>
+          <LinkTextButton size="medium" href="/study">
             순차 풀이
-          </Link>
+          </LinkTextButton>
         </>
       }
     />

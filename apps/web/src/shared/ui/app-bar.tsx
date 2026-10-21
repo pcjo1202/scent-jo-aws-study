@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
+import { Icon } from '@scent-jo/react'
 
 const PERCENT = 100
 
@@ -38,7 +37,7 @@ export function AppBar({
             aria-label="뒤로"
             className="state-layer flex size-12 shrink-0 items-center justify-center rounded-corner-full"
           >
-            <MaterialSymbol name="arrow_back" />
+            <Icon name="arrow-left" />
           </Link>
         )}
 

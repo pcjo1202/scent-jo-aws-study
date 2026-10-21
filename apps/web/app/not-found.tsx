@@ -1,8 +1,6 @@
-import Link from 'next/link'
-
 import { APP_TITLE } from '@/shared/config/app'
 import { AppBar } from '@/shared/ui/app-bar'
-import { buttonClassName } from '@/shared/ui/button'
+import { LinkButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 
 /**
@@ -26,11 +24,7 @@ export default function NotFound() {
       <div className="app-bar-gutter-top flex min-h-dvh flex-col">
         <EmptyState
           message="화면을 찾을 수 없다"
-          actions={
-            <Link href="/" className={buttonClassName('filled')}>
-              대시보드로
-            </Link>
-          }
+          actions={<LinkButton href="/">대시보드로</LinkButton>}
         />
       </div>
     </>

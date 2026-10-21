@@ -1,12 +1,12 @@
 'use client'
 
 import { QueryErrorResetBoundary } from '@tanstack/react-query'
-import Link from 'next/link'
 import { Suspense, type ReactNode } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
+import { TextButton } from '@scent-jo/react'
 
 import { ApiError } from '@/shared/api/api-client'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { LinkTextButton } from '@/shared/ui/link-button'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 import { ExamShell } from './exam-shell'
@@ -51,9 +51,9 @@ export function ExamSessionBoundary({
                   <StatusBanner
                     kind="error"
                     action={
-                      <Link href="/exam" className={buttonClassName()}>
+                      <LinkTextButton size="medium" href="/exam">
                         모의고사 목록
-                      </Link>
+                      </LinkTextButton>
                     }
                   >
                     세션을 찾을 수 없다
@@ -61,7 +61,11 @@ export function ExamSessionBoundary({
                 ) : (
                   <StatusBanner
                     kind="error"
-                    action={<Button onClick={resetErrorBoundary}>다시 시도</Button>}
+                    action={
+                      <TextButton size="medium" onClick={resetErrorBoundary}>
+                        다시 시도
+                      </TextButton>
+                    }
                   >
                     모의고사를 불러오지 못했다
                   </StatusBanner>

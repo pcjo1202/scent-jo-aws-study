@@ -1,9 +1,9 @@
 'use client'
 
 import { useId } from 'react'
+import { Button, TextButton } from '@scent-jo/react'
 
 import { useModalDialog } from '@/shared/lib/use-modal-dialog'
-import { Button } from '@/shared/ui/button'
 
 /**
  * 되돌릴 수 없는 것을 확인받는다 — 진행 중 모의고사 포기, 세션 종료 (`DESIGN.md` 「다이얼로그」).
@@ -48,10 +48,10 @@ export function ConfirmDialog({
         {description}
       </p>
       <div className="mt-6 flex justify-end gap-2">
-        <Button onClick={onCancel}>취소</Button>
-        <Button variant="filled" onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
+        <TextButton size="medium" onClick={onCancel}>
+          취소
+        </TextButton>
+        <Button onClick={onConfirm}>{confirmLabel}</Button>
       </div>
     </dialog>
   )
