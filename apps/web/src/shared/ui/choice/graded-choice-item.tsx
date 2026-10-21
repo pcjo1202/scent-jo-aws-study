@@ -9,7 +9,7 @@ import { CHOICE_CARD_CLASS } from '@/shared/ui/choice/choice-card'
 
 /**
  * DS에 semantic 테두리 색은 default·strong·focus뿐이라 success 테두리를 글자색 토큰으로 칠한다.
- * DS 레포에 토큰 추가 이슈가 있다.
+ * 토큰이 생기면 `border-success`로 바꾼다 (scent-jo-ds#20).
  */
 const SUCCESS_BORDER: CSSProperties = { borderColor: 'var(--sj-color-fg-success)' }
 
