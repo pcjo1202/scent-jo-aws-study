@@ -38,9 +38,14 @@ function isChoiceControl(target: EventTarget | null) {
   return target instanceof HTMLInputElement && ['radio', 'checkbox'].includes(target.type)
 }
 
-/** 모달이 떠 있으면 뒤 화면은 조작되지 않아야 한다. `showModal()`은 포커스만 가둔다. */
-function isInsideModal(target: EventTarget | null) {
-  return target instanceof HTMLElement && target.closest('dialog[open]') !== null
+/**
+ * 모달이 떠 있으면 뒤 화면은 조작되지 않아야 한다. `showModal()`은 포커스만 가둔다.
+ *
+ * **이벤트 대상이 아니라 문서를 본다.** 시트 안에서 누른 버튼이 사라지면(「모두 해제」, 해제한
+ * 서비스 칩) 포커스가 `body`로 빠지는데, 대상 기준으로 판정하면 시트가 열린 채로 뒤 문항이 넘어간다.
+ */
+function isModalOpen() {
+  return document.querySelector('dialog:modal') !== null
 }
 
 /**
@@ -79,7 +84,7 @@ export function useQuestionShortcuts({
 
       // 이 둘은 키 종류를 가리지 않는다 — 도움말이 떠 있는데 뒤 문항이 넘어가거나,
       // 필터 입력에 `1`을 치는데 선택지가 토글되면 안 된다.
-      if (isInsideModal(event.target) || isTextEntry(event.target)) return
+      if (isModalOpen() || isTextEntry(event.target)) return
 
       if (DIGIT_PATTERN.test(event.key)) {
         const choiceKey = choiceKeys[Number(event.key) - 1]
