@@ -1,7 +1,7 @@
-/** 60% 미만 `error` · 이상 `correct`. 두 색 사이를 보간하지 않는다 (`DESIGN.md` 「대시보드 요소」). */
-const GOOD_ACCURACY = 0.6
+import { ListHeader, ProgressBar } from '@scent-jo/react'
 
-const PERCENT = 100
+/** 60% 미만 `danger` · 이상 `success`. 두 색 사이를 보간하지 않는다 (`DESIGN.md` 「대시보드 요소」). */
+const GOOD_ACCURACY = 0.6
 
 /** `value`는 화면이 정한다 — 대시보드는 백분율(`62%`), 결과 화면은 `정답 / 문항`(`4 / 6`). */
 export type CategoryBar = {
@@ -20,25 +20,37 @@ export type CategoryBar = {
  * 값이 항상 숫자로 병기되므로 색이 나르는 것은 「낮음/높음」 둘뿐이다. 이 예외를 다른 곳으로
  * 넓히지 않는다.
  *
- * 줄 높이 36px은 탭 타겟이 아니다 — 누를 수 없다.
+ * DS `BarChart`가 아니라 `ProgressBar`인 이유: `BarChart`는 세로 막대 아래 X축 라벨을 다는
+ * 차트라 「라벨 · 막대 · 값」 한 줄을 그리지 못한다. **막대는 낭독에서 뺀다** — `ProgressBar`의
+ * `aria-valuetext`는 백분율로 고정이라 결과 화면의 `4 / 6`과 다른 말을 하고, 값은 옆 글자가
+ * 이미 나른다. 누를 수 없는 행이라 `ListRow`가 아니다.
  */
 export function CategoryBars({ title, bars }: { title: string; bars: CategoryBar[] }) {
   if (bars.length === 0) return null
 
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="text-title-small">{title}</h2>
-      <ul>
+    <section>
+      <ListHeader
+        size="small"
+        horizontalPadding="small"
+        title={<ListHeader.TitleParagraph>{title}</ListHeader.TitleParagraph>}
+      />
+      <ul className="px-5">
         {bars.map(({ category, accuracy, value }) => (
-          <li key={category} className="flex h-9 items-center gap-2">
-            <span className="w-22 shrink-0 truncate text-body-small">{category}</span>
-            <span className="h-2 flex-1 rounded-corner-full bg-surface-container-high">
-              <span
-                className={`block h-full rounded-corner-full ${accuracy < GOOD_ACCURACY ? 'bg-error' : 'bg-correct'}`}
-                style={{ width: `${(accuracy * PERCENT).toFixed(0)}%` }}
-              />
-            </span>
-            <span className="shrink-0 text-right text-body-small">{value}</span>
+          <li key={category} className="flex items-center gap-3 py-2 text-t7">
+            <span className="w-22 shrink-0 truncate">{category}</span>
+            <ProgressBar
+              value={accuracy}
+              max={1}
+              color={
+                accuracy < GOOD_ACCURACY
+                  ? 'var(--sj-color-bg-danger)'
+                  : 'var(--sj-color-bg-success)'
+              }
+              className="flex-1"
+              aria-hidden
+            />
+            <span className="shrink-0 text-right">{value}</span>
           </li>
         ))}
       </ul>
