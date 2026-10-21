@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash
 2. 근거 문서를 읽는다: DS 마크업·공개 변수는 `apps/web/node_modules/@scent-jo/css/MARKUP.md`, 동작·의미·문구는 `DESIGN.md`, 이 앱의 적용 규칙은 `apps/web/CLAUDE.md` 「스타일은 DS로만 쓴다」
 3. 다음 위반을 찾는다:
    - **DS 컴포넌트 미사용** — DS에 있는 컴포넌트(`Button`·`AppBar`·`ActionBar`·`Dialog`·`BottomSheet`·`ListRow`·`Badge`·`ProgressBar`·`Result`·`Skeleton` 등)를 사이트가 따로 만들었다
-   - **하드코딩 값** — 사이트 코드의 hex 색·`rgb()`/`rgba()`·Tailwind 임의값(`p-[13px]`)·인라인 px. 값은 DS 컴포넌트·DS 유틸리티·`var(--sj-*)`로만 쓴다
+   - **하드코딩 값** — 사이트 코드의 hex 색·`rgb()`/`rgba()`·Tailwind 임의값(`p-[13px]`)·인라인 px. 값은 DS 컴포넌트·DS 유틸리티·`var(--sj-*)`로만 쓴다. CSS 변수를 못 쓰는 출력(PNG 생성)만 `@scent-jo/css` JS 토큰 import를 허용한다 (`docs/10` 「CSS 변수를 못 쓰는 출력」)
    - **공개되지 않은 변수 덮어쓰기** — `MARKUP.md`가 그 컴포넌트의 공개 변수로 적지 않은 `--sj-*`를 지정했다, 또는 공개 변수에 DS 토큰이 아닌 값을 넣었다
    - **DS 내부 셀렉터** — `.sj-*` 내부 구조를 셀렉터로 건드렸다(`.sj-app-bar__row > …`, `.sj-button span`)
    - **색상만으로 정오 표시** — `success`·`danger` 계열이 아이콘·텍스트 병기 없이 단독으로 정오를 나른다. **예외는 문제 이동 그리드**: 모양(채움 / 테두리 없음·얇음·굵음) + `aria-label` + 개수 텍스트가 모두 있는지 본다

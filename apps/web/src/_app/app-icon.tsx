@@ -10,7 +10,7 @@ export const ICON_SIZES = [192, 512]
 
 /**
  * `app/icon.tsx`·`app/apple-icon.tsx`가 함께 그린다. PNG라 CSS 변수를 못 쓰므로 DS가 JS로
- * 내보내는 토큰 값을 쓴다 (색 직접 쓰기 금지 규칙의 출구).
+ * 내보내는 토큰 값을 쓴다 (`docs/10` 「CSS 변수를 못 쓰는 출력」).
  */
 export function renderAppIcon(size: number) {
   return new ImageResponse(
