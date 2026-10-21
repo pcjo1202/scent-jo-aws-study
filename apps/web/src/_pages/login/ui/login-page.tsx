@@ -22,7 +22,7 @@ export async function LoginPage({ searchParams }: { searchParams: Promise<{ deni
   return (
     <AppShell>
       <ReadingColumn className="flex min-h-dvh flex-col items-center justify-center gap-6">
-        <h1 className="text-headline-small">AWS SAA-C03 학습</h1>
+        <h1 className="text-t2 font-bold">AWS SAA-C03 학습</h1>
         {denied === OWNER_ONLY_DENIED_REASON && (
           // 재시도를 유도하지 않는다 — 액션을 주지 않는 것이 그것이다 (`docs/02`).
           <StatusBanner kind="error">소유자 전용이다. 이 계정으로는 쓸 수 없다</StatusBanner>
