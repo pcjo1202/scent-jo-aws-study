@@ -18,21 +18,22 @@ export const metadata = { title: '암기 노트' }
  * manifest·index는 `(app)/layout.tsx`의 `CatalogGate`가 이미 세워 뒀다. 여기서 세우는 경계는
  * **노트 둘**뿐이고 그래서 문구도 노트 쪽이다 — 두 경계를 하나로 합치면 노트 5xx가
  * 「문제 데이터를 불러오지 못했다」로 나간다.
+ *
+ * **경계는 골격 안에 둔다.** 제목이 정해진 화면이라 골격이 조회를 기다릴 이유가 없고, 경계가
+ * 골격 바깥이면 노트 5xx에서 앱바 — 웹뷰의 유일한 이탈 경로인 뒤로가기 — 없이 배너 한 줄만 남는다.
  */
 export function NotesPage() {
   return (
-    <QueryBoundary
-      pending={
-        <ScreenShell title="암기 노트" backHref="/">
-          <ReadingColumn className="py-6">
-            <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-          </ReadingColumn>
-        </ScreenShell>
-      }
-      errorMessage="암기 노트를 불러오지 못했다"
-      canRetry
-    >
-      <NotesScreen />
-    </QueryBoundary>
+    <ScreenShell title="암기 노트" backHref="/">
+      <ReadingColumn className="py-6">
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="암기 노트를 불러오지 못했다"
+          canRetry
+        >
+          <NotesScreen />
+        </QueryBoundary>
+      </ReadingColumn>
+    </ScreenShell>
   )
 }

@@ -1,8 +1,9 @@
-import Link from 'next/link'
+import { List, ListHeader, ListRow } from '@scent-jo/react'
 
 import type { OneLiner } from '@aws-study/shared'
 
 import { studyServiceHref } from '@/shared/config/study'
+import { LinkTextButton } from '@/shared/ui/link-button'
 
 import type { OneLinerGroup } from '../lib/notes-index'
 
@@ -22,19 +23,29 @@ export function OneLinerList({
   questionServices: ReadonlySet<string>
 }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2">
       {groups.map((group) => (
         <section key={group.category}>
-          <h3 className="text-title-small text-on-surface-variant">{group.category}</h3>
-          <ul className="mt-2 flex flex-col divide-y divide-outline-variant">
+          <ListHeader
+            size="small"
+            verticalPadding="small"
+            horizontalPadding="small"
+            title={
+              // 구역 제목(`h2` 수준) 아래 그룹이다. DS 제목은 기본이 `aria-level` 2라 낮춘다.
+              <ListHeader.TitleParagraph aria-level={3}>{group.category}</ListHeader.TitleParagraph>
+            }
+          />
+          <List>
             {group.items.map((item) => (
               // key가 `(service, category)`인 이유: `service`만으로는 카테고리가 둘인 서비스
               // 하나에서 충돌한다 (`docs/04` 「oneliners.json」 — 203항목 · 고유 이름 202개).
-              <li key={`${item.category}/${item.service}`} className="py-3">
-                <OneLinerItem item={item} hasQuestions={questionServices.has(item.service)} />
-              </li>
+              <OneLinerRow
+                key={`${item.category}/${item.service}`}
+                item={item}
+                hasQuestions={questionServices.has(item.service)}
+              />
             ))}
-          </ul>
+          </List>
         </section>
       ))}
     </div>
@@ -49,20 +60,30 @@ export function OneLinerList({
  * **인덱스의 136개에서 빼서 구하지 않는다.** 136과 202는 포함 관계가 아니다 — 인덱스에만 있는
  * `S3`·`IAM` 같은 루트 이름이 7개 있어 `202 - 136`은 답이 아니다. 그래서 뺄셈이 아니라
  * 교집합 판정(`questionServices.has`)이다.
+ *
+ * **행 전체를 링크로 만들지 않는다.** 읽는 화면이라 본문을 누르다 이동하면 안 되고, 행이 링크면
+ * 링크 이름이 노트 본문 전체가 된다. 링크는 본문 아래 텍스트 버튼 하나다 (2026-10-21, SJO-66).
  */
-function OneLinerItem({ item, hasQuestions }: { item: OneLiner; hasQuestions: boolean }) {
+function OneLinerRow({ item, hasQuestions }: { item: OneLiner; hasQuestions: boolean }) {
   return (
-    <>
-      <p className="text-title-small">{item.service}</p>
-      <p className="mt-1 text-body-medium text-on-surface-variant">{item.note}</p>
-      {hasQuestions && (
-        <Link
-          href={studyServiceHref(item.service)}
-          className="inline-flex min-h-12 items-center text-body-small text-primary"
-        >
-          이 서비스가 나온 문제 보기
-        </Link>
-      )}
-    </>
+    <ListRow
+      border="indented"
+      horizontalPadding="small"
+      contents={
+        <>
+          <ListRow.Texts type="2RowTypeA" top={item.service} bottom={item.note} />
+          {hasQuestions && (
+            // DS 기본 글자색(secondary)이 바로 위 설명과 같아 링크가 본문에 묻힌다.
+            <LinkTextButton
+              size="small"
+              href={studyServiceHref(item.service)}
+              className="mt-1 text-brand"
+            >
+              이 서비스가 나온 문제 보기
+            </LinkTextButton>
+          )}
+        </>
+      }
+    />
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { ReadingColumn } from '@scent-jo/react'
+import { ListHeader, SearchField } from '@scent-jo/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
@@ -10,7 +10,6 @@ import {
   oneLinersQuery,
   questionIndexQuery,
 } from '@/shared/api/cdn'
-import { ScreenShell } from '@/shared/ui/screen-shell'
 import { EmptyState } from '@/shared/ui/empty-state'
 
 import { groupByCategory, searchOneLiners, sortByImportance } from '../lib/notes-index'
@@ -46,49 +45,49 @@ export function NotesScreen() {
   const sortedComparisons = useMemo(() => sortByImportance(comparisons.items), [comparisons])
 
   return (
-    <ScreenShell title="암기 노트" backHref="/">
-      <ReadingColumn className="flex flex-col gap-8 py-6">
-        <section>
-          <h2>한줄노트</h2>
-          {/*
-              검색은 한줄노트에만 걸리므로 입력이 페이지 머리가 아니라 이 제목 아래에 있다
-              (`docs/02` 「한줄노트」). 글자는 `body-large`(16px)여야 한다 — 그 미만이면
-              iOS Safari가 포커스에서 화면을 확대한다 (`DESIGN.md` 「필터 패널」).
-            */}
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="서비스 이름"
-            aria-label="한줄노트 서비스 검색"
-            className="mt-2 h-12 w-full rounded-corner-extra-small border border-outline bg-surface px-4 text-body-large"
-          />
+    <div className="flex flex-col gap-6">
+      <section>
+        <SectionHeader title="한줄노트" />
+        {/*
+          검색은 한줄노트에만 걸리므로 입력이 페이지 머리가 아니라 이 제목 아래에 있다
+          (`docs/02` 「한줄노트」). 입력은 DS `SearchField`를 그대로 쓴다 — 글자가 작으면
+          iOS Safari가 포커스에서 화면을 확대한다 (`DESIGN.md` 「화면 보조 패널」).
+        */}
+        <SearchField
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="서비스 이름"
+          aria-label="한줄노트 서비스 검색"
+        />
 
-          {/*
-              라이브 리전은 **문구보다 먼저** DOM에 있어야 낭독되므로 비어 있어도 항상
-              렌더한다 (`DESIGN.md` 「상태 배너」). 목록 자체를 감싸지 않는 이유는 203개가
-              글자 하나마다 통째로 다시 낭독되기 때문이다.
-            */}
-          {/* 위쪽 간격을 여기서 주지 않는다 — `EmptyState`가 자기 `py-6`(24px)을 갖고 있어
-                더하면 40px이 되고, 그건 「간격」이 열거한 값 밖이다. */}
-          <div aria-live="polite">
-            {groups.length === 0 && <EmptyState message="검색 결과 없음" />}
-          </div>
+        {/*
+          라이브 리전은 **문구보다 먼저** DOM에 있어야 낭독되므로 비어 있어도 항상
+          렌더한다 (`DESIGN.md` 「상태 배너」). 목록 자체를 감싸지 않는 이유는 203개가
+          글자 하나마다 통째로 다시 낭독되기 때문이다.
+        */}
+        <div aria-live="polite">
+          {groups.length === 0 && <EmptyState message="검색 결과 없음" />}
+        </div>
 
-          {groups.length > 0 && (
-            <div className="mt-4">
-              <OneLinerList groups={groups} questionServices={questionServices} />
-            </div>
-          )}
-        </section>
+        {groups.length > 0 && <OneLinerList groups={groups} questionServices={questionServices} />}
+      </section>
 
-        <section>
-          <h2>비교노트</h2>
-          <div className="mt-2">
-            <ComparisonList comparisons={sortedComparisons} />
-          </div>
-        </section>
-      </ReadingColumn>
-    </ScreenShell>
+      <section>
+        <SectionHeader title="비교노트" />
+        <ComparisonList comparisons={sortedComparisons} />
+      </section>
+    </div>
+  )
+}
+
+/** 두 구역의 제목. 구역 안 카테고리 그룹 제목(`OneLinerList`)보다 한 단계 크다. */
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <ListHeader
+      size="medium"
+      verticalPadding="small"
+      horizontalPadding="small"
+      title={<ListHeader.TitleParagraph>{title}</ListHeader.TitleParagraph>}
+    />
   )
 }
