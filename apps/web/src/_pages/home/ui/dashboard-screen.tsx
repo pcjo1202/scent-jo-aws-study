@@ -1,19 +1,17 @@
 'use client'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import Link from 'next/link'
 import { useMemo } from 'react'
-import { Icon, ReadingColumn } from '@scent-jo/react'
+import { List, ListHeader, ListRow } from '@scent-jo/react'
 
 import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examsQuery } from '@/shared/api/exams'
 import { progressQuery, statsQuery } from '@/shared/api/me'
-import { APP_TITLE } from '@/shared/config/app'
 import { examSessionHref } from '@/shared/config/exam'
 import { toStartIndex } from '@/shared/lib/study-cursor'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
-import { ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
+import { LinkListRow } from '@/shared/ui/link-list-row'
 import { CategoryBars } from '@/shared/ui/category-bars'
 import { ExamSessionRow } from '@/shared/ui/exam-session-row'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
@@ -45,9 +43,6 @@ const ENTRY_ROWS = [
  * 허브 화면 (`docs/02-features.md` 「`/` 대시보드」). 블록 순서의 정본은 같은 문서 「화면 구성
  * 요소」의 `/` 행이다 — 여기서 새로 정하지 않는다.
  *
- * **뒤로가기도 우측 액션도 진행 바도 없다.** 허브이고, 진행 바는 문제 풀이 3화면만이다
- * (`DESIGN.md` 「앱바」).
- *
  * **이 컴포넌트가 suspend하는 것은 진도뿐이다.** 정답률과 모의고사는 안쪽 경계로 내렸다 —
  * `docs/05` 「카테고리별 정답률」의 `/stats`는 CDN 카탈로그(`CatalogService`)를 타는데
  * `/me/progress`는 DB만 타므로 **CDN 장애에서 정답률만 죽고 진도는 산다.** 경계가 하나면 그때
@@ -76,66 +71,64 @@ export function DashboardScreen({ apiUrl }: { apiUrl: string }) {
   const hasAttempt = progress.solvedCount > 0
 
   return (
-    <ScreenShell title={APP_TITLE}>
-      <ReadingColumn className="flex flex-col gap-6 py-4">
-        <StatCard
-          label="전체 진도"
-          value={progress.solvedCount}
-          total={manifest.questions.total}
-          hasTrack
-        />
+    <div className="flex flex-col gap-6">
+      <StatCard
+        label="전체 진도"
+        value={progress.solvedCount}
+        total={manifest.questions.total}
+        hasTrack
+      />
 
-        {/*
+      {/*
             이어풀기의 목적지는 완주해도 `/study`다 — 거기가 완주 화면(`/review`·`/exam` 유도)을
             그리므로 「전체 완주」가 가리킬 곳이 그 자리다 (`DESIGN.md` 「대시보드 요소」).
           */}
-        <LinkButton href="/study" display="block">
-          {toResumeLabel({ hasAttempt, isFinished })}
-        </LinkButton>
+      <LinkButton href="/study" display="block">
+        {toResumeLabel({ hasAttempt, isFinished })}
+      </LinkButton>
 
-        {hasAttempt && (
-          <QueryBoundary
-            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-            errorMessage="진행 중인 모의고사를 불러오지 못했다"
-            canRetry
-          >
-            <ActiveExamBanner apiUrl={apiUrl} />
-          </QueryBoundary>
-        )}
+      {hasAttempt && (
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="진행 중인 모의고사를 불러오지 못했다"
+          canRetry
+        >
+          <ActiveExamBanner apiUrl={apiUrl} />
+        </QueryBoundary>
+      )}
 
-        <nav aria-label="다른 화면">
-          <ul className="border-t border-outline-variant">
-            {hasAttempt && (
-              <li>
-                <EntryRow
-                  href="/review"
-                  label="오답 복습"
-                  trailing={`오답 ${progress.wrongCount}문제`}
-                />
-              </li>
-            )}
-            {ENTRY_ROWS.map((row) => (
-              <li key={row.href}>
-                <EntryRow href={row.href} label={row.label} />
-              </li>
-            ))}
-          </ul>
-        </nav>
+      <nav aria-label="다른 화면">
+        <List>
+          {hasAttempt && (
+            <li>
+              <EntryRow
+                href="/review"
+                label="오답 복습"
+                trailing={`오답 ${progress.wrongCount}문제`}
+              />
+            </li>
+          )}
+          {ENTRY_ROWS.map((row) => (
+            <li key={row.href}>
+              <EntryRow href={row.href} label={row.label} />
+            </li>
+          ))}
+        </List>
+      </nav>
 
-        {hasAttempt && (
-          <QueryBoundary
-            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-            errorMessage="학습 현황을 불러오지 못했다"
-            canRetry
-          >
-            <StudyStatus apiUrl={apiUrl} />
-          </QueryBoundary>
-        )}
+      {hasAttempt && (
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="학습 현황을 불러오지 못했다"
+          canRetry
+        >
+          <StudyStatus apiUrl={apiUrl} />
+        </QueryBoundary>
+      )}
 
-        {/* 테마 전환이 있는 화면은 여기 하나다 (`docs/02` 「화면 구성 요소」). */}
-        <ThemeToggle />
-      </ReadingColumn>
-    </ScreenShell>
+      {/* 테마 전환이 있는 화면은 여기 하나다 (`docs/02` 「화면 구성 요소」). */}
+      <ThemeToggle />
+    </div>
   )
 }
 
@@ -185,24 +178,26 @@ function StudyStatus({ apiUrl }: { apiUrl: string }) {
         <div className="flex flex-col gap-2">
           <CategoryBars title="카테고리별 정답률" bars={bars} />
           {unsolvedCount > 0 && (
-            <p className="text-body-small text-on-surface-variant">
-              아직 안 푼 영역 {unsolvedCount}개
-            </p>
+            <p className="px-5 text-t7 text-secondary">아직 안 푼 영역 {unsolvedCount}개</p>
           )}
         </div>
       )}
 
-      {/* 「대시보드 카드 (진도 · 최근 모의고사)」 — `DESIGN.md` 「surface container를 화면에 매핑」. */}
       {recentSessions.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-corner-medium border border-outline bg-surface-container-low p-4">
-          <h2 className="text-title-small">최근 모의고사</h2>
-          <ul>
+        <section>
+          <ListHeader
+            size="small"
+            verticalPadding="small"
+            horizontalPadding="small"
+            title={<ListHeader.TitleParagraph>최근 모의고사</ListHeader.TitleParagraph>}
+          />
+          <List>
             {recentSessions.map((session) => (
               <li key={session.id}>
                 <ExamSessionRow session={session} />
               </li>
             ))}
-          </ul>
+          </List>
         </section>
       )}
     </div>
@@ -210,20 +205,16 @@ function StudyStatus({ apiUrl }: { apiUrl: string }) {
 }
 
 /**
- * 「진입 행 ×4」 규격 (`DESIGN.md` 「대시보드 요소」). 위아래 `outline-variant` 1px은 목록의
- * `border-t`와 각 행의 `border-b`가 만든다.
+ * 「진입 행 ×4」 규격 (`DESIGN.md` 「대시보드 요소」).
  *
  * **수를 병기하는 것은 오답 행뿐이다** — 나머지 셋은 화면 이름만 갖는다.
  */
 function EntryRow({ href, label, trailing }: { href: string; label: string; trailing?: string }) {
   return (
-    <Link
+    <LinkListRow
       href={href}
-      className="state-layer flex min-h-12 items-center gap-4 border-b border-outline-variant px-2 text-body-large"
-    >
-      <span className="flex-1">{label}</span>
-      {trailing && <span className="text-on-surface-variant">{trailing}</span>}
-      <Icon name="chevron-right" />
-    </Link>
+      contents={<ListRow.Texts type="1RowTypeA" top={label} />}
+      right={trailing ? <ListRow.Texts type="Right1RowTypeC" top={trailing} /> : undefined}
+    />
   )
 }

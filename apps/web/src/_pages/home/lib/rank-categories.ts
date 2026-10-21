@@ -18,7 +18,7 @@ const PERCENT = 100
  *
  * **표시값·막대 폭·색은 반올림 뒤 값 하나에서 나온다.** 백분율을 먼저 반올림하고 그것을 다시
  * 비율로 되돌려 넘기는 이유가 그것이다 — 반올림 전 값으로 색을 가르면 `0.596`이 「60%」라고
- * 적힌 채 60% 미만 색(`error`)으로 칠해진다.
+ * 적힌 채 60% 미만 색(`danger`)으로 칠해진다.
  */
 export function rankCategories(byCategory: CategoryStats[]): {
   bars: CategoryBar[]
