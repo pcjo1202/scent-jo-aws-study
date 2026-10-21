@@ -7,7 +7,7 @@ import { Badge, Button } from '@scent-jo/react'
  * 쓴다 — 배지 규격을 두 화면에 복제하면 한쪽만 고쳐도 화면이 멀쩡해 조용히 갈린다
  * (`.claude/rules/code-conventions.md` 「SSOT」).
  *
- * DS에 필터 아이콘이 없어 글자 버튼이다. **`lg`에서는 사라진다** — 패널이 사이드바로 이미 열려
+ * DS에 필터 아이콘이 없어 글자 버튼이다 (scent-jo-ds#17). **`lg`에서는 사라진다** — 패널이 사이드바로 이미 열려
  * 있다 (`DESIGN.md` 「화면 구성」 ④). 배지는 선택 상태라 정오 색(`green`·`red`)을 쓰지 않는다.
  */
 export function FilterButton({

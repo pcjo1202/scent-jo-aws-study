@@ -88,7 +88,7 @@ export function FilterPanel({
 
   const searched = serviceSearch.trim().toLowerCase()
 
-  // 검색하지 않을 때는 고른 것만 보인다 — 136개를 늘어놓지 않는다 (`DESIGN.md` 「필터 패널」).
+  // 검색하지 않을 때는 고른 것만 보인다 — 136개를 늘어놓지 않는다 (`DESIGN.md` 「화면 보조 패널」).
   const shownServices = searched
     ? options.services.filter((service) => service.toLowerCase().includes(searched))
     : filter.services

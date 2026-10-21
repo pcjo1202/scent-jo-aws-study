@@ -298,7 +298,7 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
         progress={{ current: cursor + 1, total }}
         sidebar={<QuestionGrid container="sidebar" {...gridProps} />}
         trailing={
-          // DS에 그리드 아이콘이 없어 글자 버튼이다. `lg`에서는 사이드바가 이미 열려 있다.
+          // DS에 그리드 아이콘이 없어 글자 버튼이다 (scent-jo-ds#17). `lg`에서는 사이드바가 이미 열려 있다.
           <Button
             color="dark"
             variant="weak"

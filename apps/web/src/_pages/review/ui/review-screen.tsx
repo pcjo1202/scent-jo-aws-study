@@ -29,7 +29,7 @@ const SCREEN_NAME = '오답 복습'
 /**
  * **카테고리 한 그룹뿐이다** — 오답 세트는 정의상 전부 오답이라 「풀이 상태」가 성립하지 않고,
  * 서비스·정답 개수는 이미 좁혀진 집합을 더 좁힐 값이 아니다 (`docs/02-features.md`
- * 「`/review` 오답 복습」 · `DESIGN.md` 「필터 패널」).
+ * 「`/review` 오답 복습」 · `DESIGN.md` 「화면 보조 패널」).
  */
 const REVIEW_FILTER_GROUPS: readonly FilterGroup[] = ['categories']
 

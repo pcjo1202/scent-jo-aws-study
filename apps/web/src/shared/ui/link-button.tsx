@@ -11,7 +11,7 @@ type LinkProps = Omit<ComponentProps<typeof Link>, 'color'>
  * 확인이 처음부터 돈다. 그래서 Next `Link`에 DS 마크업(`MARKUP.md` §8·§13)을 그대로 입힌다.
  *
  * ponytail: DS 마크업을 손으로 옮겼다. DS가 마크업을 바꾸면 이 파일이 낡는다 — DS가 링크
- * 컴포넌트 주입을 받으면 이 파일을 지우고 DS 컴포넌트에 `Link`를 넘긴다.
+ * 컴포넌트 주입을 받으면(scent-jo-ds#18) 이 파일을 지우고 DS 컴포넌트에 `Link`를 넘긴다.
  */
 
 export function LinkButton({

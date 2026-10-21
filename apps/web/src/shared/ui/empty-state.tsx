@@ -15,7 +15,7 @@ import type { ReactNode } from 'react'
  * 버튼 하나만 받아 옵션·텍스트 버튼을 그 사이에 끼울 수 없으므로 쓰지 않는다.
  *
  * 수직 가운데는 부모가 남은 높이를 줄 때 선다 — 화면 전체가 빈 상태면 `ScreenFill`로 감싼다.
- * `/notes` 검색 0건처럼 한 구역만 비면 감싸지 않는다 (`DESIGN.md` 「빈 상태」 「정렬」).
+ * `/notes` 검색 0건처럼 한 구역만 비면 감싸지 않는다 (`DESIGN.md` 「빈 상태」 표의 「정렬」 행).
  */
 export function EmptyState({
   message,
