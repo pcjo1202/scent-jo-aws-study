@@ -3,7 +3,7 @@
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Button, ReadingColumn, TextButton } from '@scent-jo/react'
+import { Button, List, ListHeader, ReadingColumn, TextButton } from '@scent-jo/react'
 
 import { ApiError } from '@/shared/api/api-client'
 import { examKeys, examsQuery } from '@/shared/api/exams'
@@ -179,15 +179,20 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
         )}
 
         {finishedSessions.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-title-small">지난 모의고사</h2>
-            <ul>
+          <section>
+            <ListHeader
+              size="small"
+              verticalPadding="small"
+              horizontalPadding="small"
+              title={<ListHeader.TitleParagraph>지난 모의고사</ListHeader.TitleParagraph>}
+            />
+            <List>
               {finishedSessions.map((session) => (
                 <li key={session.id}>
                   <ExamSessionRow session={session} />
                 </li>
               ))}
-            </ul>
+            </List>
           </section>
         )}
 
