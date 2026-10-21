@@ -53,7 +53,7 @@ export function groupByCategory(items: readonly OneLiner[]): OneLinerGroup[] {
  *
  * `sort`가 ES2019부터 **안정 정렬**이라 동점의 원본 순서가 그대로 남는다 — 이 성질이 규칙의
  * 절반이라 비교 함수에 2차 기준을 두지 않았다. `toSorted`를 안 쓰는 이유는 저쪽이 Baseline
- * 2023이라 구형 웹뷰에서 없을 수 있어서다 (이 앱은 웹뷰에서도 열린다 — `DESIGN.md` 「앱바」).
+ * 2023이라 구형 웹뷰에서 없을 수 있어서다 (이 앱은 웹뷰에서도 열린다 — `docs/01` 「운영 환경」).
  */
 export function sortByImportance(items: readonly Comparison[]): Comparison[] {
   return [...items].sort((a, b) => b.importance - a.importance)
