@@ -3,14 +3,14 @@
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Button, TextButton } from '@scent-jo/react'
+import { Button, ReadingColumn, TextButton } from '@scent-jo/react'
 
 import { ApiError } from '@/shared/api/api-client'
 import { examKeys, examsQuery } from '@/shared/api/exams'
 import { examResultHref, examSessionHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkTextButton } from '@/shared/ui/link-button'
 import { Chip } from '@/shared/ui/chip'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
@@ -148,63 +148,54 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
    */
   if (data.sessions.length === 0) {
     return (
-      <>
-        <AppBar title="모의고사" backHref="/" />
-        <div className="app-bar-gutter-top flex min-h-dvh flex-col">
-          <div className="px-screen pt-4">{banner}</div>
+      <ScreenShell title="모의고사" backHref="/">
+        <ReadingColumn className="flex flex-col pt-4">
+          {banner}
           <EmptyState
             message="아직 모의고사 기록이 없다"
             options={unsolvedChip}
             actions={startButton}
           />
-        </div>
-      </>
+        </ReadingColumn>
+      </ScreenShell>
     )
   }
 
   return (
-    <>
-      <AppBar title="모의고사" backHref="/" />
+    <ScreenShell title="모의고사" backHref="/">
+      <ReadingColumn className="flex flex-col gap-6 py-4">
+        {banner}
 
-      <div className="app-bar-gutter-top">
-        <main className="action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-6 px-screen py-4">
-          {banner}
+        {/* 이 화면에서만 액션이 둘이다 — 대시보드에는 「포기」 경로가 없다. */}
+        {activeSession && (
+          <ActiveSessionCard startedAt={activeSession.startedAt}>
+            <LinkTextButton size="medium" href={examSessionHref(activeSession.id)}>
+              이어풀기
+            </LinkTextButton>
+            <TextButton size="medium" disabled={isSubmitting} onClick={() => setAbandonOpen(true)}>
+              포기
+            </TextButton>
+          </ActiveSessionCard>
+        )}
 
-          {/* 이 화면에서만 액션이 둘이다 — 대시보드에는 「포기」 경로가 없다. */}
-          {activeSession && (
-            <ActiveSessionCard startedAt={activeSession.startedAt}>
-              <LinkTextButton size="medium" href={examSessionHref(activeSession.id)}>
-                이어풀기
-              </LinkTextButton>
-              <TextButton
-                size="medium"
-                disabled={isSubmitting}
-                onClick={() => setAbandonOpen(true)}
-              >
-                포기
-              </TextButton>
-            </ActiveSessionCard>
-          )}
+        {finishedSessions.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-title-small">지난 모의고사</h2>
+            <ul>
+              {finishedSessions.map((session) => (
+                <li key={session.id}>
+                  <ExamSessionRow session={session} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-          {finishedSessions.length > 0 && (
-            <section className="flex flex-col gap-2">
-              <h2 className="text-title-small">지난 모의고사</h2>
-              <ul>
-                {finishedSessions.map((session) => (
-                  <li key={session.id}>
-                    <ExamSessionRow session={session} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+        <div className="flex justify-end">{unsolvedChip}</div>
+      </ReadingColumn>
 
-          <div className="flex justify-end">{unsolvedChip}</div>
-        </main>
-      </div>
-
-      <ActionBar>{startButton}</ActionBar>
       {abandonDialog}
-    </>
+      <ActionBar>{startButton}</ActionBar>
+    </ScreenShell>
   )
 }

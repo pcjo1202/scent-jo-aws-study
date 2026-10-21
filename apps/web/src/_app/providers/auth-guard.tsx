@@ -1,5 +1,6 @@
 'use client'
 
+import { AppShell, ReadingColumn } from '@scent-jo/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
 
@@ -41,9 +42,11 @@ export function AuthGuard({ children }: { children: ReactNode }) {
       {hasSession ? (
         <div aria-live="off">{children}</div>
       ) : (
-        <main className="mx-auto max-w-reading px-screen py-6">
-          <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-        </main>
+        <AppShell>
+          <ReadingColumn className="py-6">
+            <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+          </ReadingColumn>
+        </AppShell>
       )}
     </div>
   )

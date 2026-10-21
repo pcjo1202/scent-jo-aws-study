@@ -1,5 +1,5 @@
 import { APP_TITLE } from '@/shared/config/app'
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 
@@ -19,14 +19,11 @@ import { EmptyState } from '@/shared/ui/empty-state'
  */
 export default function NotFound() {
   return (
-    <>
-      <AppBar title={APP_TITLE} backHref="/" />
-      <div className="app-bar-gutter-top flex min-h-dvh flex-col">
-        <EmptyState
-          message="화면을 찾을 수 없다"
-          actions={<LinkButton href="/">대시보드로</LinkButton>}
-        />
-      </div>
-    </>
+    <ScreenShell title={APP_TITLE} backHref="/">
+      <EmptyState
+        message="화면을 찾을 수 없다"
+        actions={<LinkButton href="/">대시보드로</LinkButton>}
+      />
+    </ScreenShell>
   )
 }

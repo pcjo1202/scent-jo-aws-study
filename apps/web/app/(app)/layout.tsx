@@ -1,3 +1,4 @@
+import { AppShell, ReadingColumn } from '@scent-jo/react'
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
@@ -33,9 +34,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <HydrationBoundary state={dehydrate(queryClient)}>
         <QueryBoundary
           pending={
-            <main className="mx-auto max-w-reading px-screen py-6">
-              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-            </main>
+            <AppShell>
+              <ReadingColumn className="py-6">
+                <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+              </ReadingColumn>
+            </AppShell>
           }
           errorMessage="문제 데이터를 불러오지 못했다"
           canRetry

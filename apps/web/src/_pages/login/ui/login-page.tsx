@@ -1,3 +1,5 @@
+import { AppShell, ReadingColumn } from '@scent-jo/react'
+
 import { OWNER_ONLY_DENIED_REASON } from '@/shared/config/auth'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -18,13 +20,15 @@ export async function LoginPage({ searchParams }: { searchParams: Promise<{ deni
   const { denied } = await searchParams
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-reading flex-col items-center justify-center gap-6 px-screen">
-      <h1 className="text-headline-small">AWS SAA-C03 학습</h1>
-      {denied === OWNER_ONLY_DENIED_REASON && (
-        // 재시도를 유도하지 않는다 — 액션을 주지 않는 것이 그것이다 (`docs/02`).
-        <StatusBanner kind="error">소유자 전용이다. 이 계정으로는 쓸 수 없다</StatusBanner>
-      )}
-      <GoogleSignInButton />
-    </main>
+    <AppShell>
+      <ReadingColumn className="flex min-h-dvh flex-col items-center justify-center gap-6">
+        <h1 className="text-headline-small">AWS SAA-C03 학습</h1>
+        {denied === OWNER_ONLY_DENIED_REASON && (
+          // 재시도를 유도하지 않는다 — 액션을 주지 않는 것이 그것이다 (`docs/02`).
+          <StatusBanner kind="error">소유자 전용이다. 이 계정으로는 쓸 수 없다</StatusBanner>
+        )}
+        <GoogleSignInButton />
+      </ReadingColumn>
+    </AppShell>
   )
 }

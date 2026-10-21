@@ -1,6 +1,7 @@
+import { ReadingColumn } from '@scent-jo/react'
 import type { ReactNode } from 'react'
 
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 
 /**
  * `/exam` 계열 화면이 **본문을 못 그리는 동안** 쓰는 골격. 로딩·오류·리다이렉트 대기가 그렇다.
@@ -22,11 +23,8 @@ export function ExamShell({
   children: ReactNode
 }) {
   return (
-    <>
-      <AppBar title={title} backHref={backHref} />
-      <div className="app-bar-gutter-top">
-        <main className="mx-auto max-w-reading px-screen py-6">{children}</main>
-      </div>
-    </>
+    <ScreenShell title={title} backHref={backHref}>
+      <ReadingColumn className="py-6">{children}</ReadingColumn>
+    </ScreenShell>
   )
 }

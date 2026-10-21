@@ -1,5 +1,6 @@
 'use client'
 
+import { ReadingColumn } from '@scent-jo/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
@@ -7,7 +8,7 @@ import { useEffect, useMemo } from 'react'
 import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examQuery } from '@/shared/api/exams'
 import { examSessionHref } from '@/shared/config/exam'
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { CategoryBars } from '@/shared/ui/category-bars'
 import { StatCard } from '@/shared/ui/stat-card'
 import { StatusBanner } from '@/shared/ui/status-banner'
@@ -88,21 +89,17 @@ export function ExamResultScreen({ apiUrl, sessionId }: { apiUrl: string; sessio
   }
 
   return (
-    <>
-      <AppBar title={SCREEN_NAME} backHref="/exam" />
-
-      <div className="app-bar-gutter-top">
-        <main className="mx-auto flex w-full max-w-reading flex-col gap-6 px-screen py-4">
-          {/*
+    <ScreenShell title={SCREEN_NAME} backHref="/exam">
+      <ReadingColumn className="flex flex-col gap-6 py-4">
+        {/*
             분모는 **서버가 준 문항 수**다. 종료된 세션의 `results`는 65개가 나오지만 그 값을
             `EXAM_QUESTION_COUNT`로 다시 쓰면 화면이 서버와 다른 근거로 같은 수를 말하게 된다 —
             그 상수의 자리는 `questionIds`를 안 담는 목록 화면뿐이다 (`shared/config/exam`).
           */}
-          <StatCard label="점수" value={session.score} total={results.length} />
-          <CategoryBars title="카테고리별 정오" bars={bars} />
-          <ResultGrid results={results} sessionId={sessionId} />
-        </main>
-      </div>
-    </>
+        <StatCard label="점수" value={session.score} total={results.length} />
+        <CategoryBars title="카테고리별 정오" bars={bars} />
+        <ResultGrid results={results} sessionId={sessionId} />
+      </ReadingColumn>
+    </ScreenShell>
   )
 }
