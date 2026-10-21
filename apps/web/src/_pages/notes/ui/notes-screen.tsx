@@ -49,10 +49,10 @@ export function NotesScreen() {
       <section>
         <SectionHeader title="한줄노트" />
         {/*
-              검색은 한줄노트에만 걸리므로 입력이 페이지 머리가 아니라 이 제목 아래에 있다
-              (`docs/02` 「한줄노트」). 입력은 DS `SearchField`를 그대로 쓴다 — 글자가 작으면
-              iOS Safari가 포커스에서 화면을 확대한다 (`DESIGN.md` 「화면 보조 패널」).
-            */}
+          검색은 한줄노트에만 걸리므로 입력이 페이지 머리가 아니라 이 제목 아래에 있다
+          (`docs/02` 「한줄노트」). 입력은 DS `SearchField`를 그대로 쓴다 — 글자가 작으면
+          iOS Safari가 포커스에서 화면을 확대한다 (`DESIGN.md` 「화면 보조 패널」).
+        */}
         <SearchField
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -61,10 +61,10 @@ export function NotesScreen() {
         />
 
         {/*
-              라이브 리전은 **문구보다 먼저** DOM에 있어야 낭독되므로 비어 있어도 항상
-              렌더한다 (`DESIGN.md` 「상태 배너」). 목록 자체를 감싸지 않는 이유는 203개가
-              글자 하나마다 통째로 다시 낭독되기 때문이다.
-            */}
+          라이브 리전은 **문구보다 먼저** DOM에 있어야 낭독되므로 비어 있어도 항상
+          렌더한다 (`DESIGN.md` 「상태 배너」). 목록 자체를 감싸지 않는 이유는 203개가
+          글자 하나마다 통째로 다시 낭독되기 때문이다.
+        */}
         <div aria-live="polite">
           {groups.length === 0 && <EmptyState message="검색 결과 없음" />}
         </div>
