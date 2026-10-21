@@ -1,40 +1,52 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { IconName } from '@scent-jo/css'
 import { Icon } from '@scent-jo/react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
 import type { ChoiceResult } from '@/shared/lib/choice-result'
+import { CHOICE_CARD_CLASS } from '@/shared/ui/choice/choice-card'
+
+/**
+ * DS에 semantic 테두리 색은 default·strong·focus뿐이라 success 테두리를 글자색 토큰으로 칠한다.
+ * DS 레포에 토큰 추가 이슈가 있다.
+ */
+const SUCCESS_BORDER: CSSProperties = { borderColor: 'var(--sj-color-fg-success)' }
 
 /**
  * `DESIGN.md` 「채점 결과 · 선택지 표시」의 네 행. **면(채움 / 테두리 / 없음) × 아이콘(체크 /
- * 엑스 / 없음)** 두 축이라 색을 전부 걷어내도 네 경우가 갈린다.
+ * 엑스 / 없음)** 두 축이라 색을 전부 걷어내도 네 경우가 갈린다 (「색 단독 전달 금지」).
  *
- * 안 고른 정답을 `correct-container` 채움이 아니라 `correct` 테두리로 그리는 것이 중요하다.
- * 선택된 선택지가 `secondary-container`라서 적록색약에서는 "내가 고른 것"과 "정답"이 같은
- * 면색이 된다 (`DESIGN.md` 「색으로만 갈리지 않는 쌍」 — 색각 최악 ΔE 2.2).
+ * 안 고른 정답을 채움이 아니라 테두리로 그리는 것이 중요하다. 채움이면 「내가 고른 정답」과
+ * 흑백에서 같은 카드가 된다.
  */
 const RESULT_STYLE: Record<
   ChoiceResult,
-  { surface: string; icon: IconName | null; label: string | null }
+  {
+    surface: string
+    style?: CSSProperties
+    icon: { name: IconName; className: string } | null
+    label: string | null
+  }
 > = {
   'chosen-correct': {
-    surface: 'border border-transparent bg-correct-container text-on-correct-container',
-    icon: 'check',
+    surface: 'border border-transparent bg-success-weak',
+    icon: { name: 'check', className: 'text-success' },
     label: '정답',
   },
   'chosen-wrong': {
-    surface: 'border border-transparent bg-error-container text-on-error-container',
-    icon: 'close',
+    surface: 'border border-transparent bg-danger-weak',
+    icon: { name: 'close', className: 'text-danger' },
     label: '내 선택',
   },
   'missed-correct': {
-    surface: 'border-2 border-correct bg-surface-container-low text-on-surface',
-    icon: 'check',
+    surface: 'border-2 bg-default',
+    style: SUCCESS_BORDER,
+    icon: { name: 'check', className: 'text-success' },
     label: '정답',
   },
   'unchosen-wrong': {
-    surface: 'border border-outline bg-surface-container-low text-on-surface-variant',
+    surface: 'border border-default bg-default text-secondary',
     icon: null,
     label: null,
   },
@@ -47,11 +59,7 @@ const RESULT_STYLE: Record<
  *
  * `input`을 두지 않는다. 조작이 사라졌고, 비활성 입력을 남기면 채움색 위에 흐려진 표식이
  * 겹쳐 정오 아이콘과 경쟁한다. **정오 라벨도 화면에 그리지 않는다** — 형태만으로 네 경우가
- * 이미 갈리는데 라벨은 선택지 텍스트에서 가로 ~62px를 가져간다 (`DESIGN.md` 「채점 결과」).
- *
- * 전환 애니메이션이 없다. 답을 제출한 직후가 집중이 가장 높은 순간이고 거기에 모션을
- * 끼우면 매번 흐름이 끊긴다 (`DESIGN.md` 「Motion」). 카드가 펼쳐지는 것은 별개다 — 누른
- * 요소가 제자리에서 반응하는 것이라 `short4`가 걸린다.
+ * 이미 갈린다 (`DESIGN.md` 「채점 결과 · 선택지 표시」).
  */
 export function GradedChoiceItem({
   choiceKey,
@@ -67,25 +75,34 @@ export function GradedChoiceItem({
   explanation?: ReactNode
   isDefaultOpen?: boolean
 }) {
-  const { surface, icon, label } = RESULT_STYLE[result]
+  const { surface, style, icon, label } = RESULT_STYLE[result]
 
   const row = (
     <>
       <span>{choiceKey}</span>
-      <span className="flex-1 whitespace-pre-wrap">{text}</span>
-      {icon && <Icon name={icon} />}
+      <span className="min-w-0 flex-1 whitespace-pre-wrap">{text}</span>
+      {icon && <Icon name={icon.name} className={icon.className} />}
       {label && <span className="sr-only">{label}</span>}
     </>
   )
 
   if (!explanation) {
-    return <div className={`choice-card ${surface}`}>{row}</div>
+    return (
+      <div className={`${CHOICE_CARD_CLASS} ${surface}`} style={style}>
+        {row}
+      </div>
+    )
   }
 
   // `open`을 React 상태로 들지 않는다. 한 번만 주고 그 뒤의 여닫기는 브라우저가 소유한다.
+  // 펼침 화살표를 두지 않는다 — 카드 전체가 클릭 영역이다 (`DESIGN.md` 「채점 결과 · 선택지 표시」).
   return (
-    <details className={`disclosure rounded-corner-medium ${surface}`} open={isDefaultOpen}>
-      <summary className="choice-card state-layer cursor-pointer">{row}</summary>
+    <details className={`rounded-3 ${surface}`} style={style} open={isDefaultOpen}>
+      <summary
+        className={`${CHOICE_CARD_CLASS} sj-pressed-overlay cursor-pointer list-none [&::-webkit-details-marker]:hidden`}
+      >
+        {row}
+      </summary>
       <div className="px-4 pb-3">{explanation}</div>
     </details>
   )
