@@ -2,16 +2,14 @@
 
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { List, ListHeader, ListRow, ReadingColumn } from '@scent-jo/react'
+import { List, ListHeader, ListRow } from '@scent-jo/react'
 
 import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examsQuery } from '@/shared/api/exams'
 import { progressQuery, statsQuery } from '@/shared/api/me'
-import { APP_TITLE } from '@/shared/config/app'
 import { examSessionHref } from '@/shared/config/exam'
 import { toStartIndex } from '@/shared/lib/study-cursor'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
-import { ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
 import { LinkListRow } from '@/shared/ui/link-list-row'
 import { CategoryBars } from '@/shared/ui/category-bars'
@@ -45,9 +43,6 @@ const ENTRY_ROWS = [
  * 허브 화면 (`docs/02-features.md` 「`/` 대시보드」). 블록 순서의 정본은 같은 문서 「화면 구성
  * 요소」의 `/` 행이다 — 여기서 새로 정하지 않는다.
  *
- * **뒤로가기도 우측 액션도 진행 바도 없다.** 허브이고, 진행 바는 문제 풀이 3화면만이다
- * (`DESIGN.md` 「앱바」).
- *
  * **이 컴포넌트가 suspend하는 것은 진도뿐이다.** 정답률과 모의고사는 안쪽 경계로 내렸다 —
  * `docs/05` 「카테고리별 정답률」의 `/stats`는 CDN 카탈로그(`CatalogService`)를 타는데
  * `/me/progress`는 DB만 타므로 **CDN 장애에서 정답률만 죽고 진도는 산다.** 경계가 하나면 그때
@@ -76,66 +71,64 @@ export function DashboardScreen({ apiUrl }: { apiUrl: string }) {
   const hasAttempt = progress.solvedCount > 0
 
   return (
-    <ScreenShell title={APP_TITLE}>
-      <ReadingColumn className="flex flex-col gap-6 py-4">
-        <StatCard
-          label="전체 진도"
-          value={progress.solvedCount}
-          total={manifest.questions.total}
-          hasTrack
-        />
+    <div className="flex flex-col gap-6">
+      <StatCard
+        label="전체 진도"
+        value={progress.solvedCount}
+        total={manifest.questions.total}
+        hasTrack
+      />
 
-        {/*
+      {/*
             이어풀기의 목적지는 완주해도 `/study`다 — 거기가 완주 화면(`/review`·`/exam` 유도)을
             그리므로 「전체 완주」가 가리킬 곳이 그 자리다 (`DESIGN.md` 「대시보드 요소」).
           */}
-        <LinkButton href="/study" display="block">
-          {toResumeLabel({ hasAttempt, isFinished })}
-        </LinkButton>
+      <LinkButton href="/study" display="block">
+        {toResumeLabel({ hasAttempt, isFinished })}
+      </LinkButton>
 
-        {hasAttempt && (
-          <QueryBoundary
-            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-            errorMessage="진행 중인 모의고사를 불러오지 못했다"
-            canRetry
-          >
-            <ActiveExamBanner apiUrl={apiUrl} />
-          </QueryBoundary>
-        )}
+      {hasAttempt && (
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="진행 중인 모의고사를 불러오지 못했다"
+          canRetry
+        >
+          <ActiveExamBanner apiUrl={apiUrl} />
+        </QueryBoundary>
+      )}
 
-        <nav aria-label="다른 화면">
-          <List>
-            {hasAttempt && (
-              <li>
-                <EntryRow
-                  href="/review"
-                  label="오답 복습"
-                  trailing={`오답 ${progress.wrongCount}문제`}
-                />
-              </li>
-            )}
-            {ENTRY_ROWS.map((row) => (
-              <li key={row.href}>
-                <EntryRow href={row.href} label={row.label} />
-              </li>
-            ))}
-          </List>
-        </nav>
+      <nav aria-label="다른 화면">
+        <List>
+          {hasAttempt && (
+            <li>
+              <EntryRow
+                href="/review"
+                label="오답 복습"
+                trailing={`오답 ${progress.wrongCount}문제`}
+              />
+            </li>
+          )}
+          {ENTRY_ROWS.map((row) => (
+            <li key={row.href}>
+              <EntryRow href={row.href} label={row.label} />
+            </li>
+          ))}
+        </List>
+      </nav>
 
-        {hasAttempt && (
-          <QueryBoundary
-            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-            errorMessage="학습 현황을 불러오지 못했다"
-            canRetry
-          >
-            <StudyStatus apiUrl={apiUrl} />
-          </QueryBoundary>
-        )}
+      {hasAttempt && (
+        <QueryBoundary
+          pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+          errorMessage="학습 현황을 불러오지 못했다"
+          canRetry
+        >
+          <StudyStatus apiUrl={apiUrl} />
+        </QueryBoundary>
+      )}
 
-        {/* 테마 전환이 있는 화면은 여기 하나다 (`docs/02` 「화면 구성 요소」). */}
-        <ThemeToggle />
-      </ReadingColumn>
-    </ScreenShell>
+      {/* 테마 전환이 있는 화면은 여기 하나다 (`docs/02` 「화면 구성 요소」). */}
+      <ThemeToggle />
+    </div>
   )
 }
 
