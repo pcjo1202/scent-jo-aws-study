@@ -13,7 +13,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // ThemeScript가 data-theme을 서버 마크업에 없던 값으로 채운다.
+    // ThemeScript가 data-sj-color-mode를 서버 마크업에 없던 값으로 채운다.
     <html lang="ko" suppressHydrationWarning>
       <body>
         <ThemeScript />
