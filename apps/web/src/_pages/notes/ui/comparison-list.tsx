@@ -32,9 +32,10 @@ export function ComparisonList({ comparisons }: { comparisons: Comparison[] }) {
 
 function ComparisonCard({ comparison }: { comparison: Comparison }) {
   return (
-    <details className="disclosure group rounded-corner-medium border border-outline bg-surface-container-low">
-      <summary className="state-layer flex min-h-12 cursor-pointer items-center gap-3 rounded-corner-medium px-4 py-3">
-        <span className="flex-1 text-title-small">{comparison.title}</span>
+    <details className="group rounded-3 border border-default">
+      {/* 마커는 브라우저마다 지우는 법이 다르다 — `list-none`은 Chrome·Firefox, 의사 요소는 Safari. */}
+      <summary className="sj-pressed-overlay flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="flex-1 text-t5 font-semibold">{comparison.title}</span>
         <Importance value={comparison.importance} />
         <Icon name="chevron-down" className="shrink-0 group-open:rotate-180" />
       </summary>
@@ -43,11 +44,11 @@ function ComparisonCard({ comparison }: { comparison: Comparison }) {
         {/* 이름은 쌍 안에서 유일하다 — 48쌍 전수 확인 (2026-09-09). */}
         {comparison.members.map((member) => (
           <li key={member.name}>
-            <p className="text-label-large">{member.name}</p>
-            <dl className="mt-1 flex flex-col gap-1 text-body-medium">
+            <p className="text-t6 font-semibold">{member.name}</p>
+            <dl className="mt-1 flex flex-col gap-1 text-t6">
               {SIGNAL_FIELDS.map((field) => (
                 <div key={field} className="flex gap-2">
-                  <dt className="shrink-0 text-on-surface-variant">{SIGNAL_LABEL[field]}</dt>
+                  <dt className="shrink-0 text-secondary">{SIGNAL_LABEL[field]}</dt>
                   <dd>{member[field]}</dd>
                 </div>
               ))}
@@ -67,7 +68,7 @@ function ComparisonCard({ comparison }: { comparison: Comparison }) {
  */
 function Importance({ value }: { value: number }) {
   return (
-    <span className="shrink-0 text-label-medium text-on-surface-variant">
+    <span className="shrink-0 text-t7 text-secondary">
       <span aria-hidden>{'★'.repeat(value)}</span>
       <span className="sr-only">중요도 {value}</span>
     </span>
