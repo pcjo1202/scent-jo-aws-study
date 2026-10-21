@@ -124,13 +124,17 @@ Jotai를 고른 이유는 **Provider 없이 동작**해서다. Zustand도 가볍
 않는다 — 두면 테마 소유자가 둘이 된다.
 
 **DS가 지우고 다시 거는 네임스페이스는 여섯이다** — 색·radius·shadow·font(글꼴)·text(글자 크기)·
-breakpoint (`tailwind.css` 1.0.0 원문 대조, 2026-10-21). 그래서 `bg-red-500`·`text-3xl`·`shadow-lg`는
+breakpoint (`tailwind.css` 1.0.0 원문 대조, 2026-10-21). 그래서 `bg-white`·`text-3xl`·`shadow-lg`·`rounded-lg`는
 존재하지 않는 클래스이고, 이 여섯 네임스페이스에서 쓸 수 있는 것은 `bg-default`·`text-primary`·`rounded-3`·`shadow-2`·`text-t4`·
-`md:` 같은 DS 이름뿐이다. 토큰 밖의 색·크기는 **타이핑할 수 없다** — 리뷰가 잡아야 할 일을 빌드가 잡는다.
+`md:` 같은 DS 이름뿐이다. **`bg-red-500` 같은 팔레트 유틸은 있다** — DS가 자기 팔레트(gray·orange·red·blue·green·yellow·
+teal·purple·pink)를 같은 이름으로 다시 등록한다. 의미가 있는 자리는 팔레트가 아니라 semantic(`bg-danger-weak` 등)을 쓴다. 토큰 밖의 색·크기는 **타이핑할 수 없다** — 리뷰가 잡아야 할 일을 빌드가 잡는다.
 
-**지우지 않는 것도 있다** — 간격(`--spacing`)·`font-weight`·`leading`·`tracking`·`container`는 Tailwind
-기본값이 살아 있다. 간격은 DS도 4px 배수라 의도된 것이다(`MARKUP.md` 「토큰」). 나머지 넷은 DS가 열어 둔
-것이지 권하는 것이 아니다 — `text-*`가 크기와 줄 높이를 함께 나르므로 `leading-*`를 덧붙이지 않는다.
+**지우지 않는 것도 있다** — 간격(`--spacing`)·`font-weight`·`leading`·`tracking`·`container`·`ease`·`animate`·
+`blur`·`drop-shadow`·`inset-shadow`·`text-shadow`·`aspect`·`perspective`는 Tailwind 기본값이 살아 있고,
+`duration-137` 같은 bare 값도 통과한다 (2026-10-21 프로브: 클래스 32개를 실제 컴파일해 존재 여부를 셈 —
+`bg-default`·`p-4` 존재, `text-3xl`·`medium:p-4` 부재로 하네스 확인). 간격은 DS도 4px 배수라 의도된 것이다
+(`MARKUP.md` 「토큰」). 나머지는 DS가 열어 둔 것이지 권하는 것이 아니다 — `text-*`가 크기와 줄 높이를 함께
+나르므로 `leading-*`를 덧붙이지 않고, 모션·그림자는 DS 컴포넌트에 맡긴다.
 
 **`dark:` variant를 쓸 수 있다.** DS가 `data-sj-color-mode`에 묶어 두었다(`system`이면 OS 설정).
 다만 색은 semantic 토큰이 먼저 뒤집으므로 `bg-default`·`text-primary`를 쓰면 다크 분기가 필요 없다.

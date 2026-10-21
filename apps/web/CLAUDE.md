@@ -81,12 +81,14 @@ import { ChoiceList } from '@/shared/ui'
 `docs/10-conventions.md` 「스타일 저작」, 마크업·공개 변수의 정본은 `node_modules/@scent-jo/css/MARKUP.md`.
 
 - **DS 컴포넌트가 먼저다.** DS에 있는 것(`Button`·`AppBar`·`Dialog`·`ListRow`…)을 사이트가 따로 만들지 않는다. 없을 때만 DS 토큰으로 짓는다
-- **유틸리티는 DS가 등록한 것만 쓴다.** `src/shared/styles/global.css`는 `tailwindcss` + `@scent-jo/css/tailwind.css` 두 줄이고, 그 파일이 색·radius·shadow·글꼴·글자 크기·breakpoint를 DS 값으로 갈아 끼운다. `bg-red-500`·`text-3xl`은 존재하지 않는 클래스다 — `bg-default`·`text-primary`·`border-default`·`rounded-3`·`text-t4`처럼 DS 이름으로 부른다. 글자 크기 클래스가 줄 높이까지 나르므로 `leading-*`를 덧붙이지 않는다
+- **유틸리티는 DS가 등록한 것만 쓴다.** `src/shared/styles/global.css`는 `tailwindcss` + `@scent-jo/css/tailwind.css` 두 줄이고, 그 파일이 색·radius·shadow·글꼴·글자 크기·breakpoint를 DS 값으로 갈아 끼운다. `bg-white`·`text-3xl`·`shadow-lg`는 존재하지 않는 클래스다 — `bg-default`·`text-primary`·`border-default`·`rounded-3`·`text-t4`처럼 DS 이름으로 부른다. `bg-red-500` 같은 팔레트 유틸은 DS 팔레트로 남아 있지만 의미가 있는 자리는 semantic(`bg-danger-weak` 등)이 먼저다. 모션·그림자 계열(`ease-*`·`animate-*`·`drop-shadow-*` 등)은 Tailwind 기본값이 살아 있으니 쓰지 않고 DS 컴포넌트에 맡긴다. 글자 크기 클래스가 줄 높이까지 나르므로 `leading-*`를 덧붙이지 않는다
 - **임의값 문법을 쓰지 않는다.** `p-[13px]`·`bg-[#abc]`는 린트가 막는다 — `className` 안이든 **클래스 상수·레코드로 뽑아 뒀든** 파일 어디서나 걸린다 (SJO-18). 필요한 값이 DS에 없으면 scent-jo-ds에 먼저 추가한다. 임의 *variant*(`data-[state=open]:`·`[&>svg]:`)는 값이 아니라 선택자라 허용된다
 - **덮어쓰기는 DS가 공개한 `--sj-<component>-*` 변수만 쓴다.** 값은 DS 토큰으로 넣는다. `.sj-app-bar__row > …`처럼 DS 내부 구조를 셀렉터로 건드리지 않는다 — 내부 클래스 이름은 공개 계약이 아니다. 사이트 전용 CSS가 꼭 필요하면 `global.css`에 두되 값은 `var(--sj-*)`만 쓴다
 - **반응형 분기는 `sm:`(≥480) · `md:`(≥768) · `lg:`(≥1280) · `xl:`(≥1440)이다.** DS breakpoint 그대로다. 옛 `medium:`·`expanded:`는 없다. 화면별로 무엇을 어느 지점에 거는지는 `DESIGN.md` 「화면 구성」
 - **`dark:` variant는 쓸 수 있다.** DS가 `data-sj-color-mode`에 묶어 두었다. 다만 색은 semantic 토큰이 먼저 뒤집으므로 토큰으로 되는 자리에서는 다크 분기를 만들지 않는다
 - **DS의 상태 없는 컴포넌트는 서버 컴포넌트로 쓴다.** 위 「`'use client'`는 최말단에만」 그대로다 — 어느 컴포넌트가 `'use client'`인지는 `MARKUP.md` 「서버 컴포넌트에서 쓸 때」
+
+<!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
 
