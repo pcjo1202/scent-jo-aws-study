@@ -3,8 +3,9 @@
 import { QueryErrorResetBoundary } from '@tanstack/react-query'
 import { Suspense, type ReactNode } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
-import { TextButton } from '@scent-jo/react'
+import { ReadingColumn, TextButton } from '@scent-jo/react'
 
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
 /**
@@ -25,6 +26,11 @@ import { StatusBanner } from '@/shared/ui/status-banner'
  * 404의 「목록으로 복귀」는 `errorAction`에 링크를 넘겨 만든다
  * (`docs/02-features.md` 「API 오류의 화면 표현」).
  *
+ * - `frame` — 화면 전체를 세우는 경계에 준다. 대기와 오류를 **같은** 골격(앱바·뒤로가기·읽기 칼럼)으로
+ *   감싼다. 없으면 오류일 때 배너 한 줄만 남아 웹뷰에서 유일한 이탈 경로인 뒤로가기가 사라진다
+ *   (`DESIGN.md` 「뒤로가기는 히스토리가 아니라 라우트가 정하는 고정 링크다」). 정상 경로의 골격은
+ *   `children`이 직접 그리므로 여기서 감싸지 않는다
+ *
  * 천장: **응답 코드에 따라 표현을 바꾸지는 못한다.** 화면이 한 벌을 미리 고른다. 한 경계에서
  * 403과 404를 갈라야 하는 화면이 생기면 그 화면이 클라이언트 컴포넌트로 감싸고 직접 분기한다.
  */
@@ -33,14 +39,26 @@ export function QueryBoundary({
   errorMessage,
   errorAction,
   canRetry = false,
+  frame,
   children,
 }: {
   pending: ReactNode
   errorMessage: ReactNode
   errorAction?: ReactNode
   canRetry?: boolean
+  frame?: { title: string; backHref: string }
   children: ReactNode
 }) {
+  function framed(node: ReactNode) {
+    if (!frame) return node
+
+    return (
+      <ScreenShell title={frame.title} backHref={frame.backHref}>
+        <ReadingColumn className="py-6">{node}</ReadingColumn>
+      </ScreenShell>
+    )
+  }
+
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
@@ -50,32 +68,34 @@ export function QueryBoundary({
         <div aria-live="polite">
           <ErrorBoundary
             onReset={reset}
-            fallbackRender={({ resetErrorBoundary }) => (
+            fallbackRender={({ resetErrorBoundary }) =>
               // `error`를 쓰지 않는다. `Failed to fetch` 같은 기술 문자열은 사용자가 할 수
               // 있는 일을 알려주지 않는다.
-              <StatusBanner
-                kind="error"
-                action={
-                  <>
-                    {errorAction}
-                    {canRetry && (
-                      <TextButton size="medium" onClick={resetErrorBoundary}>
-                        다시 시도
-                      </TextButton>
-                    )}
-                  </>
-                }
-              >
-                {errorMessage}
-              </StatusBanner>
-            )}
+              framed(
+                <StatusBanner
+                  kind="error"
+                  action={
+                    <>
+                      {errorAction}
+                      {canRetry && (
+                        <TextButton size="medium" onClick={resetErrorBoundary}>
+                          다시 시도
+                        </TextButton>
+                      )}
+                    </>
+                  }
+                >
+                  {errorMessage}
+                </StatusBanner>,
+              )
+            }
           >
             {/*
               내용은 리전 밖으로 뺀다. 리전이 배너만 낭독해야 하는데 여기 두면 suspense가
               풀릴 때 지문·선택지·해설 전문이 통째로 polite 큐에 들어간다. 삽입된 노드의
               낭독 여부는 그 노드 자신의 `aria-live`가 정하므로 `off`면 조용하다.
             */}
-            <Suspense fallback={pending}>
+            <Suspense fallback={framed(pending)}>
               <div aria-live="off">{children}</div>
             </Suspense>
           </ErrorBoundary>
