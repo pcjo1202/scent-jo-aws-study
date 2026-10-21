@@ -3,6 +3,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useMemo } from 'react'
+import { Icon, ReadingColumn } from '@scent-jo/react'
 
 import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examsQuery } from '@/shared/api/exams'
@@ -11,11 +12,10 @@ import { APP_TITLE } from '@/shared/config/app'
 import { examSessionHref } from '@/shared/config/exam'
 import { toStartIndex } from '@/shared/lib/study-cursor'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
-import { AppBar } from '@/shared/ui/app-bar'
-import { buttonClassName } from '@/shared/ui/button'
+import { ScreenShell } from '@/shared/ui/screen-shell'
+import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
 import { CategoryBars } from '@/shared/ui/category-bars'
 import { ExamSessionRow } from '@/shared/ui/exam-session-row'
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatCard } from '@/shared/ui/stat-card'
 import { StatusBanner } from '@/shared/ui/status-banner'
@@ -76,70 +76,66 @@ export function DashboardScreen({ apiUrl }: { apiUrl: string }) {
   const hasAttempt = progress.solvedCount > 0
 
   return (
-    <>
-      <AppBar title={APP_TITLE} />
+    <ScreenShell title={APP_TITLE}>
+      <ReadingColumn className="flex flex-col gap-6 py-4">
+        <StatCard
+          label="전체 진도"
+          value={progress.solvedCount}
+          total={manifest.questions.total}
+          hasTrack
+        />
 
-      <div className="app-bar-gutter-top">
-        <main className="mx-auto flex w-full max-w-reading flex-col gap-6 px-screen py-4">
-          <StatCard
-            label="전체 진도"
-            value={progress.solvedCount}
-            total={manifest.questions.total}
-            hasTrack
-          />
-
-          {/*
+        {/*
             이어풀기의 목적지는 완주해도 `/study`다 — 거기가 완주 화면(`/review`·`/exam` 유도)을
             그리므로 「전체 완주」가 가리킬 곳이 그 자리다 (`DESIGN.md` 「대시보드 요소」).
           */}
-          <Link href="/study" className={`${buttonClassName('filled')} h-14 w-full`}>
-            {toResumeLabel({ hasAttempt, isFinished })}
-          </Link>
+        <LinkButton href="/study" display="block">
+          {toResumeLabel({ hasAttempt, isFinished })}
+        </LinkButton>
 
-          {hasAttempt && (
-            <QueryBoundary
-              pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-              errorMessage="진행 중인 모의고사를 불러오지 못했다"
-              canRetry
-            >
-              <ActiveExamBanner apiUrl={apiUrl} />
-            </QueryBoundary>
-          )}
+        {hasAttempt && (
+          <QueryBoundary
+            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+            errorMessage="진행 중인 모의고사를 불러오지 못했다"
+            canRetry
+          >
+            <ActiveExamBanner apiUrl={apiUrl} />
+          </QueryBoundary>
+        )}
 
-          <nav aria-label="다른 화면">
-            <ul className="border-t border-outline-variant">
-              {hasAttempt && (
-                <li>
-                  <EntryRow
-                    href="/review"
-                    label="오답 복습"
-                    trailing={`오답 ${progress.wrongCount}문제`}
-                  />
-                </li>
-              )}
-              {ENTRY_ROWS.map((row) => (
-                <li key={row.href}>
-                  <EntryRow href={row.href} label={row.label} />
-                </li>
-              ))}
-            </ul>
-          </nav>
+        <nav aria-label="다른 화면">
+          <ul className="border-t border-outline-variant">
+            {hasAttempt && (
+              <li>
+                <EntryRow
+                  href="/review"
+                  label="오답 복습"
+                  trailing={`오답 ${progress.wrongCount}문제`}
+                />
+              </li>
+            )}
+            {ENTRY_ROWS.map((row) => (
+              <li key={row.href}>
+                <EntryRow href={row.href} label={row.label} />
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-          {hasAttempt && (
-            <QueryBoundary
-              pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-              errorMessage="학습 현황을 불러오지 못했다"
-              canRetry
-            >
-              <StudyStatus apiUrl={apiUrl} />
-            </QueryBoundary>
-          )}
+        {hasAttempt && (
+          <QueryBoundary
+            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+            errorMessage="학습 현황을 불러오지 못했다"
+            canRetry
+          >
+            <StudyStatus apiUrl={apiUrl} />
+          </QueryBoundary>
+        )}
 
-          {/* 테마 전환이 있는 화면은 여기 하나다 (`docs/02` 「화면 구성 요소」). */}
-          <ThemeToggle />
-        </main>
-      </div>
-    </>
+        {/* 테마 전환이 있는 화면은 여기 하나다 (`docs/02` 「화면 구성 요소」). */}
+        <ThemeToggle />
+      </ReadingColumn>
+    </ScreenShell>
   )
 }
 
@@ -158,9 +154,9 @@ function ActiveExamBanner({ apiUrl }: { apiUrl: string }) {
 
   return (
     <ActiveSessionCard startedAt={activeSession.startedAt}>
-      <Link href={examSessionHref(activeSession.id)} className={buttonClassName()}>
+      <LinkTextButton size="medium" href={examSessionHref(activeSession.id)}>
         이어풀기
-      </Link>
+      </LinkTextButton>
     </ActiveSessionCard>
   )
 }
@@ -227,7 +223,7 @@ function EntryRow({ href, label, trailing }: { href: string; label: string; trai
     >
       <span className="flex-1">{label}</span>
       {trailing && <span className="text-on-surface-variant">{trailing}</span>}
-      <MaterialSymbol name="chevron_right" />
+      <Icon name="chevron-right" />
     </Link>
   )
 }

@@ -1,4 +1,6 @@
-import { AppBar } from '@/shared/ui/app-bar'
+import { ReadingColumn } from '@scent-jo/react'
+
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -21,14 +23,11 @@ export function NotesPage() {
   return (
     <QueryBoundary
       pending={
-        <>
-          <AppBar title="암기 노트" backHref="/" />
-          <div className="app-bar-gutter-top">
-            <main className="mx-auto max-w-reading px-screen py-6">
-              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-            </main>
-          </div>
-        </>
+        <ScreenShell title="암기 노트" backHref="/">
+          <ReadingColumn className="py-6">
+            <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+          </ReadingColumn>
+        </ScreenShell>
       }
       errorMessage="암기 노트를 불러오지 못했다"
       canRetry

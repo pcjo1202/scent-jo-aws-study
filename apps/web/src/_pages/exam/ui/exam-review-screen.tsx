@@ -3,13 +3,13 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
+import { Button, ReadingColumn } from '@scent-jo/react'
 
 import { manifestQuery, oneLinersQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examQuery } from '@/shared/api/exams'
 import { examResultHref, examReviewHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
-import { AppBar } from '@/shared/ui/app-bar'
-import { Button } from '@/shared/ui/button'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -81,41 +81,37 @@ export function ExamReviewScreen({
   const total = results.length
 
   return (
-    <>
-      <AppBar
-        title={`${SCREEN_NAME} ${position} / ${total}`}
-        backHref={examResultHref(sessionId)}
-      />
-
-      <div className="app-bar-gutter-top">
-        <main className="action-bar-gutter mx-auto flex w-full min-w-0 max-w-reading flex-col gap-4 px-screen py-4">
-          {/*
+    <ScreenShell
+      title={`${SCREEN_NAME} ${position} / ${total}`}
+      backHref={examResultHref(sessionId)}
+    >
+      <ReadingColumn className="flex flex-col gap-4 py-4">
+        {/*
             **인덱스에 없는 문항은 이 화면을 막지 않는다.** `v2`에서 빠진 문항을 든 옛 세션을
             재열람할 때만 나오고, 서버도 같은 이유로 던지지 않고 `answer: []`를 돌려준다
             (`exams.service.ts`의 `toResults`) — 나머지 64문항의 리뷰까지 잃을 이유가 없다.
           */}
-          {entry ? (
-            <QueryBoundary
-              pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
-              errorMessage="이 문제를 불러오지 못했다"
-              canRetry
-            >
-              <QuestionSlot
-                manifest={manifest}
-                entry={entry}
-                selected={result.selected ?? []}
-                onToggle={() => undefined}
-                graded={{ isCorrect: result.isCorrect, answer: result.answer }}
-                notes={notes}
-              />
-            </QueryBoundary>
-          ) : (
-            <StatusBanner kind="error">
-              이 문제는 문제 데이터가 갱신되면서 사라졌다 · 다른 문제는 그대로 볼 수 있다
-            </StatusBanner>
-          )}
-        </main>
-      </div>
+        {entry ? (
+          <QueryBoundary
+            pending={<StatusBanner kind="loading">불러오는 중…</StatusBanner>}
+            errorMessage="이 문제를 불러오지 못했다"
+            canRetry
+          >
+            <QuestionSlot
+              manifest={manifest}
+              entry={entry}
+              selected={result.selected ?? []}
+              onToggle={() => undefined}
+              graded={{ isCorrect: result.isCorrect, answer: result.answer }}
+              notes={notes}
+            />
+          </QueryBoundary>
+        ) : (
+          <StatusBanner kind="error">
+            이 문제는 문제 데이터가 갱신되면서 사라졌다 · 다른 문제는 그대로 볼 수 있다
+          </StatusBanner>
+        )}
+      </ReadingColumn>
 
       {/*
         양 끝에서 비활성이고 숨기지 않는다 — 부재는 「그런 기능이 없다」로 읽히는데 이 화면은
@@ -123,20 +119,20 @@ export function ExamReviewScreen({
       */}
       <ActionBar>
         <Button
-          variant="tonal"
+          color="dark"
+          variant="weak"
           disabled={position <= 1}
           onClick={() => router.push(examReviewHref(sessionId, position - 1))}
         >
           이전
         </Button>
         <Button
-          variant="filled"
           disabled={position >= total}
           onClick={() => router.push(examReviewHref(sessionId, position + 1))}
         >
           다음
         </Button>
       </ActionBar>
-    </>
+    </ScreenShell>
   )
 }

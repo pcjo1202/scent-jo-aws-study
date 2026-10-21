@@ -1,7 +1,8 @@
 'use client'
 
+import { Button } from '@scent-jo/react'
+
 import { getSupabaseClient } from '@/shared/api/supabase'
-import { Button } from '@/shared/ui/button'
 
 /**
  * 이 화면에서 클라이언트로 넘어가는 것은 이 버튼 하나다 (`apps/web/CLAUDE.md`
@@ -19,9 +20,5 @@ export function GoogleSignInButton() {
     })
   }
 
-  return (
-    <Button variant="filled" onClick={handleSignIn}>
-      Google로 계속하기
-    </Button>
-  )
+  return <Button onClick={handleSignIn}>Google로 계속하기</Button>
 }

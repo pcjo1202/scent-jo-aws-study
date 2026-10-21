@@ -1,9 +1,10 @@
+import { ReadingColumn } from '@scent-jo/react'
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 
 import { examsQuery } from '@/shared/api/exams'
 import { getQueryClient } from '@/shared/api/query-client'
 import { resolveApiUrl } from '@/shared/config/api-url'
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -27,14 +28,11 @@ export async function ExamListPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <QueryBoundary
         pending={
-          <>
-            <AppBar title="모의고사" backHref="/" />
-            <div className="app-bar-gutter-top">
-              <main className="mx-auto max-w-reading px-screen py-6">
-                <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-              </main>
-            </div>
-          </>
+          <ScreenShell title="모의고사" backHref="/">
+            <ReadingColumn className="py-6">
+              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+            </ReadingColumn>
+          </ScreenShell>
         }
         errorMessage="모의고사 목록을 불러오지 못했다"
         canRetry

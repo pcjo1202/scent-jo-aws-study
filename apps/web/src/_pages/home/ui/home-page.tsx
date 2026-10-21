@@ -1,3 +1,4 @@
+import { ReadingColumn } from '@scent-jo/react'
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 
 import { examsQuery } from '@/shared/api/exams'
@@ -5,7 +6,7 @@ import { progressQuery, statsQuery } from '@/shared/api/me'
 import { getQueryClient } from '@/shared/api/query-client'
 import { resolveApiUrl } from '@/shared/config/api-url'
 import { APP_TITLE } from '@/shared/config/app'
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -36,14 +37,11 @@ export async function HomePage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <QueryBoundary
         pending={
-          <>
-            <AppBar title={APP_TITLE} />
-            <div className="app-bar-gutter-top">
-              <main className="mx-auto max-w-reading px-screen py-6">
-                <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-              </main>
-            </div>
-          </>
+          <ScreenShell title={APP_TITLE}>
+            <ReadingColumn className="py-6">
+              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+            </ReadingColumn>
+          </ScreenShell>
         }
         errorMessage="진도를 불러오지 못했다"
         canRetry

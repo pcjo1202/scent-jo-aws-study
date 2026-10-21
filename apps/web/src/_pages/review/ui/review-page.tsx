@@ -1,9 +1,10 @@
+import { ReadingColumn } from '@scent-jo/react'
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 
 import { resolveApiUrl } from '@/shared/config/api-url'
 import { getQueryClient } from '@/shared/api/query-client'
 import { wrongQuestionsQuery } from '@/shared/api/me'
-import { AppBar } from '@/shared/ui/app-bar'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -30,14 +31,11 @@ export async function ReviewPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <QueryBoundary
         pending={
-          <>
-            <AppBar title="오답 복습" backHref="/" />
-            <div className="app-bar-gutter-top">
-              <main className="mx-auto max-w-reading px-screen py-6">
-                <StatusBanner kind="loading">불러오는 중…</StatusBanner>
-              </main>
-            </div>
-          </>
+          <ScreenShell title="오답 복습" backHref="/">
+            <ReadingColumn className="py-6">
+              <StatusBanner kind="loading">불러오는 중…</StatusBanner>
+            </ReadingColumn>
+          </ScreenShell>
         }
         errorMessage="오답 목록을 불러오지 못했다"
         canRetry

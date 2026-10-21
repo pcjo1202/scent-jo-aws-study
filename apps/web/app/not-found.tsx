@@ -1,8 +1,6 @@
-import Link from 'next/link'
-
 import { APP_TITLE } from '@/shared/config/app'
-import { AppBar } from '@/shared/ui/app-bar'
-import { buttonClassName } from '@/shared/ui/button'
+import { ScreenFill, ScreenShell } from '@/shared/ui/screen-shell'
+import { LinkButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 
 /**
@@ -13,7 +11,7 @@ import { EmptyState } from '@/shared/ui/empty-state'
  * 이 화면이 필요한 이유는 대시보드가 **아직 없는 화면으로 링크를 걸기 때문**이다 — 남은 것은
  * `/anatomy`(SJO-26)이고 `/notes`는 2026-09-09에 붙었다(SJO-25). Next 기본 404에는 앱바도 복귀 링크도
  * 없는데, 이 앱은 주소창도 브라우저 뒤로가기도 없는 웹뷰에서 열리므로 그 화면에 닿으면
- * 빠져나올 방법이 사라진다 (`shared/ui/app-bar.tsx` 「뒤로가기는 히스토리가 아니라 라우트가
+ * 빠져나올 방법이 사라진다 (`shared/ui/screen-shell.tsx` 「뒤로가기는 히스토리가 아니라 라우트가
  * 정하는 고정 링크다」).
  *
  * 라우트 그룹 `(app)` 밖이라 `AuthGuard`·`CatalogGate`를 타지 않는다. 없는 경로는 세션과
@@ -21,18 +19,13 @@ import { EmptyState } from '@/shared/ui/empty-state'
  */
 export default function NotFound() {
   return (
-    <>
-      <AppBar title={APP_TITLE} backHref="/" />
-      <div className="app-bar-gutter-top flex min-h-dvh flex-col">
+    <ScreenShell title={APP_TITLE} backHref="/">
+      <ScreenFill>
         <EmptyState
           message="화면을 찾을 수 없다"
-          actions={
-            <Link href="/" className={buttonClassName('filled')}>
-              대시보드로
-            </Link>
-          }
+          actions={<LinkButton href="/">대시보드로</LinkButton>}
         />
-      </div>
-    </>
+      </ScreenFill>
+    </ScreenShell>
   )
 }

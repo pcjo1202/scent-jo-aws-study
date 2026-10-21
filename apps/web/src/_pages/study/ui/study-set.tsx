@@ -1,33 +1,32 @@
 'use client'
 
-import Link from 'next/link'
+import { Button, ReadingColumn, TextButton } from '@scent-jo/react'
 import { useState, type ReactNode } from 'react'
 
 import type { AttemptResponse, ChoiceKey, IndexEntry, Manifest } from '@aws-study/shared'
 
 import { canSubmit, CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
-import { toStartIndex } from '@/shared/lib/study-cursor'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
-import { AppBar } from '@/shared/ui/app-bar'
-import { Button, buttonClassName } from '@/shared/ui/button'
+import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
+import { ScreenFill } from '@/shared/ui/screen-shell'
 
 import { submitAttempt } from '@/features/submit-answer/api/submit-attempt'
 
 import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
 
-const SCREEN_NAME = '순차 풀이'
-
 /**
- * 지금 보이는 세트를 순서대로 푼다.
+ * 지금 보이는 세트를 순서대로 푼다. 앱바·사이드바를 가진 골격은 호출부(`StudyScreen`)가 그리고,
+ * 이 컴포넌트는 그 `main` 안 — 본문 칼럼과 하단 액션 바 — 를 그린다.
  *
- * **커서를 `key`로 초기화하지 않고 컴포넌트째 다시 마운트한다** — 호출부가 필터를 `key`로
- * 준다. 필터가 바뀌면 세트도 시작 위치도 채점 결과도 전부 새로 시작해야 하는데, 그걸 여러
- * `useEffect`로 맞추면 하나를 빠뜨렸을 때 이전 문항의 채점 결과가 새 세트에 남는다.
+ * **선택·채점 결과는 `key`로 컴포넌트째 다시 마운트해서 버린다** — 호출부가 필터를 `key`로
+ * 준다. 그걸 여러 `useEffect`로 맞추면 하나를 빠뜨렸을 때 이전 문항의 채점 결과가 새 세트에
+ * 남는다. **커서만 호출부가 쥔다** — 앱바 제목이 커서를 쓰는데 앱바는 사이드바와 같은 자리에서
+ * 그려야 하고, 사이드바가 이 `key` 아래로 들어오면 필터를 누를 때마다 다시 마운트돼 포커스를 잃는다.
  *
  * **되돌아간 문항은 `[대기]`로 연다.** 커서를 옮길 때 채점 결과와 선택을 함께 버리는 것이
  * 그것이다 — 되돌아가는 목적이 다시 푸는 것이고, 답이 이미 보이면 그게 안 된다
@@ -37,34 +36,30 @@ export function StudySet({
   apiUrl,
   manifest,
   entries,
-  lastQuestionId,
+  cursor,
+  isEmpty,
+  isFinished,
   hasFilter,
   notes,
-  filterAction,
   appliedChips,
   onClearFilter,
   onSubmitted,
+  onCursorChange,
 }: {
   apiUrl: string
   manifest: Manifest
   entries: IndexEntry[]
-  /** 필터 모드는 `0`이다 — 진행 위치를 저장하지 않으므로 부분집합의 처음부터다. */
-  lastQuestionId: number
+  cursor: number
+  isEmpty: boolean
+  isFinished: boolean
   hasFilter: boolean
   notes: Map<string, string>
-  filterAction: ReactNode
   appliedChips: ReactNode
   onClearFilter: () => void
   /** 제출이 서버에 닿은 뒤. 호출부가 진도 캐시를 무효화해 재진입이 낡은 포인터를 안 쓴다. */
   onSubmitted: () => void
+  onCursorChange: (cursor: number) => void
 }) {
-  const [cursor, setCursor] = useState(
-    () =>
-      toStartIndex(
-        entries.map((entry) => entry.id),
-        lastQuestionId,
-      ) ?? entries.length,
-  )
   const [selected, setSelected] = useState<ChoiceKey[]>([])
   const [graded, setGraded] = useState<AttemptResponse | null>(null)
   const [isSubmitting, setSubmitting] = useState(false)
@@ -73,11 +68,9 @@ export function StudySet({
 
   const entry = entries[cursor]
   const answerCount = entry?.answer.length ?? 0
-  const isEmpty = entries.length === 0
-  const isFinished = !isEmpty && cursor >= entries.length
 
   function moveTo(nextCursor: number) {
-    setCursor(nextCursor)
+    onCursorChange(nextCursor)
     setSelected([])
     setGraded(null)
     setSubmitFailed(false)
@@ -141,36 +134,28 @@ export function StudySet({
     onShowHelp: () => setHelpOpen(true),
   })
 
-  // 빈 상태·완주에서는 앱바 제목에서 숫자가 빠지고 진행 바와 하단 액션 바를 그리지 않는다
-  // (`DESIGN.md` 「빈 상태·완주에서 골격은 어떻게 되나」). 우측 액션은 그대로 둔다 — 필터가
-  // 0건일 때 `filter_list`가 없으면 되돌릴 방법이 사라진다.
+  // 빈 상태·완주에서는 하단 액션 바를 그리지 않는다 — 제출할 문제가 없다 (`DESIGN.md`
+  // 「빈 상태·완주에서 골격은 어떻게 되나」). 앱바 쪽 규칙은 `StudyScreen`이 지킨다.
   if (isEmpty || isFinished) {
     return (
-      <>
-        <AppBar title={SCREEN_NAME} backHref="/" action={filterAction} />
-        <div className="flex min-h-0 flex-1 flex-col">
-          {/* 필터 칩은 0건일 때도 상단에 남는다 — 무엇 때문에 0건인지가 보여야 해제할지
+      <ScreenFill>
+        {/* 필터 칩은 0건일 때도 상단에 남는다 — 무엇 때문에 0건인지가 보여야 해제할지
               고칠지를 정한다. 필터가 없으면 `AppliedFilterChips`가 `null`이라 빈 줄이다. */}
-          {hasFilter && <div className="px-screen pt-4">{appliedChips}</div>}
-          {isEmpty ? (
-            <EmptyState
-              message="조건에 맞는 문제 없음"
-              actions={
-                <Button variant="filled" onClick={onClearFilter}>
-                  필터 해제
-                </Button>
-              }
-            />
-          ) : (
-            <FinishedState
-              hasFilter={hasFilter}
-              total={entries.length}
-              onClearFilter={onClearFilter}
-              onRestart={() => moveTo(0)}
-            />
-          )}
-        </div>
-      </>
+        {hasFilter && <div className="pt-4">{appliedChips}</div>}
+        {isEmpty ? (
+          <EmptyState
+            message="조건에 맞는 문제 없음"
+            actions={<Button onClick={onClearFilter}>필터 해제</Button>}
+          />
+        ) : (
+          <FinishedState
+            hasFilter={hasFilter}
+            total={entries.length}
+            onClearFilter={onClearFilter}
+            onRestart={() => moveTo(0)}
+          />
+        )}
+      </ScreenFill>
     )
   }
 
@@ -178,14 +163,7 @@ export function StudySet({
 
   return (
     <>
-      <AppBar
-        title={`${SCREEN_NAME} ${cursor + 1} / ${entries.length}`}
-        backHref="/"
-        action={filterAction}
-        progress={{ current: cursor + 1, total: entries.length }}
-      />
-
-      <main className="action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-4 px-screen py-4">
+      <ReadingColumn className="flex flex-col gap-4 py-4">
         {appliedChips}
         {/* 라이브 리전은 배너보다 먼저 있어야 낭독된다 (`DESIGN.md` 「상태 배너」). */}
         <div aria-live="polite" className="contents">
@@ -209,36 +187,31 @@ export function StudySet({
             />
           )}
         </QueryBoundary>
-      </main>
+      </ReadingColumn>
+
+      <ShortcutHelp isOpen={isHelpOpen} onClose={() => setHelpOpen(false)} />
 
       <ActionBar>
         {graded ? (
-          <Button variant="filled" onClick={() => moveTo(cursor + 1)}>
-            다음
-          </Button>
+          <Button onClick={() => moveTo(cursor + 1)}>다음</Button>
         ) : (
           <>
             {/* 첫 문제에서 「이전」은 비활성이고 숨기지 않는다 — 부재는 「그런 기능이 없다」를
                 말하는데 되돌아가기는 이 앱에 있는 기능이다 (`DESIGN.md` 「하단 액션의 버튼 배치」). */}
             <Button
-              variant="tonal"
+              color="dark"
+              variant="weak"
               disabled={cursor === 0 || isSubmitting}
               onClick={() => moveTo(cursor - 1)}
             >
               이전
             </Button>
-            <Button
-              variant="filled"
-              disabled={!isSubmittable || isSubmitting}
-              onClick={() => void handleSubmit()}
-            >
+            <Button disabled={!isSubmittable || isSubmitting} onClick={() => void handleSubmit()}>
               제출
             </Button>
           </>
         )}
       </ActionBar>
-
-      <ShortcutHelp isOpen={isHelpOpen} onClose={() => setHelpOpen(false)} />
     </>
   )
 }
@@ -264,10 +237,10 @@ function FinishedState({
         message={`조건에 맞는 ${total}문제를 다 풀었다`}
         actions={
           <>
-            <Button variant="filled" onClick={onClearFilter}>
-              필터 해제
-            </Button>
-            <Button onClick={onRestart}>다시 풀기</Button>
+            <Button onClick={onClearFilter}>필터 해제</Button>
+            <TextButton size="medium" onClick={onRestart}>
+              다시 풀기
+            </TextButton>
           </>
         }
       />
@@ -279,12 +252,10 @@ function FinishedState({
       message="전체 완주"
       actions={
         <>
-          <Link href="/review" className={buttonClassName('filled')}>
-            오답 복습
-          </Link>
-          <Link href="/exam" className={buttonClassName()}>
+          <LinkButton href="/review">오답 복습</LinkButton>
+          <LinkTextButton size="medium" href="/exam">
             모의고사
-          </Link>
+          </LinkTextButton>
         </>
       }
     />

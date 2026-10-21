@@ -1,13 +1,14 @@
 'use client'
 
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
+import { Badge, Button } from '@scent-jo/react'
 
 /**
  * 앱바 우측의 필터 버튼 (`DESIGN.md` 「화면별 우측 액션」). `/study`와 `/review`가 같은 것을
  * 쓴다 — 배지 규격을 두 화면에 복제하면 한쪽만 고쳐도 화면이 멀쩡해 조용히 갈린다
  * (`.claude/rules/code-conventions.md` 「SSOT」).
  *
- * **`expanded`에서는 사라진다** — 패널이 이미 열려 있다. 규칙 하나가 두 화면을 덮는다.
+ * DS에 필터 아이콘이 없어 글자 버튼이다 (scent-jo-ds#17). **`lg`에서는 사라진다** — 패널이 사이드바로 이미 열려
+ * 있다 (`DESIGN.md` 「화면 구성」 ④). 배지는 선택 상태라 정오 색(`green`·`red`)을 쓰지 않는다.
  */
 export function FilterButton({
   badgeCount,
@@ -18,18 +19,20 @@ export function FilterButton({
   onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      aria-label={badgeCount > 0 ? `필터 ${badgeCount}개 적용` : '필터'}
+    <Button
+      color="dark"
+      variant="weak"
+      size="small"
+      aria-label={badgeCount > 0 ? `필터 ${badgeCount}개 적용` : undefined}
       onClick={onClick}
-      className="state-layer relative flex size-12 items-center justify-center rounded-corner-full expanded:hidden"
+      className="lg:hidden"
     >
-      <MaterialSymbol name="filter_list" />
+      필터
       {badgeCount > 0 && (
-        <span className="absolute right-1 top-1 min-w-4 rounded-corner-full bg-secondary-container px-1 text-center text-label-medium text-on-secondary-container">
+        <Badge color="blue" variant="fill" size="xsmall" className="ml-1">
           {badgeCount}
-        </span>
+        </Badge>
       )}
-    </button>
+    </Button>
   )
 }

@@ -1,4 +1,4 @@
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
+import { Icon } from '@scent-jo/react'
 
 /**
  * 채점 결과를 선택지 위에 한 줄로 알린다 (`DESIGN.md` 「채점 결과 · 결과 배너」).
@@ -17,7 +17,7 @@ export function ResultBanner({ isCorrect }: { isCorrect: boolean }) {
     <p
       className={`flex min-h-12 items-center gap-3 rounded-corner-medium px-4 py-3 text-title-small ${surface}`}
     >
-      <MaterialSymbol name={isCorrect ? 'check_circle' : 'cancel'} />
+      <Icon name={isCorrect ? 'check' : 'close'} />
       {isCorrect ? '정답' : '오답'}
     </p>
   )

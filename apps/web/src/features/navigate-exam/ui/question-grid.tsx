@@ -2,7 +2,7 @@
 
 import type { ChoiceKey } from '@aws-study/shared'
 
-import { SidePanel } from '@/shared/ui/side-panel'
+import { PanelSheet, type PanelContainer } from '@/shared/ui/panel-sheet'
 
 /**
  * 칸의 세 상태 (`DESIGN.md` 「문제 이동 그리드」). **`correct`·`error`를 쓰지 않는다** — 진행
@@ -33,21 +33,18 @@ export function QuestionGrid({
   questionIds,
   answers,
   cursor,
-  isOpen,
-  onClose,
   onJump,
-}: {
+  ...panel
+}: PanelContainer & {
   questionIds: number[]
   answers: Record<number, ChoiceKey[]>
   cursor: number
-  isOpen: boolean
-  onClose: () => void
   onJump: (position: number) => void
 }) {
   const answeredCount = questionIds.filter((id) => (answers[id]?.length ?? 0) > 0).length
 
-  return (
-    <SidePanel label="문제 이동" isOpen={isOpen} onClose={onClose}>
+  const content = (
+    <>
       <ul className="question-grid grid gap-2">
         {questionIds.map((id, position) => {
           const isAnswered = (answers[id]?.length ?? 0) > 0
@@ -61,7 +58,7 @@ export function QuestionGrid({
                 aria-current={position === cursor ? 'true' : undefined}
                 onClick={() => {
                   onJump(position)
-                  onClose()
+                  if (panel.container === 'sheet') panel.onClose()
                 }}
                 className={`state-layer flex w-full items-center justify-center rounded-corner-small text-label-medium ${CELL_CLASS[state]}`}
               >
@@ -72,9 +69,23 @@ export function QuestionGrid({
         })}
       </ul>
 
-      <p className="text-body-small text-on-surface-variant">
+      <p className="text-t7 text-secondary">
         {answeredCount}문제 답함 · {questionIds.length - answeredCount}문제 남음
       </p>
-    </SidePanel>
+    </>
+  )
+
+  if (panel.container === 'sidebar') {
+    return (
+      <section aria-label="문제 이동" className="flex flex-col gap-6 p-6">
+        {content}
+      </section>
+    )
+  }
+
+  return (
+    <PanelSheet label="문제 이동" isOpen={panel.isOpen} onClose={panel.onClose}>
+      {content}
+    </PanelSheet>
   )
 }

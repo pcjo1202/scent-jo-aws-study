@@ -1,9 +1,9 @@
 'use client'
 
 import { useId, useState } from 'react'
+import { Icon } from '@scent-jo/react'
 
 import { Chip } from '@/shared/ui/chip'
-import { MaterialSymbol } from '@/shared/ui/icon/material-symbol'
 
 /**
  * 해설 블록 ④ — **이것이 이 앱의 핵심 가치다.** 문제를 풀다 "EFS가 뭐였지"에서 흐름이
@@ -47,9 +47,10 @@ export function ServiceChips({
                 onClick={() => setOpenName(service.name === openName ? null : service.name)}
               >
                 {service.name}
-                <MaterialSymbol
-                  name="expand_more"
-                  className={`size-4 ${service.name === openName ? 'rotate-180' : ''}`}
+                <Icon
+                  name="chevron-down"
+                  size="var(--sj-dimension-x4)"
+                  className={service.name === openName ? 'rotate-180' : undefined}
                 />
               </Chip>
             ) : (
