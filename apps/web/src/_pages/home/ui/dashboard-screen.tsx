@@ -1,9 +1,8 @@
 'use client'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import Link from 'next/link'
 import { useMemo } from 'react'
-import { Icon, ReadingColumn } from '@scent-jo/react'
+import { List, ListHeader, ListRow, ReadingColumn } from '@scent-jo/react'
 
 import { manifestQuery, questionIndexQuery } from '@/shared/api/cdn'
 import { examsQuery } from '@/shared/api/exams'
@@ -14,6 +13,7 @@ import { toStartIndex } from '@/shared/lib/study-cursor'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
 import { ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
+import { LinkListRow } from '@/shared/ui/link-list-row'
 import { CategoryBars } from '@/shared/ui/category-bars'
 import { ExamSessionRow } from '@/shared/ui/exam-session-row'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
@@ -104,7 +104,7 @@ export function DashboardScreen({ apiUrl }: { apiUrl: string }) {
         )}
 
         <nav aria-label="다른 화면">
-          <ul className="border-t border-outline-variant">
+          <List>
             {hasAttempt && (
               <li>
                 <EntryRow
@@ -119,7 +119,7 @@ export function DashboardScreen({ apiUrl }: { apiUrl: string }) {
                 <EntryRow href={row.href} label={row.label} />
               </li>
             ))}
-          </ul>
+          </List>
         </nav>
 
         {hasAttempt && (
@@ -185,24 +185,25 @@ function StudyStatus({ apiUrl }: { apiUrl: string }) {
         <div className="flex flex-col gap-2">
           <CategoryBars title="카테고리별 정답률" bars={bars} />
           {unsolvedCount > 0 && (
-            <p className="text-body-small text-on-surface-variant">
-              아직 안 푼 영역 {unsolvedCount}개
-            </p>
+            <p className="px-5 text-t7 text-secondary">아직 안 푼 영역 {unsolvedCount}개</p>
           )}
         </div>
       )}
 
-      {/* 「대시보드 카드 (진도 · 최근 모의고사)」 — `DESIGN.md` 「surface container를 화면에 매핑」. */}
       {recentSessions.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-corner-medium border border-outline bg-surface-container-low p-4">
-          <h2 className="text-title-small">최근 모의고사</h2>
-          <ul>
+        <section>
+          <ListHeader
+            size="small"
+            horizontalPadding="small"
+            title={<ListHeader.TitleParagraph>최근 모의고사</ListHeader.TitleParagraph>}
+          />
+          <List>
             {recentSessions.map((session) => (
               <li key={session.id}>
                 <ExamSessionRow session={session} />
               </li>
             ))}
-          </ul>
+          </List>
         </section>
       )}
     </div>
@@ -210,20 +211,16 @@ function StudyStatus({ apiUrl }: { apiUrl: string }) {
 }
 
 /**
- * 「진입 행 ×4」 규격 (`DESIGN.md` 「대시보드 요소」). 위아래 `outline-variant` 1px은 목록의
- * `border-t`와 각 행의 `border-b`가 만든다.
+ * 「진입 행 ×4」 규격 (`DESIGN.md` 「대시보드 요소」).
  *
  * **수를 병기하는 것은 오답 행뿐이다** — 나머지 셋은 화면 이름만 갖는다.
  */
 function EntryRow({ href, label, trailing }: { href: string; label: string; trailing?: string }) {
   return (
-    <Link
+    <LinkListRow
       href={href}
-      className="state-layer flex min-h-12 items-center gap-4 border-b border-outline-variant px-2 text-body-large"
-    >
-      <span className="flex-1">{label}</span>
-      {trailing && <span className="text-on-surface-variant">{trailing}</span>}
-      <Icon name="chevron-right" />
-    </Link>
+      contents={<ListRow.Texts type="1RowTypeA" top={label} />}
+      right={trailing && <ListRow.Texts type="Right1RowTypeC" top={trailing} />}
+    />
   )
 }
