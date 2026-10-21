@@ -23,7 +23,11 @@ export function ActiveSessionCard({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-3 border border-default px-4 py-3 text-t6">
-      <span className="flex-1">진행 중인 모의고사 · {formatSessionDate(startedAt)} 시작</span>
+      {/* 날짜를 한 덩어리로 묶는다 — 액션이 둘인 `/exam`에서는 375px에서 `2026. 9.`와 `8.` 사이가 끊긴다. */}
+      <span className="flex-1">
+        진행 중인 모의고사 ·{' '}
+        <span className="whitespace-nowrap">{formatSessionDate(startedAt)} 시작</span>
+      </span>
       {children}
     </div>
   )
