@@ -51,7 +51,8 @@ export function CategoryBars({ title, bars }: { title: string; bars: CategoryBar
               className="flex-1"
               aria-hidden
             />
-            <span className="shrink-0 text-right">{value}</span>
+            {/* 폭을 고정한다 — 값 글자 폭을 따라가면 행마다 트랙 길이가 달라져 막대 길이를 비교할 수 없다. */}
+            <span className="w-12 shrink-0 text-right">{value}</span>
           </li>
         ))}
       </ul>
