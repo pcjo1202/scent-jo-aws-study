@@ -4,5 +4,5 @@
  */
 export const APP_TITLE = 'AWS SAA-C03 학습'
 
-/** 홈 화면 아이콘 밑 이름. 길면 iOS가 말줄임한다. */
+/** manifest `short_name`. iOS가 홈 화면 이름 기본값으로 이것을 쓰는지는 미측정(SJO-69). */
 export const APP_SHORT_TITLE = 'SAA-C03'
