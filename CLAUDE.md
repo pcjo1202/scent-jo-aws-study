@@ -12,7 +12,6 @@ pnpm format:check # pre-commit 훅이 자동으로 돈다 (docs/10 「Prettier�
 pnpm data:anatomy # 해부서 61쪽 → data/anatomy/pages/  (pdftoppm·cwebp 필요)
 pnpm data:extract # 원본 PDF → data/  (SOURCE_PDF_DIR 필요, docs/06)
 pnpm data:verify  # data/ 전수 검증 — 실패하면 exit 1 (배포 차단)
-pnpm tokens:verify # DESIGN.md 색 수치 ↔ tokens.css 대조 — 커밋·`/done` 게이트 (docs/10 「토큰 검증」)
 pnpm data:publish # data/ + tests/fixtures/ → S3  (같은 버전 재배포는 --force)
 pnpm data:pull    # CDN → data/ + tests/fixtures/  (새 기기 복구)
 ```
@@ -26,7 +25,7 @@ pnpm data:pull    # CDN → data/ + tests/fixtures/  (새 기기 복구)
 | `CLAUDE.md` | 이 파일. 어기기 쉬운 규칙 |
 | `MEMORY.md` | 외부 상태의 현재값 (CDN 버전, 마이그레이션, 인프라) |
 | `TASKS.md` | Linear 포인터 + v1 보류 목록. 작업 관리는 Linear(`SJO-*`)에서 |
-| `DESIGN.md` | 디자인 시스템. UI를 건드리면 먼저 본다 |
+| `DESIGN.md` | 제품 UI 규칙(동작·용어). 겉모습은 scent-jo-ds. UI를 건드리면 먼저 본다 |
 | `LESSONS.md` | 실수·혼동 기록. `/lesson`으로만 추가, append-only |
 
 **`docs/`** — 결정을 내릴 때 펼친다.
@@ -69,7 +68,7 @@ pnpm data:pull    # CDN → data/ + tests/fixtures/  (새 기기 복구)
 - **service role key를 `NEXT_PUBLIC_`에 넣지 않는다.** RLS를 켜지 않았으므로 유출 시 DB가 통째로 열린다.
 - **정오를 색으로만 표시하지 않는다.** 아이콘·텍스트를 병기한다.
 - **CDN publish 전 `pnpm data:verify`를 통과해야 한다.** 검증 안 된 데이터가 올라가면 v2 재배포다.
-- **`DESIGN.md`의 색 수치를 손으로 계산해 옮겨 적지 않는다.** 팔레트 hex·대비비·색각 ΔE는 `pnpm tokens:verify`가 `tokens.css`에서 재계산해 판정한다. 세션 밖에서 계산해 값만 옮기면 계산기가 틀렸을 때 되짚을 방법이 없다 — SJO-38이 그렇게 불가능한 값을 발행했다.
+- **사이트 코드에 색·치수 값을 직접 쓰지 않는다** — DS 컴포넌트·DS가 등록한 Tailwind 유틸리티·`var(--sj-*)`만 쓴다. hex·`rgba()`·임의값(`p-[13px]`)이 들어오면 브랜드가 흐트러진다. DS에 없는 값이 필요하면 이 레포에서 우회하지 않고 scent-jo-ds 레포에 이슈를 남긴다 (`docs/10` 「스타일 저작」).
 - **동작·정의를 기억으로 단정하지 않는다.** 외부 도구의 설정(Vercel·pnpm·ESLint)이든 레포 안의 스키마·타입이든, 고치기 전에 **원문을 열어 대조한다** — 라이브러리·프레임워크는 context7 MCP, 레포 안이면 그 파일. 관측 몇 건으로 세운 가설은 수정을 적용하기 전에 **반례를 먼저 찾는다**. 우연히 맞는 관측이 확증편향을 굳힌다.
 - **`exit 0`은 "통과"가 아니라 "오류 없음"이다.** 0건 실행과 0건 실패는 똑같이 0을 준다. 검증은 **실행 건수와 출력 전문**을 함께 본다 — 출력을 `tail`로 자르지 않고, 린터·테스트 probe는 레포 안에서 돌린다. 대상이 0건이면 통과가 아니라 **"대상 없음"으로 보고**한다. **부분 집계도 같다** — 1019 중 999처럼 그럴듯하게 조금 모자란 숫자가 0건보다 위험하다. 사실로 보고하기 전에 그 숫자를 만든 도구가 대상 전부에 닿았는지 본다 (애드혹 grep 말고 파이프라인이 쓰는 모듈로).
   **산술이 만든 수도 같다 — 두 집합의 크기를 빼기 전에 포함 관계를 잰다.** `|A| - |B|`가 뜻을 가지려면 `B ⊆ A`여야 하는데 그건 가정이 아니라 측정값이다. 세 수(`|A∩B|` · `|A\B|` · `|B\A|`)를 전부 내면 포함 관계가 드러나고 어느 쪽이 답인지도 정해진다. 코드는 뺄셈이 아니라 **교집합 판정**으로 쓴다 — 그래야 수가 틀려도 화면은 안 틀린다. 그리고 **낡은 문장을 근거로 인용할 때가 가장 위험하다**: 인용은 그 문장을 참으로 만들지 않는데 인용하는 순간 검증한 기분이 든다 (2026-09-09 SJO-25 — 「202 중 136이니 나머지 66」이 이틀간 정본이었고, 반례가 되는 「7개」가 같은 레포에 이미 적혀 있었는데 한 번도 대조되지 않았다).
@@ -153,7 +152,7 @@ orca worktree create --name sjo-<N>-<영문-kebab> \
 | React·Next 코드 작성·리팩토링 | **react-best-practices 스킬** (로컬 설치, git 미포함) — 워터폴·번들 규칙 우선 |
 | Vercel 배포 문제·설정 | **vercel:deployment-expert** 에이전트 |
 | PDF 추출·파싱 (E1·E2) | **document-skills:pdf** |
-| 라이브 화면의 시각 품질 검토 | `/design-review` (gstack) — 코드 레벨 DESIGN.md 준수는 design-reviewer |
+| 라이브 화면의 시각 품질 검토 | `/design-review` (gstack) — 코드 레벨 DS·DESIGN.md 준수는 design-reviewer |
 | 작업 중 실수·혼동 발견 | **`/lesson`** — 즉시 LESSONS.md에 기록, 2회 반복 시 규칙·훅 승격 |
 | 같은 실수가 규칙으로도 반복되면 | **hookify**로 훅 승격 |
 | 세션 마감·재개 | `/context-save` · `/context-restore` |

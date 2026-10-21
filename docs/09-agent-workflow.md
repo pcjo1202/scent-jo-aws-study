@@ -6,7 +6,7 @@
 ## 원칙
 
 1. **역할이 아니라 컨텍스트 경계로 분할한다.** PM·프론트·백엔드 에이전트 같은 사람 조직 흉내는 만들지 않는다. 핸드오프마다 정보가 깎이고 토큰만 는다. 서브에이전트는 "메인 세션과 격리된 시선이 필요한가"로만 판단한다.
-2. **품질은 프롬프트가 아니라 메커니즘으로 강제한다.** 규칙(CLAUDE.md) → 절차(스킬) → 도구 제한(읽기 전용 리뷰어) → 훅(git pre-commit) 순으로 강한 수단을 쓴다. 판정이 결정적이면 에이전트가 아니라 스크립트가 한다 — 판정이 결정적이면서 **빠지면 조용히 깨지는** 검사는 훅으로 내린다 (`format:check` SJO-43 · `tokens:verify` SJO-39).
+2. **품질은 프롬프트가 아니라 메커니즘으로 강제한다.** 규칙(CLAUDE.md) → 절차(스킬) → 도구 제한(읽기 전용 리뷰어) → 훅(git pre-commit) 순으로 강한 수단을 쓴다. 판정이 결정적이면 에이전트가 아니라 스크립트가 한다 — 판정이 결정적이면서 **빠지면 조용히 깨지는** 검사는 훅으로 내린다 (`format:check` SJO-43).
 3. **그래프는 비용을 상쇄하는 지점에만 쓴다.** 평상시 개발 루프는 메인 세션 하나로 충분하다.
 
 ## 구성 요소
@@ -16,7 +16,7 @@
 | | 정체 | 역할 | 도구 |
 |---|---|---|---|
 | 코드 리뷰 | `pr-review-toolkit:code-reviewer` (기존 플러그인 재사용) | 이슈 전체 diff에서 CLAUDE.md 규칙 위반·버그 검사 | 플러그인 기본 |
-| 디자인 리뷰 | `.claude/agents/design-reviewer.md` (신규) | DESIGN.md 전용: 토큰 미사용 하드코딩 색상, 색상만으로 정오 표시, 48px 터치 타깃, 타이포 역할 오용 | **읽기 전용** — 고칠 수 없는 리뷰어는 실수로 고치지도 못한다 |
+| 디자인 리뷰 | `.claude/agents/design-reviewer.md` (신규) | scent-jo-ds 적용 + DESIGN.md 전용: DS 컴포넌트 대신 같은 것을 직접 만듦, hex·`rgba()`·임의값, 공개되지 않은 `--sj-*`·DS 내부 셀렉터 덮어쓰기, 색상만으로 정오 표시, 용어표 위반, DESIGN.md 동작 규칙 위반 | **읽기 전용** — 고칠 수 없는 리뷰어는 실수로 고치지도 못한다 |
 
 ### 스킬 (3)
 
@@ -41,7 +41,7 @@ working tree 정리 → **공통 게이트**(`format:check`·`typecheck --force`
 
 ### 훅 (1)
 
-`.githooks/pre-commit`이 `prettier --check .`와 `pnpm tokens:verify`를 돌린다. 루트 `prepare`가 `core.hooksPath`를 걸어 `pnpm install`만으로 심어진다.
+`.githooks/pre-commit`이 `prettier --check .`를 돌린다. 루트 `prepare`가 `core.hooksPath`를 걸어 `pnpm install`만으로 심어진다.
 
 **훅을 최종 방어선으로 세지 마라.** `pre-commit`은 `git commit` 경로에만 붙어서 `--no-verify`·머지 커밋·rebase·cherry-pick·revert·`--ignore-scripts` 설치·훅 미설치 clone으로 샌다. **이 레포는 merge commit으로 GitHub 서버에서 머지하므로 머지 경로는 훅을 아예 안 탄다** — 그 경로의 방어선은 `/done`의 공통 게이트뿐이다. 새는 자리 전수와 실측은 `10-conventions.md` 「Prettier」.
 

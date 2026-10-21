@@ -2,7 +2,7 @@
 
 루트 `CLAUDE.md`와 `.claude/rules/code-conventions.md`가 먼저 적용된다. 여기엔 **이 앱에만 해당하는 것**만 적는다.
 
-화면 명세는 `docs/02-features.md`, 디자인은 `DESIGN.md`, 이 구조를 고른 근거는 `docs/10-conventions.md`.
+화면 명세는 `docs/02-features.md`, 겉모습은 scent-jo-ds, 동작 규칙은 `DESIGN.md`, 이 구조를 고른 근거는 `docs/10-conventions.md`.
 
 ## 레이어 — FSD 5층
 
@@ -75,19 +75,18 @@ import { ChoiceList } from '@/shared/ui'
 
 데이터는 서버에서 병렬로 받는다 — 순차 `await` 워터폴을 만들지 않는다 (`react-best-practices` 스킬 §1).
 
-## 스타일은 토큰만 쓴다
+## 스타일은 DS로만 쓴다
 
-`DESIGN.md`가 정의한 `--sys-*` 토큰과 4dp 그리드 값만 쓴다. 임의 색·임의 간격을 쓰지 않는다. 색 역할은 `on-` 쌍으로 가져와 대비가 깨지지 않게 한다.
+겉모습은 scent-jo-ds(`@scent-jo/css`·`@scent-jo/react`)가 소유한다. 고른 이유와 덮어쓰기 규칙 표는
+`docs/10-conventions.md` 「스타일 저작」, 마크업·공개 변수의 정본은 `node_modules/@scent-jo/css/MARKUP.md`.
 
-**Tailwind v4 유틸로 쓴다.** `src/shared/styles/tokens.css`가 `--ref-*`/`--sys-*` 계층을 소유하고, `src/shared/styles/global.css`가 `@theme inline`으로 그것을 유틸에 노출한다. 고른 이유는 `docs/10-conventions.md` 「스타일 저작」.
-
-- **Tailwind 기본 팔레트·타입스케일·radius는 지워져 있다.** `bg-red-500`·`text-3xl`은 존재하지 않는 클래스다. 색은 역할 이름으로 부른다 — `bg-surface-container-low` · `text-on-surface-variant` · `border-outline-variant`
-- **임의값 문법을 쓰지 않는다.** `p-[13px]`·`bg-[#abc]`는 린트가 막는다 — `className` 안이든 **클래스 상수·레코드로 뽑아 뒀든** 파일 어디서나 걸린다 (`const VARIANT_CLASS = { … }`가 규칙을 우회하던 구멍은 SJO-18에서 막았다). 필요한 값이 토큰에 없으면 `DESIGN.md`를 먼저 고친다. 임의 *variant*(`data-[state=open]:`·`[&>svg]:`)는 값이 아니라 선택자라 허용된다
-- **토큰 값을 유틸로 못 쓰는 자리는 `global.css`의 `@layer components`로 내린다.** 상태 레이어 불투명도(`--sys-state-*`)·`env(safe-area-inset-bottom)`·칩의 터치 영역이 그렇다. 유틸로 쓰면 임의값이 되고, 그건 위 규칙이 막는 문법이다
-  - **거기 내린 규칙은 마크업 유틸에 진다.** `utilities` 레이어가 `components`보다 **뒤**라 상세도가 아니라 순서로 갈린다 — `.filter-panel-header { display: none }`은 마크업의 `flex` 하나에 지고, `.action-bar > button { min-height: 56px }`은 `min-h-12`에 진다. 그래서 **반응형 숨김·높이 덮기는 CSS가 아니라 유틸로 쓴다**(`expanded:hidden` · `hidden expanded:flex`). `@layer components`에 남길 것은 유틸로 **쓸 수 없는 것뿐**이다: `env()`·`calc()`·`--sys-state-*`·가상 요소. 고친 뒤에는 `getComputedStyle`로 계산값을 확인한다 — CSS가 「있다」는 「적용된다」가 아니다 (2026-09-07 SJO-20에서 한 세션에 세 번 걸렸다)
-- **반응형 분기는 `medium:`(≥600) · `expanded:`(≥840) 둘뿐이다.** `compact`가 기본이라 접두사가 없다. Tailwind 기본 `sm:`·`md:`·`lg:`는 지워져 있다 — DESIGN.md 「window size class」와 겹치는 값이 하나도 없어서다
-- **`dark:` variant를 쓰지 않는다.** 색은 토큰 계층에서 뒤집힌다. 마크업에 다크 분기를 만들면 그 자리만 테마를 두 벌 관리하게 된다
-- 타입스케일은 역할 클래스 하나가 크기·행간·굵기·자간을 다 나른다 — `text-body-large` 하나면 되고 `leading-*`·`font-*`를 덧붙이지 않는다
+- **DS 컴포넌트가 먼저다.** DS에 있는 것(`Button`·`AppBar`·`Dialog`·`ListRow`…)을 사이트가 따로 만들지 않는다. 없을 때만 DS 토큰으로 짓는다
+- **유틸리티는 DS가 등록한 것만 쓴다.** `src/shared/styles/global.css`는 `tailwindcss` + `@scent-jo/css/tailwind.css` 두 줄이고, 그 파일이 색·radius·shadow·글꼴·글자 크기·breakpoint를 DS 값으로 갈아 끼운다. `bg-white`·`text-3xl`·`shadow-lg`는 존재하지 않는 클래스다 — `bg-default`·`text-primary`·`border-default`·`rounded-3`·`text-t4`처럼 DS 이름으로 부른다. `bg-red-500` 같은 팔레트 유틸은 DS 팔레트로 남아 있지만 의미가 있는 자리는 semantic(`bg-danger-weak` 등)이 먼저다. 모션·그림자 계열(`ease-*`·`animate-*`·`drop-shadow-*` 등)은 Tailwind 기본값이 살아 있으니 쓰지 않고 DS 컴포넌트에 맡긴다. 글자 크기 클래스가 줄 높이까지 나르므로 `leading-*`를 덧붙이지 않는다
+- **임의값 문법을 쓰지 않는다.** `p-[13px]`·`bg-[#abc]`는 린트가 막는다 — `className` 안이든 **클래스 상수·레코드로 뽑아 뒀든** 파일 어디서나 걸린다 (SJO-18). 필요한 값이 DS에 없으면 scent-jo-ds에 먼저 추가한다. 임의 *variant*(`data-[state=open]:`·`[&>svg]:`)는 값이 아니라 선택자라 허용된다
+- **덮어쓰기는 DS가 공개한 `--sj-<component>-*` 변수만 쓴다.** 값은 DS 토큰으로 넣는다. `.sj-app-bar__row > …`처럼 DS 내부 구조를 셀렉터로 건드리지 않는다 — 내부 클래스 이름은 공개 계약이 아니다. 사이트 전용 CSS가 꼭 필요하면 `global.css`에 두되 값은 `var(--sj-*)`만 쓴다
+- **반응형 분기는 `sm:`(≥480) · `md:`(≥768) · `lg:`(≥1280) · `xl:`(≥1440)이다.** DS breakpoint 그대로다. 옛 `medium:`·`expanded:`는 없다. 화면별로 무엇을 어느 지점에 거는지는 `DESIGN.md` 「화면 구성」
+- **`dark:` variant는 쓸 수 있다.** DS가 `data-sj-color-mode`에 묶어 두었다. 다만 색은 semantic 토큰이 먼저 뒤집으므로 토큰으로 되는 자리에서는 다크 분기를 만들지 않는다
+- **DS의 상태 없는 컴포넌트는 서버 컴포넌트로 쓴다.** 위 「`'use client'`는 최말단에만」 그대로다 — 어느 컴포넌트가 `'use client'`인지는 `MARKUP.md` 「서버 컴포넌트에서 쓸 때」
 
 <!-- BEGIN:nextjs-agent-rules -->
 

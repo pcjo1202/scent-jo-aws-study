@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@aws-study/shared": "workspace:*",
+    "@scent-jo/css": "1.0.0",
+    "@scent-jo/react": "1.0.0",
     "@supabase/supabase-js": "^2.115.0",
     "@tanstack/react-query": "^5.102.8",
     "@vercel/related-projects": "^1.1.1",
