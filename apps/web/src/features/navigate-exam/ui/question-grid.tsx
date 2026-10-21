@@ -27,7 +27,7 @@ const CELL_CLASS = {
  *
  * 칸 규격과 열 배치는 결과 그리드와 같다 (`grid-cell.ts`).
  *
- * 칸 안은 숫자뿐이다. 상태는 화면에서 테두리로 갈리고, 화면을 안 보는 사람에게는
+ * 칸 안은 숫자뿐이다. 상태는 화면에서 채움과 테두리로 갈리고, 화면을 안 보는 사람에게는
  * `aria-label`이 말한다 (`DESIGN.md` 「색 단독 전달 금지」).
  */
 export function QuestionGrid({
