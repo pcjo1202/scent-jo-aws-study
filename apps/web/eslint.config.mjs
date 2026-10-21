@@ -16,8 +16,8 @@ const fsdZones = Object.entries(LAYERS_ABOVE).map(([layer, above]) => ({
   message: `FSD: ${layer}는 상위 레이어를 가져올 수 없다.`,
 }))
 
-// Tailwind 임의값 문법. 네임스페이스 리셋이 `bg-red-500`·`text-3xl`을 이미 없앴으므로
-// 토큰을 벗어날 수 있는 경로는 이것 하나만 남는다 (docs/10 「스타일 저작」).
+// Tailwind 임의값 문법. DS `tailwind.css`의 네임스페이스 리셋이 `bg-red-500`·`text-3xl`을 이미 없앴으므로
+// DS 토큰을 벗어날 수 있는 경로는 이것 하나만 남는다 (docs/10 「스타일 저작」).
 // 플러그인을 얹지 않는 이유는 필요한 규칙이 이 하나뿐이기 때문이다.
 //
 // `className` 안으로 범위를 좁히지 않는다. 좁히면 **클래스 문자열을 상수로 뽑는 순간**
@@ -40,7 +40,7 @@ const NO_ARBITRARY_VALUE = {
     `TemplateElement[value.raw=${ARBITRARY_VALUE_PATTERN}]`,
   ].join(', '),
   message:
-    'Tailwind 임의값(예: p-[13px], bg-[#abc])을 쓰지 않는다. 필요한 값이 토큰에 없으면 DESIGN.md를 먼저 고친다. (data-[…]: 같은 임의 variant는 허용된다)',
+    'Tailwind 임의값(예: p-[13px], bg-[#abc])을 쓰지 않는다. 필요한 값이 DS에 없으면 scent-jo-ds에 먼저 추가한다. (data-[…]: 같은 임의 variant는 허용된다)',
 }
 
 const config = [

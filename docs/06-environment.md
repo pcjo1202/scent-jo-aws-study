@@ -34,6 +34,7 @@
 | `AWS_REGION` | scripts | 로컬 | `ap-northeast-2` |
 | `S3_BUCKET` | scripts | 로컬 | CDN 오리진 버킷 |
 | `CLOUDFRONT_DISTRIBUTION_ID` | scripts | 로컬 | 예외 상황 invalidation용. 정상 흐름에선 안 씀 |
+| `GITHUB_PACKAGES_AUTH_TOKEN_SCENT_JO_DS` | web·api 빌드 + 로컬 | **서버** | classic 토큰, `read:packages`. 루트 `.npmrc`가 `@scent-jo` 스코프(GitHub Packages) 설치에 읽는다. **`NEXT_PUBLIC_` 금지.** `.npmrc`와 lockfile이 모노레포 전체에 걸리므로 **api 빌드에도 필요하다** — 없으면 api가 설치 단계에서 죽는다. Vercel은 두 프로젝트 × production·preview. 로컬은 셸(Orca 워크트리 셸 포함)에 `export` |
 
 ## 가장 흔한 사고
 
