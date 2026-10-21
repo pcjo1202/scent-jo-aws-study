@@ -2,7 +2,7 @@
 
 import type { ChoiceKey } from '@aws-study/shared'
 
-import { PanelSheet } from '@/shared/ui/panel-sheet'
+import { PanelSheet, type PanelContainer } from '@/shared/ui/panel-sheet'
 
 /**
  * 칸의 세 상태 (`DESIGN.md` 「문제 이동 그리드」). **`correct`·`error`를 쓰지 않는다** — 진행
@@ -18,10 +18,6 @@ const CELL_CLASS = {
   current: 'border-2 border-outline bg-surface-container-lowest text-on-surface',
   unanswered: 'border border-outline text-on-surface-variant',
 } as const
-
-/** `sheet`는 `lg` 미만의 시트, `sidebar`는 `lg` 이상의 AppShell 사이드바다. 화면이 둘 다 렌더한다. */
-type PanelContainer =
-  { container: 'sidebar' } | { container: 'sheet'; isOpen: boolean; onClose: () => void }
 
 /**
  * 문제 이동 그리드 (`docs/02-features.md` 「문항 간 자유롭게 이동할 수 있다」의 진입점).

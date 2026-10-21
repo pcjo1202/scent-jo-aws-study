@@ -8,6 +8,13 @@ import { useEffect, type ReactNode } from 'react'
 const SIDEBAR_QUERY = `(width >= ${breakpoint.lg}px)`
 
 /**
+ * 패널 내용 컴포넌트(필터·문제 이동 그리드)가 받는 그릇. `sheet`는 `lg` 미만의 이 시트,
+ * `sidebar`는 `lg` 이상의 AppShell 사이드바다. 화면이 둘 다 렌더한다.
+ */
+export type PanelContainer =
+  { container: 'sidebar' } | { container: 'sheet'; isOpen: boolean; onClose: () => void }
+
+/**
  * 화면 보조 패널의 **`lg` 미만 그릇** — DS `BottomSheet`다 (`DESIGN.md` 「화면 보조 패널」).
  * `lg` 이상의 그릇은 AppShell 사이드바이고 내용은 같다. `/study`·`/review`의 필터와
  * `/exam/[id]`의 문제 이동 그리드가 이것을 나눠 쓴다.

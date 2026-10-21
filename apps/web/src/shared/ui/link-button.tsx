@@ -49,6 +49,7 @@ export function LinkTextButton({
       className={cx('sj-text-button', className)}
       data-sj-size={size}
       data-sj-variant="clear"
+      data-sj-haptic="tickWeak"
     >
       <span className="sj-text-button__label">{children}</span>
     </Link>
@@ -67,6 +68,7 @@ export function LinkIconButton({
       className={cx('sj-icon-button', 'sj-pressable', className)}
       data-sj-variant="clear"
       data-sj-size="large"
+      data-sj-haptic="tickWeak"
     >
       <Icon name={icon} />
     </Link>

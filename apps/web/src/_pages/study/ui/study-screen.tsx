@@ -87,11 +87,13 @@ export function StudyScreen({
       entries.map((entry) => entry.id),
       isFiltered ? 0 : progress.lastQuestionId,
     ) ?? entries.length
-  const [cursorState, setCursorState] = useState({ filter, cursor: startCursor })
+  // `StudySet`의 `key`와 같은 문자열로 판정한다 — 둘이 갈리면 커서만 돌아가고 채점 결과는 남는다.
+  const setKey = JSON.stringify(filter)
+  const [cursorState, setCursorState] = useState({ setKey, cursor: startCursor })
   let cursor = cursorState.cursor
-  if (cursorState.filter !== filter) {
+  if (cursorState.setKey !== setKey) {
     cursor = startCursor
-    setCursorState({ filter, cursor })
+    setCursorState({ setKey, cursor })
   }
 
   const isEmpty = entries.length === 0
@@ -118,7 +120,7 @@ export function StudyScreen({
         sidebar={<FilterPanel container="sidebar" {...panelProps} />}
       >
         <StudySet
-          key={JSON.stringify(filter)}
+          key={setKey}
           apiUrl={apiUrl}
           manifest={manifest}
           entries={entries}
@@ -132,7 +134,7 @@ export function StudyScreen({
           onSubmitted={() => {
             void queryClient.invalidateQueries({ queryKey: meKeys.progress(apiUrl) })
           }}
-          onCursorChange={(next) => setCursorState({ filter, cursor: next })}
+          onCursorChange={(next) => setCursorState({ setKey, cursor: next })}
         />
       </ScreenShell>
 

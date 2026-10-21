@@ -88,11 +88,12 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
 
   // 위치는 필터나 회차가 바뀌면 세트의 처음으로 돌아간다 — `ReviewSet`의 `key`와 같은 조건이다.
   // 렌더 중에 확정해 상태로 넣는 이유는 `StudyScreen`과 같다.
-  const [positionState, setPositionState] = useState({ filter, round, position: 0 })
+  const setKey = `${round}:${JSON.stringify(filter)}`
+  const [positionState, setPositionState] = useState({ setKey, position: 0 })
   let position = positionState.position
-  if (positionState.filter !== filter || positionState.round !== round) {
+  if (positionState.setKey !== setKey) {
     position = 0
-    setPositionState({ filter, round, position })
+    setPositionState({ setKey, position })
   }
 
   const isEmpty = entries.length === 0
@@ -117,7 +118,7 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
         sidebar={<FilterPanel container="sidebar" {...panelProps} />}
       >
         <ReviewSet
-          key={`${round}:${JSON.stringify(filter)}`}
+          key={setKey}
           apiUrl={apiUrl}
           manifest={manifest}
           entries={entries}
@@ -141,7 +142,7 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
             // 커서 아래에서 빠져 「진입 시 고정」이 깨진다.
             void queryClient.invalidateQueries({ queryKey: meKeys.progress(apiUrl) })
           }}
-          onPositionChange={(next) => setPositionState({ filter, round, position: next })}
+          onPositionChange={(next) => setPositionState({ setKey, position: next })}
         />
       </ScreenShell>
 

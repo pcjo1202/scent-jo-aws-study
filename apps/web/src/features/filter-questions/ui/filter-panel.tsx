@@ -15,7 +15,7 @@ import {
   type SolveState,
 } from '@/shared/lib/question-filter'
 import { Chip } from '@/shared/ui/chip'
-import { PanelSheet } from '@/shared/ui/panel-sheet'
+import { PanelSheet, type PanelContainer } from '@/shared/ui/panel-sheet'
 
 const ANSWER_COUNT_VALUES = ['single', 'multiple'] as const satisfies readonly AnswerCountKind[]
 const SOLVE_STATE_VALUES = ['unsolved', 'wrong', 'correct'] as const satisfies readonly SolveState[]
@@ -54,10 +54,6 @@ function ChipGroup<T extends string>({
     </section>
   )
 }
-
-/** `sheet`는 `lg` 미만의 시트, `sidebar`는 `lg` 이상의 AppShell 사이드바다. 화면이 둘 다 렌더한다. */
-type PanelContainer =
-  { container: 'sidebar' } | { container: 'sheet'; isOpen: boolean; onClose: () => void }
 
 /**
  * 필터 패널 (`DESIGN.md` 「화면 보조 패널」). **내용은 같고 그릇만 다르다.**
