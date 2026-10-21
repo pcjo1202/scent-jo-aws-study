@@ -16,12 +16,15 @@ import {
   type FilterGroup,
   type QuestionFilter,
 } from '@/shared/lib/question-filter'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 
 import { FilterPanel } from '@/features/filter-questions/ui/filter-panel'
 import { FilterButton } from '@/features/filter-questions/ui/filter-button'
 import { AppliedFilterChips } from '@/features/filter-questions/ui/applied-filter-chips'
 
 import { ReviewSet } from './review-set'
+
+const SCREEN_NAME = '오답 복습'
 
 /**
  * **카테고리 한 그룹뿐이다** — 오답 세트는 정의상 전부 오답이라 「풀이 상태」가 성립하지 않고,
@@ -83,48 +86,71 @@ export function ReviewScreen({ apiUrl }: { apiUrl: string }) {
   const isFiltered = hasActiveFilter(filter)
   const badgeCount = activeFilterCount(filter)
 
-  return (
-    <div className="app-bar-gutter-top flex min-h-dvh flex-col">
-      <div className="flex flex-1 expanded:flex-row">
-        <FilterPanel
-          options={options}
-          filter={filter}
-          matchCount={entries.length}
-          isOpen={isPanelOpen}
-          onChange={setFilter}
-          onClose={() => setPanelOpen(false)}
-          shownGroups={REVIEW_FILTER_GROUPS}
-        />
+  // 위치는 필터나 회차가 바뀌면 세트의 처음으로 돌아간다 — `ReviewSet`의 `key`와 같은 조건이다.
+  // 렌더 중에 확정해 상태로 넣는 이유는 `StudyScreen`과 같다.
+  const [positionState, setPositionState] = useState({ filter, round, position: 0 })
+  let position = positionState.position
+  if (positionState.filter !== filter || positionState.round !== round) {
+    position = 0
+    setPositionState({ filter, round, position })
+  }
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <ReviewSet
-            key={`${round}:${JSON.stringify(filter)}`}
-            apiUrl={apiUrl}
-            manifest={manifest}
-            entries={entries}
-            hasFilter={isFiltered}
-            notes={notes}
-            appliedChips={<AppliedFilterChips filter={filter} />}
-            onClearFilter={() => setFilter(NO_FILTER)}
-            onRestart={() => {
-              // **무효화가 끝난 뒤에 회차를 올린다.** 순서가 뒤집히면 새 `key`의 `ReviewSet`이
-              // 옛 세트로 먼저 마운트되고, 1 RTT 뒤 도착한 목록이 `key` 밖에서 세트를 또
-              // 바꾼다 — 그 창에서 제출하면 채점 결과가 다른 문항 위에 남는다.
-              void queryClient
-                .invalidateQueries({ queryKey: meKeys.wrong(apiUrl) })
-                .then(() => setRound((current) => current + 1))
-            }}
-            onSubmitted={() => {
-              // 진도만 무효화한다. **오답 목록은 건드리지 않는다** — 다시 받으면 맞힌 문항이
-              // 커서 아래에서 빠져 「진입 시 고정」이 깨진다.
-              void queryClient.invalidateQueries({ queryKey: meKeys.progress(apiUrl) })
-            }}
-            filterAction={
-              <FilterButton badgeCount={badgeCount} onClick={() => setPanelOpen(true)} />
-            }
-          />
-        </div>
-      </div>
-    </div>
+  const isEmpty = entries.length === 0
+  const isFinished = !isEmpty && position >= entries.length
+  const isSolving = !isEmpty && !isFinished
+
+  const panelProps = {
+    options,
+    filter,
+    matchCount: entries.length,
+    onChange: setFilter,
+    shownGroups: REVIEW_FILTER_GROUPS,
+  }
+
+  return (
+    <>
+      <ScreenShell
+        title={isSolving ? `${SCREEN_NAME} ${position + 1} / ${entries.length}` : SCREEN_NAME}
+        backHref="/"
+        trailing={<FilterButton badgeCount={badgeCount} onClick={() => setPanelOpen(true)} />}
+        progress={isSolving ? { current: position + 1, total: entries.length } : undefined}
+        sidebar={<FilterPanel container="sidebar" {...panelProps} />}
+      >
+        <ReviewSet
+          key={`${round}:${JSON.stringify(filter)}`}
+          apiUrl={apiUrl}
+          manifest={manifest}
+          entries={entries}
+          position={position}
+          isEmpty={isEmpty}
+          isFinished={isFinished}
+          hasFilter={isFiltered}
+          notes={notes}
+          appliedChips={<AppliedFilterChips filter={filter} />}
+          onClearFilter={() => setFilter(NO_FILTER)}
+          onRestart={() => {
+            // **무효화가 끝난 뒤에 회차를 올린다.** 순서가 뒤집히면 새 `key`의 `ReviewSet`이
+            // 옛 세트로 먼저 마운트되고, 1 RTT 뒤 도착한 목록이 `key` 밖에서 세트를 또
+            // 바꾼다 — 그 창에서 제출하면 채점 결과가 다른 문항 위에 남는다.
+            void queryClient
+              .invalidateQueries({ queryKey: meKeys.wrong(apiUrl) })
+              .then(() => setRound((current) => current + 1))
+          }}
+          onSubmitted={() => {
+            // 진도만 무효화한다. **오답 목록은 건드리지 않는다** — 다시 받으면 맞힌 문항이
+            // 커서 아래에서 빠져 「진입 시 고정」이 깨진다.
+            void queryClient.invalidateQueries({ queryKey: meKeys.progress(apiUrl) })
+          }}
+          onPositionChange={(next) => setPositionState({ filter, round, position: next })}
+        />
+      </ScreenShell>
+
+      <FilterPanel
+        container="sheet"
+        isOpen={isPanelOpen}
+        onClose={() => setPanelOpen(false)}
+        {...panelProps}
+      />
+    </>
   )
 }

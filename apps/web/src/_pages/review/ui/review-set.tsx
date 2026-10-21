@@ -1,14 +1,13 @@
 'use client'
 
+import { Button, ReadingColumn } from '@scent-jo/react'
 import { useState, type ReactNode } from 'react'
-import { Button } from '@scent-jo/react'
 
 import type { AttemptResponse, ChoiceKey, IndexEntry, Manifest } from '@aws-study/shared'
 
 import { canSubmit, CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
-import { AppBar } from '@/shared/ui/app-bar'
 import { LinkButton, LinkTextButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
@@ -21,10 +20,9 @@ import { QuestionSlot } from '@/widgets/question-runner/ui/question-slot'
 
 import { hasRemainingWrong } from '../lib/review-round'
 
-const SCREEN_NAME = '오답 복습'
-
 /**
- * 고정된 오답 세트를 순서대로 푼다. 진행·채점·되돌아가기 규칙은 `/study`와 같고
+ * 고정된 오답 세트를 순서대로 푼다. 골격(앱바·사이드바)과 위치(`position`)는 호출부가 쥔다 —
+ * 이유는 `/study`의 `StudySet` 주석과 같다. 진행·채점·되돌아가기 규칙은 `/study`와 같고
  * (`docs/02-features.md` 「모드별 차이」가 둘을 같은 즉시 채점 모드로 둔다), 다른 것은 셋이다.
  *
  * 1. **시작 위치가 언제나 세트의 처음이다** — 진도 포인터를 읽지 않는다
@@ -39,28 +37,33 @@ export function ReviewSet({
   apiUrl,
   manifest,
   entries,
+  position,
+  isEmpty,
+  isFinished,
   hasFilter,
   notes,
-  filterAction,
   appliedChips,
   onClearFilter,
   onRestart,
   onSubmitted,
+  onPositionChange,
 }: {
   apiUrl: string
   manifest: Manifest
   entries: IndexEntry[]
+  position: number
+  isEmpty: boolean
+  isFinished: boolean
   hasFilter: boolean
   notes: Map<string, string>
-  filterAction: ReactNode
   appliedChips: ReactNode
   onClearFilter: () => void
   /** 세트를 새로 고정한다 — 호출부가 오답 목록을 무효화하고 이 컴포넌트를 다시 마운트한다. */
   onRestart: () => void
   /** 제출이 서버에 닿은 뒤. 호출부가 진도 캐시를 무효화한다. */
   onSubmitted: () => void
+  onPositionChange: (position: number) => void
 }) {
-  const [position, setPosition] = useState(0)
   const [selected, setSelected] = useState<ChoiceKey[]>([])
   const [graded, setGraded] = useState<AttemptResponse | null>(null)
   const [isSubmitting, setSubmitting] = useState(false)
@@ -70,15 +73,13 @@ export function ReviewSet({
 
   const entry = entries[position]
   const answerCount = entry?.answer.length ?? 0
-  const isEmpty = entries.length === 0
-  const isFinished = !isEmpty && position >= entries.length
   // **분자와 분모가 같은 세트에서 나온다는 전제가 `entries` 고정에 걸려 있다.** 세트가
   // 마운트 중에 줄면 사라진 문항의 정답이 계속 세어져 `N`이 `M`을 넘는다 — 고정을 지키는
   // 것은 `wrongQuestionsQuery`의 재조회 차단과 호출부의 `key`다.
   const correctCount = Object.values(roundResults).filter(Boolean).length
 
   function moveTo(nextPosition: number) {
-    setPosition(nextPosition)
+    onPositionChange(nextPosition)
     setSelected([])
     setGraded(null)
     setSubmitFailed(false)
@@ -133,22 +134,19 @@ export function ReviewSet({
 
   if (isEmpty || isFinished) {
     return (
-      <>
-        <AppBar title={SCREEN_NAME} backHref="/" action={filterAction} />
-        <div className="flex min-h-0 flex-1 flex-col">
-          {hasFilter && <div className="px-screen pt-4">{appliedChips}</div>}
-          {isEmpty ? (
-            <EmptySetState hasFilter={hasFilter} onClearFilter={onClearFilter} />
-          ) : (
-            <FinishedState
-              total={entries.length}
-              correctCount={correctCount}
-              hasFilter={hasFilter}
-              onRestart={onRestart}
-            />
-          )}
-        </div>
-      </>
+      <ReadingColumn className="flex flex-col pt-4">
+        {hasFilter && appliedChips}
+        {isEmpty ? (
+          <EmptySetState hasFilter={hasFilter} onClearFilter={onClearFilter} />
+        ) : (
+          <FinishedState
+            total={entries.length}
+            correctCount={correctCount}
+            hasFilter={hasFilter}
+            onRestart={onRestart}
+          />
+        )}
+      </ReadingColumn>
     )
   }
 
@@ -156,14 +154,7 @@ export function ReviewSet({
 
   return (
     <>
-      <AppBar
-        title={`${SCREEN_NAME} ${position + 1} / ${entries.length}`}
-        backHref="/"
-        action={filterAction}
-        progress={{ current: position + 1, total: entries.length }}
-      />
-
-      <main className="action-bar-gutter mx-auto flex w-full max-w-reading flex-col gap-4 px-screen py-4">
+      <ReadingColumn className="flex flex-col gap-4 py-4">
         {appliedChips}
         <div aria-live="polite" className="contents">
           {hasSubmitFailed && <StatusBanner kind="error">답안을 저장하지 못했다</StatusBanner>}
@@ -185,7 +176,9 @@ export function ReviewSet({
             />
           )}
         </QueryBoundary>
-      </main>
+      </ReadingColumn>
+
+      <ShortcutHelp isOpen={isHelpOpen} onClose={() => setHelpOpen(false)} />
 
       <ActionBar>
         {graded ? (
@@ -206,8 +199,6 @@ export function ReviewSet({
           </>
         )}
       </ActionBar>
-
-      <ShortcutHelp isOpen={isHelpOpen} onClose={() => setHelpOpen(false)} />
     </>
   )
 }

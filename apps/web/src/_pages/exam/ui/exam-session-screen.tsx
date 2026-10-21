@@ -2,8 +2,8 @@
 
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { Button, ReadingColumn } from '@scent-jo/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button } from '@scent-jo/react'
 
 import type { ChoiceKey } from '@aws-study/shared'
 
@@ -14,9 +14,9 @@ import { examResultHref } from '@/shared/config/exam'
 import { CHOICE_KEYS, toggleChoice } from '@/shared/lib/choice-selection'
 import { useQuestionShortcuts } from '@/shared/lib/use-question-shortcuts'
 import { ActionBar } from '@/shared/ui/action-bar'
-import { AppBar } from '@/shared/ui/app-bar'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
+import { ScreenShell } from '@/shared/ui/screen-shell'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
 
@@ -283,13 +283,21 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
     throw new Error(`인덱스에 문항 ${String(questionId)}이 없다`)
   }
 
+  const gridProps = {
+    questionIds: session.questionIds,
+    answers,
+    cursor,
+    onJump: moveTo,
+  }
+
   return (
     <>
-      <AppBar
+      <ScreenShell
         title={`${SCREEN_NAME} ${cursor + 1} / ${total}`}
         backHref="/exam"
         progress={{ current: cursor + 1, total }}
-        action={
+        sidebar={<QuestionGrid container="sidebar" {...gridProps} />}
+        trailing={
           // DS에 그리드 아이콘이 없어 글자 버튼이다. `lg`에서는 사이드바가 이미 열려 있다.
           <Button
             color="dark"
@@ -301,19 +309,8 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
             문제 이동
           </Button>
         }
-      />
-
-      <div className="app-bar-gutter-top flex min-h-dvh expanded:flex-row">
-        <QuestionGrid
-          questionIds={session.questionIds}
-          answers={answers}
-          cursor={cursor}
-          isOpen={isGridOpen}
-          onClose={() => setGridOpen(false)}
-          onJump={moveTo}
-        />
-
-        <main className="action-bar-gutter mx-auto flex w-full min-w-0 max-w-reading flex-1 flex-col gap-4 px-screen py-4">
+      >
+        <ReadingColumn className="flex flex-col gap-4 py-4">
           {/*
             라이브 리전은 **배너보다 먼저** DOM에 있어야 낭독된다 (`DESIGN.md` 「상태 배너」).
             `contents`를 쓰는 이유는 이 자리가 flex 항목이라 빈 컨테이너가 gap 하나를 만들기
@@ -343,39 +340,46 @@ export function ExamSessionScreen({ apiUrl, sessionId }: { apiUrl: string; sessi
               notes={notes}
             />
           </QueryBoundary>
-        </main>
-      </div>
+        </ReadingColumn>
 
-      <ActionBar>
-        {/* 마지막 문항에서는 주 버튼이 「종료」가 되므로 보조 「종료」를 뺀다 —
+        <ActionBar>
+          {/* 마지막 문항에서는 주 버튼이 「종료」가 되므로 보조 「종료」를 뺀다 —
             같은 라벨을 한 바에 둘 두지 않는다 (`DESIGN.md` 「하단 액션의 버튼 배치」). */}
-        {!isLast && (
+          {!isLast && (
+            <Button
+              color="dark"
+              variant="weak"
+              disabled={isFinishing}
+              onClick={() => setFinishOpen(true)}
+            >
+              종료
+            </Button>
+          )}
           <Button
             color="dark"
             variant="weak"
-            disabled={isFinishing}
-            onClick={() => setFinishOpen(true)}
+            disabled={cursor === 0}
+            onClick={() => moveTo(cursor - 1)}
           >
-            종료
+            이전
           </Button>
-        )}
-        <Button
-          color="dark"
-          variant="weak"
-          disabled={cursor === 0}
-          onClick={() => moveTo(cursor - 1)}
-        >
-          이전
-        </Button>
-        {isLast ? (
-          <Button disabled={isFinishing} onClick={() => setFinishOpen(true)}>
-            종료
-          </Button>
-        ) : (
-          // 답을 고르지 않아도 넘어간다 — 미응답이 허용되고 건너뛴 뒤 돌아올 수 있어야 한다.
-          <Button onClick={() => moveTo(cursor + 1)}>다음</Button>
-        )}
-      </ActionBar>
+          {isLast ? (
+            <Button disabled={isFinishing} onClick={() => setFinishOpen(true)}>
+              종료
+            </Button>
+          ) : (
+            // 답을 고르지 않아도 넘어간다 — 미응답이 허용되고 건너뛴 뒤 돌아올 수 있어야 한다.
+            <Button onClick={() => moveTo(cursor + 1)}>다음</Button>
+          )}
+        </ActionBar>
+      </ScreenShell>
+
+      <QuestionGrid
+        container="sheet"
+        isOpen={isGridOpen}
+        onClose={() => setGridOpen(false)}
+        {...gridProps}
+      />
 
       <ConfirmDialog
         isOpen={isFinishOpen}
