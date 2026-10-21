@@ -1,5 +1,5 @@
 import { APP_TITLE } from '@/shared/config/app'
-import { ScreenShell } from '@/shared/ui/screen-shell'
+import { ScreenFill, ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkButton } from '@/shared/ui/link-button'
 import { EmptyState } from '@/shared/ui/empty-state'
 
@@ -20,10 +20,12 @@ import { EmptyState } from '@/shared/ui/empty-state'
 export default function NotFound() {
   return (
     <ScreenShell title={APP_TITLE} backHref="/">
-      <EmptyState
-        message="화면을 찾을 수 없다"
-        actions={<LinkButton href="/">대시보드로</LinkButton>}
-      />
+      <ScreenFill>
+        <EmptyState
+          message="화면을 찾을 수 없다"
+          actions={<LinkButton href="/">대시보드로</LinkButton>}
+        />
+      </ScreenFill>
     </ScreenShell>
   )
 }

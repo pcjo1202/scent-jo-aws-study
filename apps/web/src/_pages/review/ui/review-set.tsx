@@ -13,6 +13,7 @@ import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
+import { ScreenFill } from '@/shared/ui/screen-shell'
 
 import { submitAttempt } from '@/features/submit-answer/api/submit-attempt'
 
@@ -134,8 +135,8 @@ export function ReviewSet({
 
   if (isEmpty || isFinished) {
     return (
-      <ReadingColumn className="flex flex-col pt-4">
-        {hasFilter && appliedChips}
+      <ScreenFill>
+        {hasFilter && <div className="pt-4">{appliedChips}</div>}
         {isEmpty ? (
           <EmptySetState hasFilter={hasFilter} onClearFilter={onClearFilter} />
         ) : (
@@ -146,7 +147,7 @@ export function ReviewSet({
             onRestart={onRestart}
           />
         )}
-      </ReadingColumn>
+      </ScreenFill>
     )
   }
 

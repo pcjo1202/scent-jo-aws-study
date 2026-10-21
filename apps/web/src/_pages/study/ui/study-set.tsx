@@ -13,6 +13,7 @@ import { EmptyState } from '@/shared/ui/empty-state'
 import { QueryBoundary } from '@/shared/ui/query-boundary'
 import { ShortcutHelp } from '@/shared/ui/shortcut-help'
 import { StatusBanner } from '@/shared/ui/status-banner'
+import { ScreenFill } from '@/shared/ui/screen-shell'
 
 import { submitAttempt } from '@/features/submit-answer/api/submit-attempt'
 
@@ -137,10 +138,10 @@ export function StudySet({
   // 「빈 상태·완주에서 골격은 어떻게 되나」). 앱바 쪽 규칙은 `StudyScreen`이 지킨다.
   if (isEmpty || isFinished) {
     return (
-      <ReadingColumn className="flex flex-col pt-4">
+      <ScreenFill>
         {/* 필터 칩은 0건일 때도 상단에 남는다 — 무엇 때문에 0건인지가 보여야 해제할지
               고칠지를 정한다. 필터가 없으면 `AppliedFilterChips`가 `null`이라 빈 줄이다. */}
-        {hasFilter && appliedChips}
+        {hasFilter && <div className="pt-4">{appliedChips}</div>}
         {isEmpty ? (
           <EmptyState
             message="조건에 맞는 문제 없음"
@@ -154,7 +155,7 @@ export function StudySet({
             onRestart={() => moveTo(0)}
           />
         )}
-      </ReadingColumn>
+      </ScreenFill>
     )
   }
 

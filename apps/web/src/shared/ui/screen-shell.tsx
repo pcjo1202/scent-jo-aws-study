@@ -1,4 +1,4 @@
-import { AppBar, AppShell, ProgressBar } from '@scent-jo/react'
+import { AppBar, AppShell, ProgressBar, ReadingColumn } from '@scent-jo/react'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { LinkIconButton } from '@/shared/ui/link-button'
@@ -6,9 +6,10 @@ import { LinkIconButton } from '@/shared/ui/link-button'
 const SAFE_AREA_TOP = 'var(--sj-safe-area-top, env(safe-area-inset-top))'
 
 /*
- * 사이드바가 시작하는 높이 = 앱바 전체 높이(safe area + row + 진행 바 + 아래 테두리 1px).
- * DS 기본값은 row + 1px만 세서 진행 바·safe area가 있으면 사이드바가 앱바 밑으로 파고든다
- * (`MARKUP.md` 4-3). 진행 바는 `size="light"`라 높이가 DS `x0_5`다.
+ * 앱바 전체 높이(safe area + row + 진행 바 + 아래 테두리 1px). DS가 사이드바 시작 높이로 읽는
+ * `--sj-app-shell-header-height`에 넣는다 — DS 기본값은 row + 1px만 세서 진행 바·safe area가
+ * 있으면 사이드바가 앱바 밑으로 파고든다 (`MARKUP.md` 4-3). 진행 바는 `size="light"`라 높이가
+ * DS `x0_5`다. 사이드바가 없는 화면에서도 넣는다 — `ScreenFill`이 같은 값을 읽는다.
  */
 const HEADER_HEIGHT = `calc(${SAFE_AREA_TOP} + var(--sj-size-app-bar) + 1px)`
 const HEADER_WITH_PROGRESS_HEIGHT = `calc(${SAFE_AREA_TOP} + var(--sj-size-app-bar) + var(--sj-dimension-x0_5) + 1px)`
@@ -41,11 +42,10 @@ export function ScreenShell({
   sidebar?: ReactNode
   children: ReactNode
 }) {
-  const style = sidebar
-    ? ({
-        '--sj-app-shell-header-height': progress ? HEADER_WITH_PROGRESS_HEIGHT : HEADER_HEIGHT,
-      } as CSSProperties) // 사용자 정의 속성은 `CSSProperties`에 없다
-    : undefined
+  // 사용자 정의 속성은 `CSSProperties`에 없다
+  const style = {
+    '--sj-app-shell-header-height': progress ? HEADER_WITH_PROGRESS_HEIGHT : HEADER_HEIGHT,
+  } as CSSProperties
 
   return (
     <AppShell
@@ -73,5 +73,24 @@ export function ScreenShell({
     >
       {children}
     </AppShell>
+  )
+}
+
+/**
+ * 화면 전체가 빈 상태일 때의 본문 칼럼. 앱바 아래 남은 높이를 채워 `EmptyState`가 그 영역의
+ * 수직 가운데에 서게 한다 (`DESIGN.md` 「빈 상태」 「정렬」). DS `AppShell`의 `main`이 남은
+ * 높이를 채우지 않아 사이트가 잰다.
+ *
+ * 세로 여백을 이 칼럼에 주지 않는다 — DS 읽기 칼럼은 `content-box`라 여백이 높이에 더해져
+ * 그만큼 스크롤이 생긴다. 위에 칩·배너가 오면 그 조각이 자기 여백을 갖는다.
+ */
+export function ScreenFill({ children }: { children: ReactNode }) {
+  return (
+    <ReadingColumn
+      className="flex flex-col"
+      style={{ minHeight: 'calc(100dvh - var(--sj-app-shell-header-height))' }}
+    >
+      {children}
+    </ReadingColumn>
   )
 }

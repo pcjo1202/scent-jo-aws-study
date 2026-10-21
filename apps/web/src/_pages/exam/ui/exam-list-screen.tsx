@@ -10,7 +10,7 @@ import { examKeys, examsQuery } from '@/shared/api/exams'
 import { examResultHref, examSessionHref } from '@/shared/config/exam'
 import { ActionBar } from '@/shared/ui/action-bar'
 import { ActiveSessionCard } from '@/shared/ui/active-session-card'
-import { ScreenShell } from '@/shared/ui/screen-shell'
+import { ScreenFill, ScreenShell } from '@/shared/ui/screen-shell'
 import { LinkTextButton } from '@/shared/ui/link-button'
 import { Chip } from '@/shared/ui/chip'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
@@ -149,14 +149,14 @@ export function ExamListScreen({ apiUrl }: { apiUrl: string }) {
   if (data.sessions.length === 0) {
     return (
       <ScreenShell title="모의고사" backHref="/">
-        <ReadingColumn className="flex flex-col pt-4">
-          {banner}
+        <ScreenFill>
+          <div className="pt-4">{banner}</div>
           <EmptyState
             message="아직 모의고사 기록이 없다"
             options={unsolvedChip}
             actions={startButton}
           />
-        </ReadingColumn>
+        </ScreenFill>
       </ScreenShell>
     )
   }
