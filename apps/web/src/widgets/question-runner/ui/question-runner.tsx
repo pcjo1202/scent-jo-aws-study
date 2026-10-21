@@ -10,7 +10,8 @@ import { ResultBanner } from '@/shared/ui/result-banner'
 /**
  * `wrap-break-word`는 상속되므로 여기 한 곳이 지문·선택지·해설을 다 덮는다. DS 기본
  * `word-break: keep-all`은 띄어쓰기 없는 긴 덩어리(ARN·정책 키·붙여 쓴 서비스명)를 끊지 못해
- * 375px에서 카드 밖으로 넘친다 — 1019문항 전수에서 43개 중 11개였다 (2026-10-21, SJO-64).
+ * 375px에서 카드 밖으로 넘친다 — 1019문항의 지문·선택지·해설에서 공백 없이 26자 이상인 덩어리
+ * 43개를 각자의 칸에 넣어 쟀더니 11개가 칸을 넘쳤다 (2026-10-21, SJO-64).
  */
 const RUNNER_CLASS = 'flex flex-col gap-6 wrap-break-word'
 

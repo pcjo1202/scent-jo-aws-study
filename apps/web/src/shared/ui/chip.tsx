@@ -6,7 +6,8 @@ const CHIP_BASE = 'inline-flex h-8 items-center gap-1 rounded-full px-3 text-t6'
 /**
  * DS에 칩이 없어 DS 토큰으로 짓는다. 카테고리 라벨·등장 서비스·필터에 쓴다.
  *
- * **선택 상태는 필터 칩에만 쓴다** (`DESIGN.md` 「칩」). 선택은 정오가 아니라 brand다.
+ * 선택 상태는 켜고 끄는 칩(필터·「안 푼 문제 우선」)에만 쓴다. 펼치는 칩(한줄노트)에는 쓰지 않는다
+ * (`DESIGN.md` 「칩」). 선택은 정오가 아니라 brand다.
  */
 export function Chip({
   isSelected = false,

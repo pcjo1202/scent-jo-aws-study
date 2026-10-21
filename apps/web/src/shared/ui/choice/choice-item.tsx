@@ -37,7 +37,9 @@ export function ChoiceItem({
   return (
     <label
       aria-disabled={isDisabled}
-      className={`${CHOICE_CARD_CLASS} sj-pressed-overlay cursor-pointer border border-default aria-disabled:cursor-default aria-disabled:text-tertiary ${isSelected ? 'bg-brand-weak' : 'bg-default'}`}
+      // 안 고른 카드에 면색 유틸을 주지 않는다. `sj-pressed-overlay`의 눌림 배경은 DS components 층이라
+      // utilities 층의 `bg-*`가 있으면 그려지지 않는다 — 선택된 카드는 그 대가로 눌림 배경이 없다.
+      className={`${CHOICE_CARD_CLASS} sj-pressed-overlay cursor-pointer border border-default aria-disabled:cursor-default aria-disabled:text-secondary ${isSelected ? 'bg-brand-weak' : ''}`}
     >
       <input
         type={isSingleAnswer(answerCount) ? 'radio' : 'checkbox'}
@@ -47,13 +49,14 @@ export function ChoiceItem({
         disabled={isDisabled}
         onChange={() => onToggle(choiceKey)}
         className="mt-1.5"
+        // DS Tailwind 색 네임스페이스에 semantic `accent-*`가 없어(팔레트만 있다) 변수로 칠한다.
         style={{ accentColor: 'var(--sj-color-bg-brand)' }}
       />
       <span>{choiceKey}</span>
       <span className="min-w-0 flex-1 whitespace-pre-wrap">{text}</span>
       {/* 키 힌트는 폭과 포인터 두 조건이다 — 넓은 터치 태블릿에 단축키를 보여줄 이유가 없다
           (`DESIGN.md` 「선택지 · 키보드」). */}
-      <span className="hidden text-t7 text-tertiary lg:[@media(hover:hover)]:inline">{order}</span>
+      <span className="hidden text-t7 text-secondary lg:[@media(hover:hover)]:inline">{order}</span>
     </label>
   )
 }

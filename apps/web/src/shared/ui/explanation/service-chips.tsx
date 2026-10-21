@@ -13,8 +13,8 @@ import { Chip, ChipLabel } from '@/shared/ui/chip'
  * 한 번에 하나만 펼친다. 여럿이 동시에 열리면 해설 아래가 다시 길어져서 ③에서 아코디언을
  * 쓴 이유가 무너진다.
  *
- * 펼침을 선택 면색으로 표시하지 않는다. 선택 상태는 **필터 칩에만** 쓰고 (`DESIGN.md` 「칩」),
- * 이 칩은 필터가 아니라 노트 토글이다. 상태는 마커 회전과 `aria-expanded`가 나른다.
+ * 펼침을 선택 면색으로 표시하지 않는다. 선택 상태는 켜고 끄는 칩의 것이고 (`DESIGN.md` 「칩」),
+ * 이 칩은 노트를 펼친다. 상태는 마커 회전과 `aria-expanded`가 나른다 — `aria-pressed`는 뗀다.
  *
  * **노트가 없는 서비스가 7개 있다** — `S3`·`IAM` 같은 루트 이름은 태깅을 위해 보완한 것이고
  * 노트는 기능 단위(`S3 Standard`)로만 싣는다 (`docs/04-data-model.md` 「노트가 빠뜨린 이름」).
@@ -41,6 +41,7 @@ export function ServiceChips({
           <li key={service.name}>
             {service.note ? (
               <Chip
+                aria-pressed={undefined}
                 aria-expanded={service.name === openName}
                 aria-controls={noteId}
                 onClick={() => setOpenName(service.name === openName ? null : service.name)}

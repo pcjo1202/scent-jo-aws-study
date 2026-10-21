@@ -103,7 +103,8 @@ export function GradedChoiceItem({
       >
         {row}
       </summary>
-      <div className="px-4 pb-3">{explanation}</div>
+      {/* 「글자를 낮춘다」는 선택지 글자다. 펼친 해설은 읽을 본문이라 낮추지 않는다. */}
+      <div className="px-4 pb-3 text-primary">{explanation}</div>
     </details>
   )
 }

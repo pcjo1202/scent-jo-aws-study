@@ -115,13 +115,12 @@ export function FilterPanel({
           <SearchField
             value={serviceSearch}
             onChange={(event) => setServiceSearch(event.target.value)}
-            onDeleteClick={() => setServiceSearch('')}
             placeholder="서비스 이름"
             aria-label="서비스 검색"
             // 바 여백은 화면 상단 고정용이다. 패널 안에서는 그룹 칩과 같은 선에 맞춘다 (DS 공개 변수).
             className="mt-2 [--sj-search-field-padding:0]"
           />
-          <ul className="mt-2 flex flex-wrap gap-2">
+          <ul className="flex flex-wrap gap-2">
             {shownServices.map((service) => (
               <li key={service}>
                 <Chip
@@ -188,7 +187,11 @@ export function FilterPanel({
         </BottomSheet.CTA>
       }
     >
-      {groups}
+      {/* 시트 면은 `bg-float`라 SearchField 바·페이드의 기본 배경(`bg-default`)과 다크에서 갈린다.
+          사이드바는 본문 면 위라 그대로 둔다 (DS 공개 변수). */}
+      <div className="contents [--sj-search-field-background:var(--sj-color-bg-float)]">
+        {groups}
+      </div>
     </PanelSheet>
   )
 }
