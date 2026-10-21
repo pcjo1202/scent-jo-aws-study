@@ -6,7 +6,7 @@ import type { ExamResult } from '@aws-study/shared'
 
 import { examReviewHref } from '@/shared/config/exam'
 
-import { CELL_BASE_CLASS, GRID_STYLE } from './grid-cell'
+import { CELL_BASE_CLASS, GRID_CLASS, GRID_STYLE, THIN_BORDER_CELL_CLASS } from './grid-cell'
 
 /**
  * DS에 semantic 테두리 색이 없어 danger 테두리를 글자색 토큰으로 칠한다. 토큰이 생기면
@@ -26,7 +26,7 @@ const DANGER_BORDER: CSSProperties = { borderColor: 'var(--sj-color-fg-danger)' 
 const CELL_STYLE: Record<CellState, { className: string; style?: CSSProperties }> = {
   correct: { className: 'border border-transparent bg-success-weak text-primary' },
   wrong: { className: 'border-2 text-primary', style: DANGER_BORDER },
-  unanswered: { className: 'border border-strong text-secondary' },
+  unanswered: { className: THIN_BORDER_CELL_CLASS },
 }
 
 const CELL_LABEL = {
@@ -72,7 +72,7 @@ export function ResultGrid({ results, sessionId }: { results: ExamResult[]; sess
         title={<ListHeader.TitleParagraph>문제별 리뷰</ListHeader.TitleParagraph>}
       />
 
-      <ul className="grid gap-2 px-5" style={GRID_STYLE}>
+      <ul className={`${GRID_CLASS} px-5`} style={GRID_STYLE}>
         {results.map((result, index) => {
           // `states`는 같은 배열의 `map` 결과라 길이가 같다.
           const state = states[index] as CellState
