@@ -32,9 +32,7 @@ export function ChoiceList({
 
   return (
     <fieldset>
-      <legend
-        className={hasSingleAnswer ? 'sr-only' : 'mb-2 text-body-medium text-on-surface-variant'}
-      >
+      <legend className={hasSingleAnswer ? 'sr-only' : 'mb-2 text-t6 text-secondary'}>
         {hasSingleAnswer ? '선택지' : `정답 ${answerCount}개를 고르세요`}
       </legend>
 
